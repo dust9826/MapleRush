@@ -1,0 +1,146 @@
+@Component
+script PlayerItems extends Component
+
+	-- 슬롯 1~3: "" / "rock"(짱돌) / "smoke"(연막탄) / "flash"(섬광탄)
+	@Sync
+	property string Slot1 = ""
+
+	@Sync
+	property string Slot2 = ""
+
+	@Sync
+	property string Slot3 = ""
+
+	-- 클라: 활성 슬롯 (0 = 없음). 한 번에 한 슬롯만 (player_design §7.3).
+	property integer ActiveSlot = 0
+
+	property any routerHandler = nil
+
+	@ExecSpace("ClientOnly")
+	method void OnBeginPlay()
+		-- 로컬 플레이어만 라우터 구독 (숫자키 1~3 + primary).
+		if self.Entity ~= _UserService.LocalPlayer then return end
+		self.routerHandler = _InputRouter:ConnectEvent(RouterActionEvent, self.OnRouterAction)
+		log("[PlayerItems] OnBeginPlay: router connected")
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnEndPlay()
+		-- 라우터 구독 해제.
+		if self.routerHandler ~= nil then
+			_InputRouter:DisconnectEvent(RouterActionEvent, self.routerHandler)
+		end
+	end
+
+	@ExecSpace("ClientOnly")
+	method string GetSlot(integer idx)
+		-- 슬롯 내용 조회.
+		if idx == 1 then return self.Slot1 end
+		if idx == 2 then return self.Slot2 end
+		if idx == 3 then return self.Slot3 end
+		return ""
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnRouterAction(RouterActionEvent event)
+		-- 숫자키: 활성화 토글 / 활성 상태 좌클릭: 커서 방향 사용 (평타보다 우선 — F4).
+		if event.action == "item1" then
+			self:ToggleSlot(1)
+		elseif event.action == "item2" then
+			self:ToggleSlot(2)
+		elseif event.action == "item3" then
+			self:ToggleSlot(3)
+		elseif event.action == "primary" and self.ActiveSlot > 0 then
+			-- 대시 이동 중 사용 불가 (§7.4)
+			---@type PlayerDash
+			local dash = self.Entity:GetComponent("script.PlayerDash")
+			if dash ~= nil and dash.IsDashing == true then return end
+			local slot = self.ActiveSlot
+			self.ActiveSlot = 0
+			self:RequestUseItem(slot, event.worldPos.x, event.worldPos.y)
+		end
+	end
+
+	@ExecSpace("ClientOnly")
+	method void ToggleSlot(integer idx)
+		-- 같은 키 재입력 → 비활성화 / 다른 키 → 해당 슬롯으로 전환. 빈 슬롯 무시.
+		if self:GetSlot(idx) == "" then
+			log("[PlayerItems] slot " .. tostring(idx) .. " is empty")
+			return
+		end
+		if self.ActiveSlot == idx then
+			self.ActiveSlot = 0
+			log("[PlayerItems] slot " .. tostring(idx) .. " deactivated")
+		else
+			self.ActiveSlot = idx
+			log("[PlayerItems] slot " .. tostring(idx) .. " ACTIVE (" .. self:GetSlot(idx) .. ")")
+		end
+	end
+
+	@ExecSpace("ClientOnly")
+	method boolean IsItemActive()
+		-- 평타 차단용: 아이템 활성화 중인지 (PlayerCombat이 조회).
+		return self.ActiveSlot > 0
+	end
+
+	@ExecSpace("Server")
+	method void RequestUseItem(integer slotIdx, number targetX, number targetY)
+		-- 서버 검증 + 아이템 효과 발동 + 슬롯 비움 (stage_design §3.2.2). 전투 스테이지에서만.
+		if _StageManager.StageActive == false then return end
+		local itemId = ""
+		if slotIdx == 1 then itemId = self.Slot1
+		elseif slotIdx == 2 then itemId = self.Slot2
+		elseif slotIdx == 3 then itemId = self.Slot3
+		end
+		if itemId == "" then return end
+		-- 슬롯 소모
+		if slotIdx == 1 then self.Slot1 = ""
+		elseif slotIdx == 2 then self.Slot2 = ""
+		elseif slotIdx == 3 then self.Slot3 = ""
+		end
+
+		local pos = self.Entity.TransformComponent.WorldPosition
+		local center = Vector2(pos.x, pos.y + 0.5)
+
+		if itemId == "rock" then
+			-- 짱돌: 커서 방향 투사체, ATK×300%, 적 투사체 사양 재사용
+			local map = self.Entity.CurrentMap
+			if isvalid(map) then
+				local dir = _CombatPrimitives:DirectionTo(center, Vector2(targetX, targetY))
+				local spawnPos = Vector3(center.x + dir.x * 0.4, center.y + dir.y * 0.4, 0)
+				local proj = _SpawnService:SpawnByModelId("enemyprojectile", "rock_" .. tostring(_UtilLogic:RandomInteger()), spawnPos, map)
+				if proj ~= nil then
+					---@type Projectile
+					local comp = proj:GetComponent("script.Projectile")
+					if comp ~= nil then
+						comp:Launch(dir.x, dir.y, _GameConstants.ProjectileSpeed, _GameStateManager.AttackStat * _GameConstants.DmgRockPct, false)
+						comp.OwnerSide = "player"
+						log("[PlayerItems] ROCK thrown (dmg=" .. tostring(_GameStateManager.AttackStat * _GameConstants.DmgRockPct) .. ")")
+					end
+				end
+			end
+		elseif itemId == "smoke" then
+			_BattlefieldFx:ActivateSmoke(center, _GameConstants.SmokeDuration)
+		elseif itemId == "flash" then
+			_BattlefieldFx:ActivateStun(_GameConstants.FlashStunDuration)
+		end
+	end
+
+	@ExecSpace("ServerOnly")
+	method boolean GrantItem(string itemId)
+		-- 빈 슬롯에 아이템 지급. 가득 차면 false (버리기/교체 UI는 추후).
+		if self.Slot1 == "" then
+			self.Slot1 = itemId
+		elseif self.Slot2 == "" then
+			self.Slot2 = itemId
+		elseif self.Slot3 == "" then
+			self.Slot3 = itemId
+		else
+			log("[PlayerItems] inventory full — item lost: " .. itemId)
+			return false
+		end
+		log("[PlayerItems] granted: " .. itemId)
+		return true
+	end
+
+end

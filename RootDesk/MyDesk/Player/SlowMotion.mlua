@@ -1,0 +1,154 @@
+@Logic
+script SlowMotion extends Logic
+
+	-- ===== 서버 상태 =====
+	property boolean ServerSlowActive = false
+
+	property number serverSlowEnd = -999.0
+
+	property any slowedMapRef = nil
+
+	-- ===== 클라 상태 =====
+	property boolean clientSlowActive = false
+
+	property number clientSlowStart = -999.0
+
+	method number Scale()
+		-- 적/투사체용 시간 배율 (서버에서 폴링). 슬로우 중 0.25, 평시 1.0.
+		if self.ServerSlowActive then
+			return _GameConstants.SlowScale
+		end
+		return 1.0
+	end
+
+	method void OnUpdate(number delta)
+		-- 서버: 슬로우 만료 처리 / 클라: 타임스케일 복귀 (실제 시간 스냅샷 차분).
+		if self:IsServer() then
+			if self.ServerSlowActive and _UtilLogic.ServerElapsedSeconds >= self.serverSlowEnd then
+				self:DeactivateServer()
+			end
+		else
+			if self.clientSlowActive and _WallClock:IsExpired(self.clientSlowStart, _GameConstants.SlowDuration) then
+				self:ClientSlowEnd(true)
+			end
+		end
+	end
+
+	@ExecSpace("ServerOnly")
+	method void Activate(Entity playerEntity)
+		-- 슬로우 발동/갱신 (중첩 시 지속시간 초기화 — player_design §3.2.5). 적 PlayRate 감속 + 클라 통지.
+		self.ServerSlowActive = true
+		self.serverSlowEnd = _UtilLogic.ServerElapsedSeconds + _GameConstants.SlowDuration
+		self.slowedMapRef = playerEntity.CurrentMap
+		self:ApplyEnemyPlayRate(_GameConstants.SlowScale)
+		log("[SlowMotion] SERVER slow ACTIVE (0.25x) for " .. tostring(_GameConstants.SlowDuration) .. "s")
+		local pc = playerEntity.PlayerComponent
+		if pc ~= nil then
+			self:ClientSlowStart(pc.UserId)
+		end
+	end
+
+	@ExecSpace("ServerOnly")
+	method void DeactivateServer()
+		-- 서버 슬로우 해제: 배율/PlayRate 원복.
+		if self.ServerSlowActive == false then return end
+		self.ServerSlowActive = false
+		self:ApplyEnemyPlayRate(1.0)
+		log("[SlowMotion] SERVER slow END (1.0x restored)")
+	end
+
+	@ExecSpace("ServerOnly")
+	method void ApplyEnemyPlayRate(number rate)
+		-- 모든 적 스프라이트 PlayRate 직접 제어 (V1 실측 — 자동 감속 비보장이므로 직접 설정).
+		local map = self.slowedMapRef
+		if map == nil or isvalid(map) == false then return end
+		local list = map:GetChildComponentsByTypeName("script.EnemyHealth", true)
+		for _, compAny in ipairs(list) do
+			---@type EnemyHealth
+			local comp = compAny
+			local e = comp.Entity
+			if isvalid(e) and isvalid(e.SpriteRendererComponent) then
+				e.SpriteRendererComponent.PlayRate = rate
+			end
+		end
+	end
+
+	@ExecSpace("Client")
+	method void ClientSlowStart()
+		-- 클라: 타임스케일 0.25 + 강화 대시 1회 부여 + 지속 타이머 시작.
+		_UtilLogic:SetClientTimeScale(_GameConstants.SlowScale)
+		self.clientSlowActive = true
+		self.clientSlowStart = _WallClock:Now()
+		local player = _UserService.LocalPlayer
+		if player ~= nil then
+			---@type PlayerDash
+			local dash = player:GetComponent("script.PlayerDash")
+			if dash ~= nil then
+				dash.EmpoweredReady = true
+			end
+		end
+		self:ApplyEnemyGrayscale(true)
+		log("[SlowMotion] CLIENT timescale 0.25, empowered dash READY")
+	end
+
+	@ExecSpace("ClientOnly")
+	method void ApplyEnemyGrayscale(boolean on)
+		-- 클라 연출: 현재 맵의 모든 적 스프라이트에 흑백(GrayScale) 머티리얼 적용/해제. 플레이어·배경은 컬러 유지.
+		local player = _UserService.LocalPlayer
+		if player == nil or isvalid(player) == false then return end
+		local map = player.CurrentMap
+		if map == nil or isvalid(map) == false then return end
+		local matName = _GameConstants.MatGrayScale
+		if on == false then matName = _GameConstants.MatFxDefault end
+		local matId = _EntryService:GetMaterialIdByName(matName)
+		if matId == nil or matId == "" then
+			log("[SlowMotion] grayscale material '" .. tostring(matName) .. "' NOT FOUND")
+			return
+		end
+		local list = map:GetChildComponentsByTypeName("script.EnemyHealth", true)
+		local n = 0
+		for _, compAny in ipairs(list) do
+			---@type EnemyHealth
+			local comp = compAny
+			local e = comp.Entity
+			if isvalid(e) and isvalid(e.SpriteRendererComponent) then
+				e.SpriteRendererComponent:ChangeMaterial(matId)
+				n += 1
+			end
+		end
+		log("[SlowMotion] grayscale on=" .. tostring(on) .. " -> " .. tostring(n) .. " enemies (matId=" .. tostring(matId) .. ")")
+	end
+
+	@ExecSpace("ClientOnly")
+	method void ClientSlowEnd(boolean expireEmpowered)
+		-- 클라: 타임스케일 복귀. 자연 만료 시 미사용 강화 대시 소멸.
+		self.clientSlowActive = false
+		_UtilLogic:SetClientTimeScale(1.0)
+		self:ApplyEnemyGrayscale(false)
+		if expireEmpowered then
+			local player = _UserService.LocalPlayer
+			if player ~= nil then
+				---@type PlayerDash
+				local dash = player:GetComponent("script.PlayerDash")
+				if dash ~= nil and dash.EmpoweredReady == true then
+					dash.EmpoweredReady = false
+					log("[SlowMotion] unused empowered dash expired")
+				end
+			end
+		end
+		log("[SlowMotion] CLIENT timescale restored 1.0")
+	end
+
+	@ExecSpace("Server")
+	method void RequestEndEarly()
+		-- 강화 대시 사용 → 서버 슬로우 즉시 해제.
+		self:DeactivateServer()
+	end
+
+	@ExecSpace("ServerOnly")
+	method void ClearAllServer()
+		-- 스테이지 전환/재시작 시 강제 정리 (Phase 3 ResetStage 경유).
+		self:DeactivateServer()
+	end
+
+end

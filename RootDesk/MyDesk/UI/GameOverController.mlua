@@ -1,0 +1,44 @@
+@Component
+script GameOverController extends Component
+
+	property Entity gameOverRoot = "fb0c0364-132b-4097-9d11-0992561ead73"
+
+	property TextComponent infoText = "5fde9e23-82c4-46be-b1d5-b4703ad575ce"
+
+	property ButtonComponent btnRestart = "413011b8-9a3a-4b94-9c41-0fce6cfd98f5"
+
+	property any hRestart = nil
+
+	@ExecSpace("ClientOnly")
+	method void OnBeginPlay()
+		-- StageManager에 등록 + 패널 숨김 + 재시작 버튼 연결.
+		_StageManager.gameOverUI = self
+		if isvalid(self.gameOverRoot) then self.gameOverRoot.Enable = false end
+		self.hRestart = self.btnRestart.Entity:ConnectEvent(ButtonClickEvent, self.OnRestartClick)
+		log("[GameOverController] OnBeginPlay: registered")
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnEndPlay()
+		-- 버튼 이벤트 해제.
+		if self.hRestart ~= nil then self.btnRestart.Entity:DisconnectEvent(ButtonClickEvent, self.hRestart) end
+	end
+
+	@ExecSpace("ClientOnly")
+	method void Open()
+		-- 게임오버 팝업 표시 (클리어 수 요약 포함).
+		self.gameOverRoot.Enable = true
+		self.infoText.Text = "일반 " .. tostring(_GameStateManager.NormalClears) .. "스테이지 / 보스 " .. tostring(_GameStateManager.BossClears) .. "스테이지 클리어"
+		log("[GameOverController] opened")
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnRestartClick(ButtonClickEvent event)
+		-- 다시 시작: 팝업 닫기 + 전투 컨텍스트 + 런 재시작 요청.
+		self.gameOverRoot.Enable = false
+		_InputRouter:SetContext("Combat")
+		_StageManager:RequestRestartRun()
+		log("[GameOverController] restart requested")
+	end
+
+end

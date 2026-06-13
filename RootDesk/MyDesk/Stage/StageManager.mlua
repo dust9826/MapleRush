@@ -1,0 +1,271 @@
+@Logic
+script StageManager extends Logic
+
+	-- normal / shop / boss
+	@Sync
+	property string StageType = "normal"
+
+	@Sync
+	property integer SpawnedCount = 0
+
+	@Sync
+	property integer KilledCount = 0
+
+	@Sync
+	property boolean StageActive = false
+
+	-- 서버: 현재 스테이지 적 구성 [{model, x, y}]
+	property any composition = nil
+
+	property integer spawnSerial = 0
+
+	-- 진입 유예: 이 시각(ServerElapsedSeconds)까지 적 행동 정지 (스폰 캠핑 방지)
+	property number combatGraceUntil = -999.0
+
+	-- 클라: 보상 UI 컨트롤러 참조 (RewardController가 등록)
+	property any rewardUI = nil
+
+	-- 클라: 게임오버 UI 컨트롤러 참조
+	property any gameOverUI = nil
+
+	@ExecSpace("ServerOnly")
+	method void OnPlayerReady(Entity player)
+		-- 첫 플레이어 입장 → 런 시작 + 거울던전식 층 진행 시작 (PlayerBootstrap이 호출).
+		if _GameStateManager.RunActive then return end
+		_GameStateManager:StartRun()
+		_ShopManager:ResetPrices()
+		_FloorManager:StartGameFlow()
+	end
+
+	@ExecSpace("ServerOnly")
+	method void StartStage(string stageType)
+		-- 새 스테이지 진입: 목숨 최대 갱신 + 구성 롤 + 단일 초기화 경유 스폰.
+		self.StageType = stageType
+		_GameStateManager:RefillLives()
+		if stageType == "boss" then
+			-- 보스 스테이지: 전용 보스 1기 (HP 500, 그로기/패턴 풀)
+			self.composition = { { model = "bossenemy", x = 6.0, y = 0.4 } }
+		else
+			self.composition = self:RollComposition()
+		end
+		self:ResetStage()
+		log("[StageManager] stage START type=" .. stageType .. " enemies=" .. tostring(self.SpawnedCount) .. " lives=" .. tostring(_GameStateManager.CurrentLives))
+	end
+
+	@ExecSpace("ServerOnly")
+	method table RollComposition()
+		-- 일반 스테이지 적 구성 랜덤 롤 (근/원거리 조합, 스폰 포인트 고정 — map01 기준).
+		local points = {
+			{ x = 5.5, y = 0.4 },
+			{ x = 7.5, y = 0.4 },
+			{ x = -5.5, y = 0.4 },
+			{ x = 8.5, y = 0.4 },
+		}
+		local count = 3 + _UtilLogic:RandomIntegerRange(0, 1)
+		local comp = {}
+		for i = 1, count do
+			local modelId = "meleeenemy"
+			if _UtilLogic:RandomDouble() < 0.4 then modelId = "rangedenemy" end
+			local p = points[((i - 1) % #points) + 1]
+			table.insert(comp, { model = modelId, x = p.x, y = p.y })
+		end
+		return comp
+	end
+
+	@ExecSpace("ServerOnly")
+	method void ResetStage()
+		-- 단일 초기화 함수 (A-5): 잔존 적/투사체 소멸 → 슬로우 해제 → 카운터 초기화 → 재스폰 → 플레이어 위치 리셋.
+		local map = self:GetMap()
+		if map == nil then return end
+		-- (1) 잔존 적 소멸
+		local enemies = map:GetChildComponentsByTypeName("script.EnemyHealth", true)
+		for _, compAny in ipairs(enemies) do
+			---@type EnemyHealth
+			local comp = compAny
+			if isvalid(comp.Entity) then comp.Entity:Destroy() end
+		end
+		-- (2) 비행 중 투사체 소멸
+		local projs = map:GetChildComponentsByTypeName("script.Projectile", true)
+		for _, compAny in ipairs(projs) do
+			---@type Projectile
+			local comp = compAny
+			if isvalid(comp.Entity) then comp.Entity:Destroy() end
+		end
+		-- (3) 슬로우 모션 + 전장 효과 강제 해제
+		_SlowMotion:ClearAllServer()
+		_BattlefieldFx:ClearAllServer()
+		-- (4) 카운터 초기화
+		self.SpawnedCount = 0
+		self.KilledCount = 0
+		-- (5) 적 재스폰 (초기 구성)
+		if self.composition ~= nil and self.StageType ~= "shop" then
+			for _, c in ipairs(self.composition) do
+				self.spawnSerial += 1
+				local name = "E" .. tostring(self.spawnSerial)
+				local e = _SpawnService:SpawnByModelId(c.model, name, Vector3(c.x, c.y, 0), map)
+				if e == nil then
+					log_error("[StageManager] spawn failed: " .. c.model)
+				else
+					self.SpawnedCount += 1
+					-- 구성에 hp 오버라이드가 있으면 적용 (보스 플레이스홀더 등)
+					if c.hp ~= nil then
+						---@type EnemyHealth
+						local hpComp = e:GetComponent("script.EnemyHealth")
+						if hpComp ~= nil then
+							hpComp.MaxHP = c.hp
+							hpComp.HP = c.hp
+						end
+					end
+				end
+			end
+		end
+		-- (6) 플레이어 위치/상태 리셋 + 능력 사용 횟수 초기화
+		local users = _UserService:GetUsersByMapComponent(map.MapComponent)
+		if users ~= nil then
+			for _, u in ipairs(users) do
+				local pc = u.PlayerComponent
+				if pc ~= nil then
+					self:ClientStageReset(pc.UserId)
+				end
+				---@type PlayerAbility
+				local ability = u:GetComponent("script.PlayerAbility")
+				if ability ~= nil then
+					ability:ResetUses(self.StageType)
+				end
+			end
+		end
+		self.StageActive = true
+		self.combatGraceUntil = _UtilLogic.ServerElapsedSeconds + 1.5
+		log("[StageManager] ResetStage done: spawned=" .. tostring(self.SpawnedCount))
+	end
+
+	@ExecSpace("ServerOnly")
+	method boolean IsGraceActive()
+		-- 진입 유예 중인지 (적 AI가 폴링).
+		return _UtilLogic.ServerElapsedSeconds < self.combatGraceUntil
+	end
+
+	@ExecSpace("ServerOnly")
+	method Entity GetMap()
+		-- 현재 전투 맵 (현재는 map01 고정 — Phase 8에서 랜덤 풀로 확장).
+		return _EntityService:GetEntityByPath("/maps/map01")
+	end
+
+	@ExecSpace("Client")
+	method void ClientStageReset()
+		-- 클라: 시작 지점 텔레포트 + 전투 컨텍스트 복귀 + 타임스케일 보정.
+		local player = _UserService.LocalPlayer
+		if player ~= nil then
+			player.MovementComponent:SetWorldPosition(Vector2(0, 0.3))
+		end
+		_UtilLogic:SetClientTimeScale(1.0)
+		_InputRouter:SetContext("Combat")
+	end
+
+	@ExecSpace("ServerOnly")
+	method void OnEnemyKilled(string enemyKind)
+		-- 처치 카운트. 스폰 수 == 처치 수 → 클리어 (stage_design §2.3.5).
+		if self.StageActive == false then return end
+		self.KilledCount += 1
+		log("[StageManager] kill " .. tostring(self.KilledCount) .. "/" .. tostring(self.SpawnedCount) .. " (" .. enemyKind .. ")")
+		if self.KilledCount >= self.SpawnedCount then
+			self:StageClear()
+		end
+	end
+
+	@ExecSpace("ServerOnly")
+	method void StageClear()
+		-- 스테이지 클리어: 메소 일괄 지급 + 보상 롤 + 보상 UI 표시.
+		self.StageActive = false
+		local mesoGain = 0
+		if self.StageType == "boss" then
+			_GameStateManager.BossClears += 1
+			mesoGain = _GameStateManager.BossClears * _GameConstants.MesoPerBossClear
+		else
+			_GameStateManager.NormalClears += 1
+			mesoGain = _GameStateManager.NormalClears * _GameConstants.MesoPerNormalClear
+		end
+		_GameStateManager:AddMeso(mesoGain)
+		local rewards = _RewardManager:RollRewards(self.StageType)
+		log("[StageManager] STAGE CLEAR! type=" .. self.StageType .. " meso+" .. tostring(mesoGain) .. " stat=" .. tostring(rewards.stat) .. " item=" .. tostring(rewards.item) .. " ability=" .. tostring(rewards.ability))
+		-- 보상 UI (클라)
+		local map = self:GetMap()
+		local users = _UserService:GetUsersByMapComponent(map.MapComponent)
+		if users ~= nil and #users > 0 then
+			local pc = users[1].PlayerComponent
+			if pc ~= nil then
+				self:ClientShowReward(mesoGain, rewards.stat, rewards.item, rewards.ability, pc.UserId)
+			end
+		end
+	end
+
+	@ExecSpace("Client")
+	method void ClientShowReward(number mesoGain, boolean statReward, boolean itemReward, boolean abilityReward)
+		-- 클라: 보상 팝업 표시 + 입력 컨텍스트 전환.
+		_InputRouter:SetContext("Reward")
+		if self.rewardUI ~= nil then
+			self.rewardUI:Open(mesoGain, statReward, itemReward, abilityReward)
+		else
+			log_warning("[StageManager] rewardUI not registered — auto-proceed")
+			self:RequestProceedNext()
+		end
+	end
+
+	@ExecSpace("Server")
+	method void RequestProceedNext()
+		-- 보상 수령 완료 → 층 진행 매니저에 위임 (노드맵/상점/보스/다음층 분기).
+		log("[StageManager] reward done -> floor flow (" .. self.StageType .. ")")
+		_FloorManager:OnStageRewardDone(self.StageType)
+	end
+
+	@ExecSpace("ServerOnly")
+	method void OnPlayerDeath(Entity player)
+		-- 사망 처리: 목숨 1 감소 후 재시작 / 목숨 0에서 사망 시 게임 오버 (player_design §1.4).
+		if self.StageActive == false then return end
+		if _GameStateManager.CurrentLives > 0 then
+			_GameStateManager.CurrentLives -= 1
+			log("[StageManager] player died -> lives=" .. tostring(_GameStateManager.CurrentLives) .. ", restarting stage")
+			self:ResetStage()
+		else
+			self:GameOver()
+		end
+	end
+
+	@ExecSpace("ServerOnly")
+	method void GameOver()
+		-- 게임 오버: 런 종료 + 클라 게임오버 화면.
+		self.StageActive = false
+		_GameStateManager.RunActive = false
+		log("[StageManager] GAME OVER (normalClears=" .. tostring(_GameStateManager.NormalClears) .. ")")
+		local map = self:GetMap()
+		local users = _UserService:GetUsersByMapComponent(map.MapComponent)
+		if users ~= nil and #users > 0 then
+			local pc = users[1].PlayerComponent
+			if pc ~= nil then
+				self:ClientShowGameOver(pc.UserId)
+			end
+		end
+	end
+
+	@ExecSpace("Client")
+	method void ClientShowGameOver()
+		-- 클라: 게임오버 팝업 + 입력 차단.
+		_InputRouter:SetContext("GameOver")
+		_UtilLogic:SetClientTimeScale(1.0)
+		if self.gameOverUI ~= nil then
+			self.gameOverUI:Open()
+		else
+			log_warning("[StageManager] gameOverUI not registered")
+		end
+	end
+
+	@ExecSpace("Server")
+	method void RequestRestartRun()
+		-- 게임오버/게임클리어 화면에서 재시작.
+		log("[StageManager] run restart requested")
+		_GameStateManager:StartRun()
+		_ShopManager:ResetPrices()
+		_FloorManager:StartGameFlow()
+	end
+
+end

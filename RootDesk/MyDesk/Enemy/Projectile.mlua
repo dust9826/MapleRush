@@ -1,0 +1,109 @@
+@Component
+script Projectile extends Component
+
+	property number DirX = 1.0
+
+	property number DirY = 0.0
+
+	property number Speed = 10.0
+
+	property number Damage = 10.0
+
+	property boolean Parryable = true
+
+	-- enemy / player (반사 후 player로 전환)
+	property string OwnerSide = "enemy"
+
+	property boolean Launched = false
+
+	@ExecSpace("ServerOnly")
+	method void Launch(number dirX, number dirY, number speed, number damage, boolean parryable)
+		-- 투사체 발사 파라미터 설정 (서버).
+		self.DirX = dirX
+		self.DirY = dirY
+		self.Speed = speed
+		self.Damage = damage
+		self.Parryable = parryable
+		self.OwnerSide = "enemy"
+		self.Launched = true
+	end
+
+	@ExecSpace("ServerOnly")
+	method void Reflect(number reflectDamage)
+		-- 패링 반사: 날아온 반대 방향으로 전환, 플레이어 소유로 변경 (재피격 면제), ATK×200%.
+		self.DirX = -self.DirX
+		self.DirY = -self.DirY
+		self.OwnerSide = "player"
+		self.Damage = reflectDamage
+		log("[Projectile] reflected! now player-owned, dmg=" .. tostring(reflectDamage))
+	end
+
+	@ExecSpace("ServerOnly")
+	method void OnUpdate(number delta)
+		-- 직선 이동(서버 시뮬레이션) + 충돌/소멸 판정. 적 투사체만 슬로우 배율 적용.
+		if self.Launched == false then return end
+		local e = self.Entity
+		if isvalid(e) == false then return end
+		local timeScale = 1.0
+		if self.OwnerSide == "enemy" then
+			timeScale = _SlowMotion:Scale()
+		end
+		local t = e.TransformComponent
+		local pos = t.WorldPosition
+		local step = self.Speed * delta * timeScale
+		local nx = pos.x + self.DirX * step
+		local ny = pos.y + self.DirY * step
+
+		-- (1) 맵 밖 이탈 → 소멸
+		if nx < -12 or nx > 14 or ny < -6 or ny > 8 then
+			e:Destroy()
+			return
+		end
+
+		-- (2) 지형(발판) 충돌 → 소멸
+		local map = e.CurrentMap
+		if isvalid(map) and isvalid(map.FootholdComponent) and step > 0 then
+			local fh = map.FootholdComponent:Raycast(Vector2(pos.x, pos.y), Vector2(self.DirX, self.DirY), step)
+			if fh ~= nil then
+				log("[Projectile] hit terrain, destroyed")
+				e:Destroy()
+				return
+			end
+		end
+
+		t.Position = Vector3(nx, ny, pos.z)
+		local myPos = Vector2(nx, ny)
+
+		if self.OwnerSide == "enemy" then
+			-- (3a) 플레이어 명중 → 1피격 즉사 요청 + 소멸
+			if isvalid(map) then
+				local users = _UserService:GetUsersByMapComponent(map.MapComponent)
+				if users ~= nil then
+					for _, u in ipairs(users) do
+						if isvalid(u) then
+							local pp = u.TransformComponent.WorldPosition
+							local playerCenter = Vector2(pp.x, pp.y + 0.5)
+							if _CombatPrimitives:CircleOverlap(myPos, _GameConstants.RadiusProjectile, playerCenter, 0.5) then
+								---@type PlayerHit
+								local hitComp = u:GetComponent("script.PlayerHit")
+								if hitComp ~= nil then
+									hitComp:RequestHit("projectile")
+								end
+								e:Destroy()
+								return
+							end
+						end
+					end
+				end
+			end
+		else
+			-- (3b) 반사 투사체 → 적 명중
+			local hitCount = _CombatPrimitives:DamageEnemiesInCircle(map, myPos, _GameConstants.RadiusProjectile, self.Damage, "reflect")
+			if hitCount > 0 then
+				e:Destroy()
+				return
+			end
+		end
+	end
+
+end

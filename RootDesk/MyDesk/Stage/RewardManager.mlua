@@ -1,0 +1,68 @@
+@Logic
+script RewardManager extends Logic
+
+	@ExecSpace("ServerOnly")
+	method table RollRewards(string stageType)
+		-- 보상 등장 독립 판정 (stage_design §3.2.1): 스탯 50% / 아이템 70% / 능력 15%. 보스: 전체 제시.
+		if stageType == "boss" then
+			return { stat = true, item = true, ability = true }
+		end
+		return {
+			stat = _UtilLogic:RandomDouble() < _GameConstants.RewardStatChance,
+			item = _UtilLogic:RandomDouble() < _GameConstants.RewardItemChance,
+			ability = _UtilLogic:RandomDouble() < _GameConstants.RewardAbilityChance,
+		}
+	end
+
+	@ExecSpace("Server")
+	method void ClaimStatReward()
+		-- 스탯 강화 보상 수령: 공격력 +2 (런 내 임시 — 추후 랜덤 스탯 풀로 확장).
+		_GameStateManager.AttackStat += 2
+		log("[RewardManager] stat reward claimed: ATK -> " .. tostring(_GameStateManager.AttackStat))
+	end
+
+	@ExecSpace("Server")
+	method void ClaimItemReward()
+		-- 일회성 아이템 보상: 랜덤 아이템(짱돌/연막탄/섬광탄)을 빈 슬롯에 지급.
+		local pool = { "rock", "smoke", "flash" }
+		local itemId = pool[_UtilLogic:RandomIntegerRange(1, 3)]
+		local player = self:FindRequester()
+		if player == nil then return end
+		---@type PlayerItems
+		local items = player:GetComponent("script.PlayerItems")
+		if items ~= nil then
+			items:GrantItem(itemId)
+		end
+		log("[RewardManager] item reward claimed: " .. itemId)
+	end
+
+	@ExecSpace("Server")
+	method void ClaimAbilityReward()
+		-- 능력 보상: 랜덤 능력(임시무적/투사체무효화) 장착 (기존 능력 교체).
+		local pool = { "invincible", "clearProjectiles" }
+		local abilityId = pool[_UtilLogic:RandomIntegerRange(1, 2)]
+		local player = self:FindRequester()
+		if player == nil then return end
+		---@type PlayerAbility
+		local ability = player:GetComponent("script.PlayerAbility")
+		if ability ~= nil then
+			ability:GrantAbility(abilityId)
+			ability:ResetUses("normal")
+		end
+		log("[RewardManager] ability reward claimed: " .. abilityId)
+	end
+
+	@ExecSpace("ServerOnly")
+	method Entity FindRequester()
+		-- 1인 1런 전제: 현재 맵의 첫 플레이어.
+		local map = _EntityService:GetEntityByPath("/maps/map01")
+		if isvalid(map) == false then return nil end
+		local users = _UserService:GetUsersByMapComponent(map.MapComponent)
+		if users == nil then return nil end
+		for _, u in ipairs(users) do
+			if isvalid(u) then return u end
+		end
+		return nil
+	end
+
+end

@@ -1,0 +1,75 @@
+@Logic
+script ShopManager extends Logic
+
+	-- 현재 가격 (구매 시 2배 갱신, 상한 없음 — 메소 캡 내 클램프) (stage_design §2.4)
+	@Sync
+	property integer PriceMaxLife = 100
+
+	@Sync
+	property integer PriceStat = 50
+
+	@Sync
+	property integer PriceAbility = 150
+
+	@Sync
+	property integer PriceItem = 40
+
+	@ExecSpace("ServerOnly")
+	method void ResetPrices()
+		-- 새 런 시작 시 가격 초기화.
+		self.PriceMaxLife = _GameConstants.PriceMaxLife
+		self.PriceStat = _GameConstants.PriceStat
+		self.PriceAbility = _GameConstants.PriceAbility
+		self.PriceItem = _GameConstants.PriceItem
+	end
+
+	@ExecSpace("Server")
+	method void RequestBuyMaxLife()
+		-- 최대 목숨 +1 (구입 즉시 현재 목숨도 +1 — 회복 아님).
+		if _GameStateManager:SpendMeso(self.PriceMaxLife) == false then
+			log("[ShopManager] not enough meso for maxlife (" .. tostring(self.PriceMaxLife) .. ")")
+			return
+		end
+		_GameStateManager.MaxLives += 1
+		_GameStateManager.CurrentLives += 1
+		self.PriceMaxLife = math.floor(math.min(self.PriceMaxLife * 2, _GameConstants.MesoCap))
+		log("[ShopManager] maxlife bought -> " .. tostring(_GameStateManager.MaxLives) .. " (next price " .. tostring(self.PriceMaxLife) .. ")")
+	end
+
+	@ExecSpace("Server")
+	method void RequestBuyStat()
+		-- 스탯 강화 (공격력 +2 — 랜덤 스탯 풀은 추후 확장).
+		if _GameStateManager:SpendMeso(self.PriceStat) == false then
+			log("[ShopManager] not enough meso for stat (" .. tostring(self.PriceStat) .. ")")
+			return
+		end
+		_GameStateManager.AttackStat += 2
+		self.PriceStat = math.floor(math.min(self.PriceStat * 2, _GameConstants.MesoCap))
+		log("[ShopManager] stat bought -> ATK " .. tostring(_GameStateManager.AttackStat) .. " (next price " .. tostring(self.PriceStat) .. ")")
+	end
+
+	@ExecSpace("Server")
+	method void RequestBuyAbility()
+		-- 능력 획득/강화 (랜덤 능력 장착).
+		if _GameStateManager:SpendMeso(self.PriceAbility) == false then
+			log("[ShopManager] not enough meso for ability (" .. tostring(self.PriceAbility) .. ")")
+			return
+		end
+		_RewardManager:ClaimAbilityReward()
+		self.PriceAbility = math.floor(math.min(self.PriceAbility * 2, _GameConstants.MesoCap))
+		log("[ShopManager] ability bought (next price " .. tostring(self.PriceAbility) .. ")")
+	end
+
+	@ExecSpace("Server")
+	method void RequestBuyItem()
+		-- 일회성 아이템 (랜덤) 구입.
+		if _GameStateManager:SpendMeso(self.PriceItem) == false then
+			log("[ShopManager] not enough meso for item (" .. tostring(self.PriceItem) .. ")")
+			return
+		end
+		_RewardManager:ClaimItemReward()
+		self.PriceItem = math.floor(math.min(self.PriceItem * 2, _GameConstants.MesoCap))
+		log("[ShopManager] item bought (next price " .. tostring(self.PriceItem) .. ")")
+	end
+
+end

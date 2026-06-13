@@ -1,0 +1,10 @@
+@Event
+script RouterActionEvent extends EventType
+
+	property string action = ""
+
+	property Vector2 worldPos = Vector2(0, 0)
+
+	property string context = ""
+
+end

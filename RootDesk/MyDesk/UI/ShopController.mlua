@@ -1,0 +1,116 @@
+@Component
+script ShopController extends Component
+
+	property Entity shopRoot = "1550d0f0-fc07-40ef-b813-0d179def5f1e"
+
+	property TextComponent mesoText = "ffa40da9-d52c-425c-bebd-379778b75a4a"
+
+	property ButtonComponent btnMaxLife = "319ac8c7-51f3-4c93-9837-36089f53b420"
+
+	property ButtonComponent btnStat = "e399fb94-ed91-46bd-90c4-97867ac42bb2"
+
+	property ButtonComponent btnAbility = "36420670-a725-40dc-aa41-577005b72589"
+
+	property ButtonComponent btnItem = "961a9bdb-78d9-4431-87fd-5a33307fd06b"
+
+	property ButtonComponent btnLeave = "c7343c77-4fd6-4a9d-8319-5074ac065fe8"
+
+	property TextComponent txtMaxLife = "ec0c97f7-27bf-4a68-b309-b7f887cb36d5"
+
+	property TextComponent txtStat = "1d4f1800-d618-4b69-8d8c-61cc2611ac79"
+
+	property TextComponent txtAbility = "e3e698e6-bbc2-44b5-acfd-8f53eb92c9e0"
+
+	property TextComponent txtItem = "c805d657-545b-4b51-82b7-b017f645c696"
+
+	property any hMaxLife = nil
+
+	property any hStat = nil
+
+	property any hAbility = nil
+
+	property any hItem = nil
+
+	property any hLeave = nil
+
+	property boolean isOpen = false
+
+	@ExecSpace("ClientOnly")
+	method void OnBeginPlay()
+		-- FloorManager에 등록 + 숨김 + 버튼 연결.
+		_FloorManager.shopUI = self
+		if isvalid(self.shopRoot) then self.shopRoot.Enable = false end
+		self.hMaxLife = self.btnMaxLife.Entity:ConnectEvent(ButtonClickEvent, self.OnMaxLifeClick)
+		self.hStat = self.btnStat.Entity:ConnectEvent(ButtonClickEvent, self.OnStatClick)
+		self.hAbility = self.btnAbility.Entity:ConnectEvent(ButtonClickEvent, self.OnAbilityClick)
+		self.hItem = self.btnItem.Entity:ConnectEvent(ButtonClickEvent, self.OnItemClick)
+		self.hLeave = self.btnLeave.Entity:ConnectEvent(ButtonClickEvent, self.OnLeaveClick)
+		log("[ShopController] registered")
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnEndPlay()
+		-- 버튼 해제.
+		if self.hMaxLife ~= nil then self.btnMaxLife.Entity:DisconnectEvent(ButtonClickEvent, self.hMaxLife) end
+		if self.hStat ~= nil then self.btnStat.Entity:DisconnectEvent(ButtonClickEvent, self.hStat) end
+		if self.hAbility ~= nil then self.btnAbility.Entity:DisconnectEvent(ButtonClickEvent, self.hAbility) end
+		if self.hItem ~= nil then self.btnItem.Entity:DisconnectEvent(ButtonClickEvent, self.hItem) end
+		if self.hLeave ~= nil then self.btnLeave.Entity:DisconnectEvent(ButtonClickEvent, self.hLeave) end
+	end
+
+	@ExecSpace("ClientOnly")
+	method void Open()
+		-- 상점 팝업 열기.
+		self.shopRoot.Enable = true
+		self.isOpen = true
+		log("[ShopController] opened")
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnUpdate(number delta)
+		-- 가격/메소 실시간 갱신 (@Sync 가격 폴링).
+		if self.isOpen == false then return end
+		if isvalid(self.mesoText) then
+			self.mesoText.Text = "보유 메소: " .. tostring(math.floor(_GameStateManager.Meso))
+		end
+		if isvalid(self.txtMaxLife) then self.txtMaxLife.Text = "최대 목숨 +1 — " .. tostring(_ShopManager.PriceMaxLife) .. " 메소" end
+		if isvalid(self.txtStat) then self.txtStat.Text = "공격력 강화 +2 — " .. tostring(_ShopManager.PriceStat) .. " 메소" end
+		if isvalid(self.txtAbility) then self.txtAbility.Text = "능력 획득/교체 — " .. tostring(_ShopManager.PriceAbility) .. " 메소" end
+		if isvalid(self.txtItem) then self.txtItem.Text = "일회성 아이템 — " .. tostring(_ShopManager.PriceItem) .. " 메소" end
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnMaxLifeClick(ButtonClickEvent event)
+		-- 최대 목숨 구입 (확인 팝업은 Phase 8 폴리시).
+		_ShopManager:RequestBuyMaxLife()
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnStatClick(ButtonClickEvent event)
+		-- 스탯 강화 구입.
+		_ShopManager:RequestBuyStat()
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnAbilityClick(ButtonClickEvent event)
+		-- 능력 구입.
+		_ShopManager:RequestBuyAbility()
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnItemClick(ButtonClickEvent event)
+		-- 아이템 구입.
+		_ShopManager:RequestBuyItem()
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnLeaveClick(ButtonClickEvent event)
+		-- 나가기 → 보스 노드.
+		self.shopRoot.Enable = false
+		self.isOpen = false
+		_InputRouter:SetContext("Combat")
+		_FloorManager:RequestLeaveShop()
+		log("[ShopController] leave -> boss")
+	end
+
+end

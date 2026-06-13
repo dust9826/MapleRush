@@ -1,0 +1,21 @@
+@Component
+script PlayerInputSetup extends Component
+
+	@ExecSpace("ClientOnly")
+	method void OnBeginPlay()
+		-- WASD 이동 키 매핑 (기존 화살표 액션을 복사). Space 점프는 기본 제공.
+		if self.Entity ~= _UserService.LocalPlayer then return end
+		local pc = self.Entity.PlayerControllerComponent
+		if pc == nil then return end
+		local leftAction = pc:GetActionName(KeyboardKey.LeftArrow)
+		local rightAction = pc:GetActionName(KeyboardKey.RightArrow)
+		local upAction = pc:GetActionName(KeyboardKey.UpArrow)
+		local downAction = pc:GetActionName(KeyboardKey.DownArrow)
+		if leftAction ~= nil and leftAction ~= "" then pc:SetActionKey(KeyboardKey.A, leftAction) end
+		if rightAction ~= nil and rightAction ~= "" then pc:SetActionKey(KeyboardKey.D, rightAction) end
+		if upAction ~= nil and upAction ~= "" then pc:SetActionKey(KeyboardKey.W, upAction) end
+		if downAction ~= nil and downAction ~= "" then pc:SetActionKey(KeyboardKey.S, downAction) end
+		log("[PlayerInputSetup] WASD mapped (L=" .. tostring(leftAction) .. " R=" .. tostring(rightAction) .. " U=" .. tostring(upAction) .. " D=" .. tostring(downAction) .. ")")
+	end
+
+end

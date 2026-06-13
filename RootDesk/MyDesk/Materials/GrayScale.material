@@ -1,0 +1,25 @@
+{
+  "Id": "",
+  "GameId": "",
+  "EntryKey": "material://7e3bcacb-df63-457f-a981-0721bfe40eaf",
+  "ContentType": "x-mod/material",
+  "Content": "",
+  "Usage": 0,
+  "UsePublish": 1,
+  "UseService": 0,
+  "CoreVersion": "26.5.0.0",
+  "StudioVersion": "0.1.0.0",
+  "DynamicLoading": 0,
+  "ContentProto": {
+    "Use": "Json",
+    "Json": {
+      "name": "GrayScale",
+      "id": "7e3bcacb-df63-457f-a981-0721bfe40eaf",
+      "shadertype": "GrayScale",
+      "Blend": 1.0,
+      "LitMode": 0,
+      "IsUIMaterial": false,
+      "RequiresUIStencilStateChange": false
+    }
+  }
+}

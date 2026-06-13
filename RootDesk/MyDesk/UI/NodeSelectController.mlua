@@ -1,0 +1,73 @@
+@Component
+script NodeSelectController extends Component
+
+	property Entity nodeRoot = "33d78a40-f3df-41ea-9140-4d4a354d4aa0"
+
+	property TextComponent titleText = "f8ec203d-025d-4ca0-9b8f-507c413be5bf"
+
+	property ButtonComponent btnNode1 = "aacaee50-591a-4514-b0a0-16f184dca84f"
+
+	property ButtonComponent btnNode2 = "8968a3db-db75-4bd7-8900-cf4fbf6ce3d8"
+
+	property ButtonComponent btnNode3 = "28768677-6a3e-45d5-a111-965b405ce5a7"
+
+	property any hNode1 = nil
+
+	property any hNode2 = nil
+
+	property any hNode3 = nil
+
+	@ExecSpace("ClientOnly")
+	method void OnBeginPlay()
+		-- FloorManager에 등록 + 숨김 + 버튼 연결.
+		_FloorManager.nodeUI = self
+		if isvalid(self.nodeRoot) then self.nodeRoot.Enable = false end
+		self.hNode1 = self.btnNode1.Entity:ConnectEvent(ButtonClickEvent, self.OnNode1Click)
+		self.hNode2 = self.btnNode2.Entity:ConnectEvent(ButtonClickEvent, self.OnNode2Click)
+		self.hNode3 = self.btnNode3.Entity:ConnectEvent(ButtonClickEvent, self.OnNode3Click)
+		log("[NodeSelectController] registered")
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnEndPlay()
+		-- 버튼 해제.
+		if self.hNode1 ~= nil then self.btnNode1.Entity:DisconnectEvent(ButtonClickEvent, self.hNode1) end
+		if self.hNode2 ~= nil then self.btnNode2.Entity:DisconnectEvent(ButtonClickEvent, self.hNode2) end
+		if self.hNode3 ~= nil then self.btnNode3.Entity:DisconnectEvent(ButtonClickEvent, self.hNode3) end
+	end
+
+	@ExecSpace("ClientOnly")
+	method void Open(integer stageNo, integer totalStages)
+		-- 3분기 노드 선택 (현재 전부 일반 스테이지 — stage_design §2.2.3).
+		self.nodeRoot.Enable = true
+		self.titleText.Text = "다음 스테이지 선택 (" .. tostring(stageNo) .. "/" .. tostring(totalStages) .. ")"
+		log("[NodeSelectController] opened " .. tostring(stageNo) .. "/" .. tostring(totalStages))
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnNode1Click(ButtonClickEvent event)
+		-- 분기 1.
+		self:SelectNode(1)
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnNode2Click(ButtonClickEvent event)
+		-- 분기 2.
+		self:SelectNode(2)
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnNode3Click(ButtonClickEvent event)
+		-- 분기 3.
+		self:SelectNode(3)
+	end
+
+	@ExecSpace("ClientOnly")
+	method void SelectNode(integer branchIdx)
+		-- 분기 확정 → 서버 통지.
+		self.nodeRoot.Enable = false
+		_FloorManager:RequestSelectNode(branchIdx)
+		log("[NodeSelectController] branch " .. tostring(branchIdx))
+	end
+
+end

@@ -1,0 +1,289 @@
+@Component
+script PlayerDash extends Component
+
+	property integer DashCount = 2
+
+	property integer MaxDash = 2
+
+	property boolean IsDashing = false
+
+	-- 슬로우 모션 발동 시 1회 강화 대시 (Phase 2에서 설정)
+	property boolean EmpoweredReady = false
+
+	property number dashStartTime = -999.0
+
+	property Vector2 dashDir = Vector2(1, 0)
+
+	property Vector2 dashStartPos = Vector2(0, 0)
+
+	-- 이번 대시의 실제 이동 거리 (커서까지 클램프 + 벽 정지 반영)
+	property number dashLen = 5.0
+
+	property number recoverAnchor = -999.0
+
+	property boolean prevControllerEnable = true
+
+	property boolean prevKinematicMove = false
+
+	-- 서버측 대시 무적(i-frame) 종료 시각 (ServerElapsedSeconds 기준)
+	property number InvincibleUntilServer = -999.0
+
+	property any routerHandler = nil
+
+	-- 대시 잔상 마지막 생성 시각 (_WallClock 실제 시간 기준)
+	property number lastAfterimage = -999.0
+
+	-- 대시 조준 미리보기 상태 (우클릭 누름~해제 동안 표시)
+	property boolean isAiming = false
+
+	-- 미리보기 엔티티(플레이어 자식) 캐시
+	property any previewCache = nil
+
+	@ExecSpace("ClientOnly")
+	method void OnBeginPlay()
+		-- 로컬 플레이어에게만 입력 라우터 구독 + 대시 횟수 초기화.
+		if self.Entity ~= _UserService.LocalPlayer then return end
+		self.DashCount = self.MaxDash
+		self.routerHandler = _InputRouter:ConnectEvent(RouterActionEvent, self.OnRouterAction)
+		log("[PlayerDash] OnBeginPlay: router connected, dash=" .. tostring(self.DashCount) .. "/" .. tostring(self.MaxDash))
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnEndPlay()
+		-- 라우터 구독 해제.
+		if self.routerHandler ~= nil then
+			_InputRouter:DisconnectEvent(RouterActionEvent, self.routerHandler)
+		end
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnRouterAction(RouterActionEvent event)
+		-- dashAim(우클릭 누름) → 조준 미리보기 시작. dashExec(해제) → 미리보기 종료 + 대시 실행.
+		if event.action == "dashAim" then
+			self:StartAimPreview()
+		elseif event.action == "dashExec" then
+			self:StopAimPreview()
+			self:TryDash(event.worldPos)
+		end
+	end
+
+	@ExecSpace("ClientOnly")
+	method void StartAimPreview()
+		-- 우클릭 누름: 조준 시작 + 즉시 1회 갱신.
+		self.isAiming = true
+		self:UpdateAimPreview()
+		log("[PlayerDash] aim preview START (found=" .. tostring(self:GetPreview() ~= nil) .. ")")
+	end
+
+	@ExecSpace("ClientOnly")
+	method void StopAimPreview()
+		-- 우클릭 해제: 조준 종료 + 미리보기 숨김.
+		self.isAiming = false
+		local preview = self:GetPreview()
+		if preview ~= nil and isvalid(preview) and isvalid(preview.SpriteRendererComponent) then
+			preview.SpriteRendererComponent.Enable = false
+		end
+		log("[PlayerDash] aim preview STOP")
+	end
+
+	@ExecSpace("ClientOnly")
+	method any GetPreview()
+		-- 플레이어 자식 미리보기 엔티티 조회(캐시). 서버 스폰 직후엔 nil일 수 있어 매번 재시도.
+		if self.previewCache ~= nil and isvalid(self.previewCache) then
+			return self.previewCache
+		end
+		self.previewCache = self.Entity:GetChildByName(_GameConstants.DashPreviewName, false)
+		return self.previewCache
+	end
+
+	@ExecSpace("ClientOnly")
+	method number ComputeDashLength(Vector2 p2, Vector2 dir, Vector2 target)
+		-- 대시 거리 = min(커서까지 거리, 최대 사거리). 경로상 벽(수직 풋홀드)이 더 가까우면 거기서 멈춤.
+		local dx = target.x - p2.x
+		local dy = target.y - p2.y
+		local L = math.sqrt(dx * dx + dy * dy)
+		if L > _GameConstants.DashDistance then L = _GameConstants.DashDistance end
+		local wallDist = _CombatPrimitives:RaycastWallDistance(self.Entity.CurrentMap, p2, dir, L)
+		if wallDist < L then
+			L = wallDist - _GameConstants.DashWallMargin
+			if L < 0 then L = 0 end
+		end
+		return L
+	end
+
+	@ExecSpace("ClientOnly")
+	method void UpdateAimPreview()
+		-- 미리보기를 커서 방향으로 배치: 월드위치=플레이어+방향×(사거리/2), 회전=커서 각도. 사거리 5 고정.
+		if self.IsDashing then return end
+		local preview = self:GetPreview()
+		if preview == nil or isvalid(preview) == false then return end
+		local sr = preview.SpriteRendererComponent
+		if isvalid(sr) == false then return end
+		-- 사용 가능한 대시가 없으면(강화 대시도 아님) 숨김 — 오조준 방지
+		if self.EmpoweredReady == false and self.DashCount <= 0 then
+			sr.Enable = false
+			return
+		end
+		local pos = self.Entity.TransformComponent.WorldPosition
+		local p2 = Vector2(pos.x, pos.y)
+		local cursor = _InputRouter:CursorWorld()
+		local dir = _CombatPrimitives:DirectionTo(p2, cursor)
+		local L = self:ComputeDashLength(p2, dir, cursor)
+		local half = L * 0.5
+		local tf = preview.TransformComponent
+		tf.WorldPosition = Vector3(p2.x + dir.x * half, p2.y + dir.y * half, pos.z)
+		tf.WorldZRotation = math.deg(math.atan(dir.y, dir.x))
+		-- 스프라이트 자연폭 = 사거리(5유닛). 실제 거리에 맞춰 가로 스케일 축소(점선 압축 + 착지 링이 실제 착지점).
+		local sx = L / _GameConstants.DashDistance
+		if sx < 0.001 then sx = 0.001 end
+		tf.Scale = Vector3(sx, 1, 1)
+		sr.Enable = true
+	end
+
+	@ExecSpace("ClientOnly")
+	method void TryDash(Vector2 targetWorldPos)
+		-- 대시 실행: 360° 커서 방향, 거리 5, 0.1s, 이동 중 무적. 강화 대시는 횟수 미소모.
+		if self.IsDashing then return end
+		local empowered = self.EmpoweredReady
+		if not empowered then
+			if self.DashCount <= 0 then
+				log("[PlayerDash] no dash left")
+				return
+			end
+			-- 횟수 소모 + 회복 타이머 시작
+			if self.DashCount == self.MaxDash then
+				self.recoverAnchor = _WallClock:Now()
+			end
+			self.DashCount -= 1
+		else
+			-- 강화 대시 사용: 횟수 미소모, 슬로우 모션 즉시 해제 (player_design §3.2.4)
+			self.EmpoweredReady = false
+			_SlowMotion:ClientSlowEnd(false)
+			_SlowMotion:RequestEndEarly()
+		end
+
+		local pos = self.Entity.TransformComponent.WorldPosition
+		local pos2 = Vector2(pos.x, pos.y)
+		self.dashDir = _CombatPrimitives:DirectionTo(pos2, targetWorldPos)
+		self.dashStartPos = pos2
+		self.dashLen = self:ComputeDashLength(pos2, self.dashDir, targetWorldPos)
+		self.dashStartTime = _WallClock:Now()
+		self.IsDashing = true
+		self:StartDashFx()
+
+		-- 대시 중 입력 차단 (이동은 MovementComponent:SetWorldPosition 절대 위치 보간 — 서버로 전파되는 정식 텔레포트 채널)
+		local pc = self.Entity.PlayerControllerComponent
+		self.prevControllerEnable = pc.Enable
+		pc.Enable = false
+
+		log("[PlayerDash] dash start! empowered=" .. tostring(empowered) .. " dir=(" .. string.format("%.2f", self.dashDir.x) .. "," .. string.format("%.2f", self.dashDir.y) .. ") len=" .. string.format("%.2f", self.dashLen) .. " left=" .. tostring(self.DashCount))
+		self:ServerDashStarted(pos2.x, pos2.y, self.dashDir.x, self.dashDir.y, empowered, self.dashLen)
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnUpdate(number delta)
+		-- (0) 조준 중이면 미리보기를 커서 방향으로 갱신 (대시 사거리/착지 지점 표시)
+		if self.isAiming then
+			self:UpdateAimPreview()
+		end
+		-- (1) 대시 회복: 실제 시간 2.5s마다 1회 (스냅샷 차분, delta 누산 금지)
+		if self.DashCount < self.MaxDash then
+			if _WallClock:IsExpired(self.recoverAnchor, _GameConstants.BaseDashRecoverTime) then
+				self.DashCount += 1
+				self.recoverAnchor = _WallClock:Now()
+				log("[PlayerDash] dash recovered -> " .. tostring(self.DashCount) .. "/" .. tostring(self.MaxDash))
+			end
+		end
+		-- (2) 대시 이동: 실제 시간 0.1s 동안 MovementComponent:SetWorldPosition으로 절대 위치 보간 (V-실측: 이 채널만 서버에 유지·전파됨)
+		if self.IsDashing then
+			local t = _WallClock:Elapsed(self.dashStartTime) / _GameConstants.DashDuration
+			if t > 1 then t = 1 end
+			local d = self.dashLen * t
+			local p = Vector2(self.dashStartPos.x + self.dashDir.x * d, self.dashStartPos.y + self.dashDir.y * d)
+			self.Entity.MovementComponent:SetWorldPosition(p)
+			-- 잔상: 실제 시간 간격마다 현재 위치에 반투명 모션 이펙트 1회 재생
+			if _WallClock:Elapsed(self.lastAfterimage) >= _GameConstants.DashAfterimageInterval then
+				self.lastAfterimage = _WallClock:Now()
+				self:SpawnAfterimage()
+			end
+			if t >= 1 then
+				self:EndDash()
+			end
+		end
+	end
+
+	@ExecSpace("ClientOnly")
+	method void StartDashFx()
+		-- 대시 연출 시작: 아바타 반투명 고스트(모션블러 느낌) + 잔상 타이머 리셋 후 첫 잔상 1개.
+		-- (MotionBlur 셰이더는 AvatarRenderer 비호환 LWA-3009 → SetAlpha 고스트로 대체)
+		local av = self.Entity.AvatarRendererComponent
+		if isvalid(av) then
+			av:SetAlpha(_GameConstants.DashGhostAlpha)
+		else
+			log("[PlayerDash] no AvatarRendererComponent on player (ghost skipped)")
+		end
+		self.lastAfterimage = _WallClock:Now()
+		self:SpawnAfterimage()
+	end
+
+	@ExecSpace("ClientOnly")
+	method void StopDashFx()
+		-- 대시 연출 종료: 아바타 알파 1.0 복원.
+		local av = self.Entity.AvatarRendererComponent
+		if isvalid(av) then
+			av:SetAlpha(1.0)
+		end
+	end
+
+	@ExecSpace("ClientOnly")
+	method void SpawnAfterimage()
+		-- 대시 잔상 1개: 현재 월드 위치에 반투명 모션 스트릭 이펙트를 진행 방향으로 1회 재생(자동 소멸).
+		local pos = self.Entity.TransformComponent.WorldPosition
+		local options = {}
+		options["Alpha"] = _GameConstants.DashAfterimageAlpha
+		options["FlipX"] = self.dashDir.x > 0
+		_EffectService:PlayEffect(_GameConstants.DashAfterimageClip, self.Entity, pos, 0, Vector3.one, false, options)
+	end
+
+	@ExecSpace("ClientOnly")
+	method void EndDash()
+		-- 대시 종료: 컨트롤러 원복. 무적은 이동 종료 즉시 해제(서버 타이머가 자연 만료).
+		self.IsDashing = false
+		self:StopDashFx()
+		self.Entity.PlayerControllerComponent.Enable = self.prevControllerEnable
+		local pos = self.Entity.TransformComponent.WorldPosition
+		log("[PlayerDash] dash end at (" .. string.format("%.2f", pos.x) .. "," .. string.format("%.2f", pos.y) .. ")")
+	end
+
+	@ExecSpace("Server")
+	method void ServerDashStarted(number startX, number startY, number dirX, number dirY, boolean empowered, number dashLen)
+		-- 서버: 대시 무적 윈도우 기록 + 슬로우 트리거 판정 + 경로 데미지 적용 (일반 ATK×50% / 강화 ATK×150%).
+		self.InvincibleUntilServer = _UtilLogic.ServerElapsedSeconds + _GameConstants.DashDuration
+		-- 슬로우 모션 트리거: 대시 시작 지점 반지름 1 내 적 공격/투사체 존재 시 발동
+		if empowered == false then
+			local dashStart = Vector2(startX, startY + 0.5)
+			if _CombatPrimitives:AnyThreatNear(self.Entity.CurrentMap, dashStart, _GameConstants.RadiusSlowTrigger) then
+				_SlowMotion:Activate(self.Entity)
+			end
+		end
+		local dmgPct = _GameConstants.DmgDashPct
+		local source = "dash"
+		if empowered then
+			dmgPct = _GameConstants.DmgEmpoweredDashPct
+			source = "empoweredDash"
+		end
+		local damage = _GameStateManager.AttackStat * dmgPct
+		local pathStart = Vector2(startX, startY)
+		local pathEnd = Vector2(startX + dirX * dashLen, startY + dirY * dashLen)
+		local hitCount = _CombatPrimitives:DamageEnemiesAlongPath(
+			self.Entity.CurrentMap, pathStart, pathEnd, 0.5, damage, source)
+		log("[PlayerDash] server dash resolved: hit=" .. tostring(hitCount) .. " dmg=" .. tostring(damage) .. " empowered=" .. tostring(empowered))
+	end
+
+	@ExecSpace("ServerOnly")
+	method boolean IsInvincibleNow()
+		-- 서버측 무적 판정 (PlayerHit이 호출, Phase 2).
+		return _UtilLogic.ServerElapsedSeconds < self.InvincibleUntilServer
+	end
+
+end

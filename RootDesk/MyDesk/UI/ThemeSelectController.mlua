@@ -1,0 +1,63 @@
+@Component
+script ThemeSelectController extends Component
+
+	property Entity themeRoot = "c1d0282f-1889-487e-87d0-d487faf562b0"
+
+	property TextComponent titleText = "f556b84c-6d35-4c1d-b2fa-73b1b91c306c"
+
+	property ButtonComponent btnTheme1 = "02b698e2-b6ba-43e1-81f5-4c4dad8d2946"
+
+	property ButtonComponent btnTheme2 = "664d0f82-c3fc-4db8-8b4b-5142abdf0166"
+
+	property any hTheme1 = nil
+
+	property any hTheme2 = nil
+
+	@ExecSpace("ClientOnly")
+	method void OnBeginPlay()
+		-- FloorManager에 등록 + 숨김 + 버튼 연결.
+		_FloorManager.themeUI = self
+		if isvalid(self.themeRoot) then self.themeRoot.Enable = false end
+		self.hTheme1 = self.btnTheme1.Entity:ConnectEvent(ButtonClickEvent, self.OnTheme1Click)
+		self.hTheme2 = self.btnTheme2.Entity:ConnectEvent(ButtonClickEvent, self.OnTheme2Click)
+		log("[ThemeSelectController] registered")
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnEndPlay()
+		-- 버튼 해제.
+		if self.hTheme1 ~= nil then self.btnTheme1.Entity:DisconnectEvent(ButtonClickEvent, self.hTheme1) end
+		if self.hTheme2 ~= nil then self.btnTheme2.Entity:DisconnectEvent(ButtonClickEvent, self.hTheme2) end
+	end
+
+	@ExecSpace("ClientOnly")
+	method void Open(boolean theme1Available, boolean theme2Available)
+		-- 테마 선택 팝업: 미플레이 테마만 활성화.
+		self.themeRoot.Enable = true
+		self.titleText.Text = tostring(_GameStateManager.CurrentFloor) .. "층 — 테마팩 선택"
+		self.btnTheme1.Entity.Enable = theme1Available
+		self.btnTheme2.Entity.Enable = theme2Available
+		log("[ThemeSelectController] opened (t1=" .. tostring(theme1Available) .. " t2=" .. tostring(theme2Available) .. ")")
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnTheme1Click(ButtonClickEvent event)
+		-- 테마1 (오르비스→엘나스→폐광).
+		self:SelectTheme("theme1")
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnTheme2Click(ButtonClickEvent event)
+		-- 테마2 (자리표시자).
+		self:SelectTheme("theme2")
+	end
+
+	@ExecSpace("ClientOnly")
+	method void SelectTheme(string themeId)
+		-- 선택 확정 → 서버 통지.
+		self.themeRoot.Enable = false
+		_FloorManager:RequestSelectTheme(themeId)
+		log("[ThemeSelectController] selected " .. themeId)
+	end
+
+end

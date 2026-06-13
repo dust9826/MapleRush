@@ -1,0 +1,164 @@
+@Logic
+script GameConstants extends Logic
+
+	-- ========== 플레이어 기본 스탯 (player_design_doc ver3 §1.1) ==========
+	property number PlayerWidth = 1.0
+
+	property number PlayerHeight = 2.0
+
+	property number BaseAttack = 10.0
+
+	property integer BaseMaxLives = 5
+
+	property integer BaseMaxDash = 2
+
+	property number BaseDashRecoverTime = 2.5
+
+	property integer BaseMaxItems = 3
+
+	-- ========== 범위 반지름 (플레이어 중심 원형, world unit) ==========
+	property number RadiusAttack = 2.0
+
+	property number RadiusSlowTrigger = 1.0
+
+	property number RadiusMeleeDetect = 3.0
+
+	property number RadiusMeleeAttack = 1.0
+
+	property number RadiusRangedDetect = 5.0
+
+	property number RadiusProjectile = 0.2
+
+	property number RadiusSmoke = 3.0
+
+	-- ========== 데미지 배율 (ATK 기준 %) ==========
+	property number DmgAttackPct = 1.0
+
+	property number DmgDashPct = 0.5
+
+	property number DmgEmpoweredDashPct = 1.5
+
+	property number DmgReflectPct = 2.0
+
+	property number DmgRockPct = 3.0
+
+	property number GroggyParryMult = 2.0
+
+	-- ========== 타이머 (실제 시간 기준, 초) ==========
+	property number AttackCooldown = 0.5
+
+	property number DashDuration = 0.1
+
+	property number DashDistance = 5.0
+
+	-- 대시가 벽(수직 풋홀드) 앞에서 멈출 때 벽으로부터 띄울 여유 거리 (플레이어 반폭 고려).
+	property number DashWallMargin = 0.4
+
+	property number SlowDuration = 1.0
+
+	property number SlowScale = 0.25
+
+	property number InvincibleAbilityDuration = 1.0
+
+	property number SmokeDuration = 5.0
+
+	property number FlashStunDuration = 3.0
+
+	property number FlashBossGroggyPause = 5.0
+
+	property number GroggyDuration = 3.0
+
+	property number RangedAimTime = 1.0
+
+	property number RangedFireCooldown = 1.0
+
+	property number ProjectileSpeed = 10.0
+
+	-- ========== 적 ==========
+	property number RadiusEnemyHitbox = 0.5
+
+	property number MeleeEnemyHP = 30.0
+
+	property number RangedEnemyHP = 20.0
+
+	property number EnemyMoveSpeed = 1.5
+
+	property number BossHP = 500.0
+
+	property number GroggyGaugeRatio = 0.2
+
+	property number GroggyDecayPerSec = 0.02
+
+	property number BossPatternDelay = 1.5
+
+	-- ========== 경제 / 보상 ==========
+	property number MesoCap = 4294967295.0
+
+	property integer ScoreCap = 65535
+
+	property integer MesoPerNormalClear = 10
+
+	property integer MesoPerBossClear = 150
+
+	property integer PriceMaxLife = 100
+
+	property integer PriceStat = 50
+
+	property integer PriceAbility = 150
+
+	property integer PriceItem = 40
+
+	property number RewardStatChance = 0.5
+
+	property number RewardItemChance = 0.7
+
+	property number RewardAbilityChance = 0.15
+
+	-- ========== 층 / 스테이지 진행 ==========
+	property integer Floor1NormalStages = 4
+
+	property integer MaxFloors = 2
+
+	property integer AbilityUsesNormal = 1
+
+	property integer AbilityUsesBoss = 2
+
+	-- ========== 연출(FX): 슬로우 흑백 / 대시 잔상·모션블러 ==========
+	-- 머티리얼 이름 (RootDesk/MyDesk/Materials/*.material). _EntryService:GetMaterialIdByName으로 런타임 조회.
+	-- 흑백: 적 SpriteRenderer에 적용. (MotionBlur 머티리얼은 AvatarRenderer 비호환 LWA-3009 → 아바타 알파 고스트로 대체)
+	property string MatGrayScale = "GrayScale"
+
+	property string MatFxDefault = "DashFxDefault"
+
+	-- 대시 잔상 이펙트 (animationclip RUID, 가로 모션 스트릭). 교체 가능.
+	property string DashAfterimageClip = "6e2703be75e04e10a554f95ad60228ca"
+
+	-- 잔상 생성 간격(실제 시간 s, _WallClock 기준)과 반투명도.
+	property number DashAfterimageInterval = 0.02
+
+	property number DashAfterimageAlpha = 0.5
+
+	-- 잔상 이펙트 배율(클립이 작으면 키울 것). 플레이어 SortingLayer 위(OrderInLayer)로 그림.
+	property number DashAfterimageScale = 2.5
+
+	-- 대시 중 플레이어 아바타 반투명도(모션블러 느낌의 고스트). 종료 시 1.0 복원.
+	property number DashGhostAlpha = 0.55
+
+	-- 대시 조준 미리보기 (점선 궤적 + 착지 마커 스프라이트). 플레이어 자식으로 1회 스폰, 우클릭 조준 중 표시.
+	property string DashPreviewModelId = "dashaimpreview"
+
+	property string DashPreviewName = "DashAimPreview"
+
+	method integer NormalStagesForFloor(integer floor)
+		-- 층별 일반 스테이지 진행 횟수: 4 + 1*(층수-1) (stage_design_doc §2.2.3)
+		return self.Floor1NormalStages + (floor - 1)
+	end
+
+	method number ClampMeso(number meso)
+		-- 메소 캡(uint max) 초과 시 클램프 (player_design_doc §6.5)
+		if meso > self.MesoCap then return self.MesoCap end
+		if meso < 0 then return 0 end
+		return meso
+	end
+
+end

@@ -1,0 +1,59 @@
+@Component
+script GroggyGauge extends Component
+
+	-- 게이지 최대치 = 보스 전체(최대) 체력의 1/5 (stage_design §1.4.2)
+	@Sync
+	property number GaugeMax = 100.0
+
+	@Sync
+	property number Gauge = 0.0
+
+	@Sync
+	property boolean IsGroggy = false
+
+	-- 그로기 종료 시각 (ServerElapsedSeconds)
+	property number groggyEndAt = -999.0
+
+	@ExecSpace("ServerOnly")
+	method void OnBeginPlay()
+		-- 게이지 최대치 = MaxHP × 1/5.
+		---@type EnemyHealth
+		local hp = self.Entity:GetComponent("script.EnemyHealth")
+		if hp ~= nil then
+			self.GaugeMax = hp.MaxHP * _GameConstants.GroggyGaugeRatio
+		end
+		self.Gauge = 0
+		log("[GroggyGauge] init: max=" .. tostring(self.GaugeMax))
+	end
+
+	@ExecSpace("ServerOnly")
+	method void OnUpdate(number delta)
+		-- 자동 감소 초당 2% (서버 실시간 — 슬로우 무관) / 그로기 지속 3초 처리. 섬광탄 시 감소만 정지.
+		if self.IsGroggy then
+			if _UtilLogic.ServerElapsedSeconds >= self.groggyEndAt then
+				self.IsGroggy = false
+				self.Gauge = 0
+				log("[GroggyGauge] groggy END — gauge reset")
+			end
+			return
+		end
+		if self.Gauge > 0 and _BattlefieldFx:IsGroggyDecayPaused() == false then
+			self.Gauge = self.Gauge - self.GaugeMax * _GameConstants.GroggyDecayPerSec * delta
+			if self.Gauge < 0 then self.Gauge = 0 end
+		end
+	end
+
+	@ExecSpace("ServerOnly")
+	method void Charge(number amount, string source)
+		-- 게이지 충전. 그로기 중에는 충전 안 됨 (§1.4.4). 100% → 그로기 3초 발동.
+		if self.IsGroggy then return end
+		self.Gauge = self.Gauge + amount
+		log("[GroggyGauge] +" .. tostring(amount) .. " (" .. source .. ") -> " .. string.format("%.1f", self.Gauge) .. "/" .. tostring(self.GaugeMax))
+		if self.Gauge >= self.GaugeMax - 0.5 then
+			self.IsGroggy = true
+			self.groggyEndAt = _UtilLogic.ServerElapsedSeconds + _GameConstants.GroggyDuration
+			log("[GroggyGauge] *** GROGGY TRIGGERED *** (" .. tostring(_GameConstants.GroggyDuration) .. "s)")
+		end
+	end
+
+end

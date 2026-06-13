@@ -1,0 +1,33 @@
+@Component
+script PlayerHit extends Component
+
+	property number lastHitServer = -999.0
+
+	@Sync
+	property boolean IsDead = false
+
+	@ExecSpace("ServerOnly")
+	method void RequestHit(string source)
+		-- 1피격 즉사 중앙 처리: 다중 피격 1회 / 대시 무적(i-frame) 면제 / 비전투 단계 무시.
+		if self.IsDead then return end
+		if _StageManager.StageActive == false then return end
+		local now = _UtilLogic.ServerElapsedSeconds
+		if now - self.lastHitServer < 0.2 then return end
+		---@type PlayerDash
+		local dash = self.Entity:GetComponent("script.PlayerDash")
+		if dash ~= nil and dash:IsInvincibleNow() == true then
+			log("[PlayerHit] hit IGNORED (dash i-frame) from " .. source)
+			return
+		end
+		---@type PlayerAbility
+		local ability = self.Entity:GetComponent("script.PlayerAbility")
+		if ability ~= nil and ability:IsAbilityInvincible() == true then
+			log("[PlayerHit] hit IGNORED (ability invincible) from " .. source)
+			return
+		end
+		self.lastHitServer = now
+		log("[PlayerHit] PLAYER HIT by " .. source .. " -> death (1-hit rule)")
+		_StageManager:OnPlayerDeath(self.Entity)
+	end
+
+end

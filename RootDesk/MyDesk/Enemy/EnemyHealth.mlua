@@ -1,0 +1,54 @@
+@Component
+script EnemyHealth extends Component
+
+	property number MaxHP = 30.0
+
+	@Sync
+	property number HP = 30.0
+
+	-- melee / ranged / boss / dummy
+	property string EnemyKind = "dummy"
+
+	@Sync
+	property boolean IsDead = false
+
+	@ExecSpace("ServerOnly")
+	method void OnBeginPlay()
+		-- HP를 최대치로 초기화.
+		self.HP = self.MaxHP
+		log("[EnemyHealth] spawned: " .. self.Entity.Name .. " kind=" .. self.EnemyKind .. " HP=" .. tostring(self.HP))
+	end
+
+	@ExecSpace("ServerOnly")
+	method void TakeDamage(number amount, string source)
+		-- 서버 권위 데미지 적용. 보스는 그로기 게이지 충전 (일반공격=데미지량 / 반사 명중=(ATK×100%)×2). HP 0 이하 시 사망.
+		if self.IsDead then return end
+		self.HP = self.HP - amount
+		log("[EnemyHealth] " .. self.Entity.Name .. " took " .. tostring(amount) .. " dmg from " .. source .. " -> HP=" .. tostring(self.HP))
+		if self.EnemyKind == "boss" then
+			---@type GroggyGauge
+			local gg = self.Entity:GetComponent("script.GroggyGauge")
+			if gg ~= nil then
+				local charge = amount
+				if source == "reflect" then
+					charge = _GameStateManager.AttackStat * _GameConstants.GroggyParryMult
+				end
+				gg:Charge(charge, source)
+			end
+		end
+		if self.HP <= 0 then
+			self:Die(source)
+		end
+	end
+
+	@ExecSpace("ServerOnly")
+	method void Die(string source)
+		-- 사망 처리. 스테이지 처치 카운트 통지 후 엔티티 소멸.
+		if self.IsDead then return end
+		self.IsDead = true
+		log("[EnemyHealth] " .. self.Entity.Name .. " died (killed by " .. source .. ")")
+		_StageManager:OnEnemyKilled(self.EnemyKind)
+		self.Entity:Destroy()
+	end
+
+end

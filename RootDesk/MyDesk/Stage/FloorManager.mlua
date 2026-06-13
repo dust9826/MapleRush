@@ -1,0 +1,197 @@
+@Logic
+script FloorManager extends Logic
+
+	-- theme / normal / shop / boss / clear
+	@Sync
+	property string PhaseName = "theme"
+
+	@Sync
+	property integer NormalsClearedThisFloor = 0
+
+	@Sync
+	property boolean ShopDoneThisFloor = false
+
+	-- 서버: 사용된 테마 (게임 판 단위)
+	property any usedThemes = nil
+
+	@Sync
+	property string CurrentTheme = ""
+
+	-- 클라 UI 컨트롤러 참조
+	property any themeUI = nil
+
+	property any nodeUI = nil
+
+	property any shopUI = nil
+
+	property any gameClearUI = nil
+
+	@ExecSpace("ServerOnly")
+	method void StartGameFlow()
+		-- 새 런: 1층 테마 선택부터 (stage_design §2.2.1).
+		self.usedThemes = {}
+		self.NormalsClearedThisFloor = 0
+		self.ShopDoneThisFloor = false
+		self.CurrentTheme = ""
+		self.PhaseName = "theme"
+		self:ShowThemeSelect()
+	end
+
+	@ExecSpace("ServerOnly")
+	method void ShowThemeSelect()
+		-- 미플레이 테마만 표시 (테마1: 오르비스 확정 / 테마2: 자리표시자).
+		local theme1Used = self.usedThemes ~= nil and self.usedThemes["theme1"] == true
+		local theme2Used = self.usedThemes ~= nil and self.usedThemes["theme2"] == true
+		local pc = self:FirstPlayerComponent()
+		if pc ~= nil then
+			self:ClientShowThemeSelect(not theme1Used, not theme2Used, pc.UserId)
+		end
+	end
+
+	@ExecSpace("Client")
+	method void ClientShowThemeSelect(boolean theme1Available, boolean theme2Available)
+		-- 클라: 테마 선택 팝업.
+		_InputRouter:SetContext("Node")
+		if self.themeUI ~= nil then
+			self.themeUI:Open(theme1Available, theme2Available)
+		else
+			log_warning("[FloorManager] themeUI not registered — auto theme1")
+			self:RequestSelectTheme("theme1")
+		end
+	end
+
+	@ExecSpace("Server")
+	method void RequestSelectTheme(string themeId)
+		-- 테마 확정 → 층 시작 (노드 진행).
+		if self.usedThemes == nil then self.usedThemes = {} end
+		self.usedThemes[themeId] = true
+		self.CurrentTheme = themeId
+		self.NormalsClearedThisFloor = 0
+		self.ShopDoneThisFloor = false
+		log("[FloorManager] theme selected: " .. themeId .. " (floor " .. tostring(_GameStateManager.CurrentFloor) .. ")")
+		self:NextNode()
+	end
+
+	@ExecSpace("ServerOnly")
+	method void NextNode()
+		-- 노드 진행: 일반 N회(3분기 1택) → 상점(고정) → 보스(고정) (stage_design §2.2.3).
+		local required = _GameConstants:NormalStagesForFloor(_GameStateManager.CurrentFloor)
+		local pc = self:FirstPlayerComponent()
+		if self.NormalsClearedThisFloor < required then
+			self.PhaseName = "normal"
+			if pc ~= nil then
+				self:ClientShowNodeSelect(self.NormalsClearedThisFloor + 1, required, pc.UserId)
+			end
+		elseif self.ShopDoneThisFloor == false then
+			self.PhaseName = "shop"
+			_StageManager:StartStage("shop")
+			if pc ~= nil then
+				self:ClientShowShop(pc.UserId)
+			end
+		else
+			self.PhaseName = "boss"
+			log("[FloorManager] BOSS node (floor " .. tostring(_GameStateManager.CurrentFloor) .. ")")
+			_StageManager:StartStage("boss")
+		end
+	end
+
+	@ExecSpace("Client")
+	method void ClientShowNodeSelect(integer stageNo, integer totalStages)
+		-- 클라: 3분기 노드 선택 팝업 (현재는 전부 일반 스테이지 — 임시 구현).
+		_InputRouter:SetContext("Node")
+		if self.nodeUI ~= nil then
+			self.nodeUI:Open(stageNo, totalStages)
+		else
+			log_warning("[FloorManager] nodeUI not registered — auto branch 1")
+			self:RequestSelectNode(1)
+		end
+	end
+
+	@ExecSpace("Server")
+	method void RequestSelectNode(integer branchIdx)
+		-- 분기 선택 → 일반 스테이지 시작 (전진만, 되돌리기 불가).
+		log("[FloorManager] node branch " .. tostring(branchIdx) .. " selected")
+		_StageManager:StartStage("normal")
+	end
+
+	@ExecSpace("Client")
+	method void ClientShowShop()
+		-- 클라: 상점 팝업.
+		_InputRouter:SetContext("Shop")
+		if self.shopUI ~= nil then
+			self.shopUI:Open()
+		else
+			log_warning("[FloorManager] shopUI not registered — auto leave")
+			self:RequestLeaveShop()
+		end
+	end
+
+	@ExecSpace("Server")
+	method void RequestLeaveShop()
+		-- 상점 나가기 → 보스 노드 (stage_design §2.4.2).
+		self.ShopDoneThisFloor = true
+		log("[FloorManager] shop left -> boss node")
+		self:NextNode()
+	end
+
+	@ExecSpace("ServerOnly")
+	method void OnStageRewardDone(string stageType)
+		-- 보상 수령 완료 후 진행 (StageManager.RequestProceedNext가 호출).
+		if stageType == "boss" then
+			if _GameStateManager.CurrentFloor >= _GameConstants.MaxFloors then
+				self:GameClear()
+			else
+				_GameStateManager.CurrentFloor += 1
+				self.NormalsClearedThisFloor = 0
+				self.ShopDoneThisFloor = false
+				self.PhaseName = "theme"
+				log("[FloorManager] floor cleared -> floor " .. tostring(_GameStateManager.CurrentFloor) .. " theme select")
+				self:ShowThemeSelect()
+			end
+		else
+			self.NormalsClearedThisFloor += 1
+			log("[FloorManager] normal stage done (" .. tostring(self.NormalsClearedThisFloor) .. "/" .. tostring(_GameConstants:NormalStagesForFloor(_GameStateManager.CurrentFloor)) .. ")")
+			self:NextNode()
+		end
+	end
+
+	@ExecSpace("ServerOnly")
+	method void GameClear()
+		-- 전층 클리어: 게임 클리어 화면 + 영구 강화 점수 (Phase 7).
+		self.PhaseName = "clear"
+		_GameStateManager.RunActive = false
+		local score = _GameStateManager.NormalClears + _GameStateManager.BossClears * 3
+		log("[FloorManager] GAME CLEAR! score=" .. tostring(score))
+		_MetaProgression:AwardScore(score)
+		local pc = self:FirstPlayerComponent()
+		if pc ~= nil then
+			self:ClientShowGameClear(score, pc.UserId)
+		end
+	end
+
+	@ExecSpace("Client")
+	method void ClientShowGameClear(integer score)
+		-- 클라: 게임 클리어 팝업.
+		_InputRouter:SetContext("GameOver")
+		_UtilLogic:SetClientTimeScale(1.0)
+		if self.gameClearUI ~= nil then
+			self.gameClearUI:Open(score)
+		else
+			log_warning("[FloorManager] gameClearUI not registered")
+		end
+	end
+
+	@ExecSpace("ServerOnly")
+	method PlayerComponent FirstPlayerComponent()
+		-- 1인 1런: 첫 플레이어의 PlayerComponent.
+		local map = _EntityService:GetEntityByPath("/maps/map01")
+		if isvalid(map) == false then return nil end
+		local users = _UserService:GetUsersByMapComponent(map.MapComponent)
+		if users == nil then return nil end
+		for _, u in ipairs(users) do
+			if isvalid(u) then return u.PlayerComponent end
+		end
+		return nil
+	end
+
+end

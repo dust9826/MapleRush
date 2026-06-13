@@ -1,0 +1,44 @@
+@Component
+script GameClearController extends Component
+
+	property Entity clearRoot = "da7245d7-43a0-4b13-9d7a-0ca1ab8a8b6e"
+
+	property TextComponent infoText = "a007c8fa-ddcf-406e-8bc9-5fe10bbf943b"
+
+	property ButtonComponent btnRestart = "1d3215ae-5124-44ca-a5f2-7485829822d5"
+
+	property any hRestart = nil
+
+	@ExecSpace("ClientOnly")
+	method void OnBeginPlay()
+		-- FloorManager에 등록 + 숨김 + 버튼 연결.
+		_FloorManager.gameClearUI = self
+		if isvalid(self.clearRoot) then self.clearRoot.Enable = false end
+		self.hRestart = self.btnRestart.Entity:ConnectEvent(ButtonClickEvent, self.OnRestartClick)
+		log("[GameClearController] registered")
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnEndPlay()
+		-- 버튼 해제.
+		if self.hRestart ~= nil then self.btnRestart.Entity:DisconnectEvent(ButtonClickEvent, self.hRestart) end
+	end
+
+	@ExecSpace("ClientOnly")
+	method void Open(integer score)
+		-- 게임 클리어 팝업: 영구 강화 점수 표시.
+		self.clearRoot.Enable = true
+		self.infoText.Text = "영구 강화 점수 +" .. tostring(score) .. " (누적 " .. tostring(_MetaProgression.MetaScore) .. ")"
+		log("[GameClearController] opened (score=" .. tostring(score) .. ")")
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnRestartClick(ButtonClickEvent event)
+		-- 새 런 시작.
+		self.clearRoot.Enable = false
+		_InputRouter:SetContext("Combat")
+		_StageManager:RequestRestartRun()
+		log("[GameClearController] restart")
+	end
+
+end

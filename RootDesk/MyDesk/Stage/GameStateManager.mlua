@@ -1,0 +1,64 @@
+@Logic
+script GameStateManager extends Logic
+
+	-- ===== 런(게임 판) 상태 — 서버 권위, @Sync =====
+	@Sync
+	property number Meso = 0.0
+
+	@Sync
+	property integer NormalClears = 0
+
+	@Sync
+	property integer BossClears = 0
+
+	@Sync
+	property integer CurrentFloor = 1
+
+	@Sync
+	property integer MaxLives = 5
+
+	@Sync
+	property integer CurrentLives = 5
+
+	@Sync
+	property number AttackStat = 10.0
+
+	@Sync
+	property boolean RunActive = false
+
+	@ExecSpace("ServerOnly")
+	method void StartRun()
+		-- 새 게임 판 시작: 런 상태 초기화 + 영구 강화 보너스 적용 (stage_design §4.5).
+		self.Meso = 0
+		self.NormalClears = 0
+		self.BossClears = 0
+		self.CurrentFloor = 1
+		self.MaxLives = _GameConstants.BaseMaxLives + _MetaProgression:GetBonusLives()
+		self.CurrentLives = self.MaxLives
+		self.AttackStat = _GameConstants.BaseAttack + _MetaProgression:GetBonusAttack()
+		self.RunActive = true
+		log("[GameStateManager] run started: lives=" .. tostring(self.CurrentLives) .. " ATK=" .. tostring(self.AttackStat) .. " (meta bonus lives+" .. tostring(_MetaProgression:GetBonusLives()) .. " atk+" .. tostring(_MetaProgression:GetBonusAttack()) .. ")")
+	end
+
+	@ExecSpace("ServerOnly")
+	method void AddMeso(number amount)
+		-- 메소 지급 (캡 클램프).
+		self.Meso = _GameConstants:ClampMeso(self.Meso + amount)
+		log("[GameStateManager] meso +" .. tostring(amount) .. " -> " .. tostring(self.Meso))
+	end
+
+	@ExecSpace("ServerOnly")
+	method boolean SpendMeso(number amount)
+		-- 메소 차감. 잔액 부족 시 false.
+		if self.Meso < amount then return false end
+		self.Meso = self.Meso - amount
+		return true
+	end
+
+	@ExecSpace("ServerOnly")
+	method void RefillLives()
+		-- 스테이지 진입 시 목숨 최대치 갱신 (player_design §1.4).
+		self.CurrentLives = self.MaxLives
+	end
+
+end

@@ -1,0 +1,65 @@
+@Logic
+script MetaProgression extends Logic
+
+	-- 누적 영구 강화 점수 (캡 65535). UserDataStorage 영속.
+	@Sync
+	property integer MetaScore = 0
+
+	property string ownerUserId = ""
+
+	property boolean loaded = false
+
+	@ExecSpace("ServerOnly")
+	method void LoadFor(string userId)
+		-- 유저 입장 시 1회 로드 (datastorage.md §4.1 — 캐시 우선, 이후 메모리 서비스).
+		if self.loaded and self.ownerUserId == userId then return end
+		self.ownerUserId = userId
+		local storage = _DataStorageService:GetUserDataStorage(userId)
+		local errorCode, raw = storage:GetAndWait("metaScore")
+		if errorCode == 0 and raw ~= nil and raw ~= "" then
+			self.MetaScore = math.floor(tonumber(raw) or 0)
+		else
+			-- 1000002 NotFound = 최초 접속 → 기본값 0
+			self.MetaScore = 0
+		end
+		self.loaded = true
+		log("[MetaProgression] loaded: score=" .. tostring(self.MetaScore) .. " (err=" .. tostring(errorCode) .. ")")
+	end
+
+	@ExecSpace("ServerOnly")
+	method void AwardScore(integer score)
+		-- 게임 클리어 시에만 적립 (이벤트 드리븐 — OnUpdate/타이머 저장 금지). 변경 시에만 SetAsync.
+		if score <= 0 then return end
+		local newScore = self.MetaScore + score
+		if newScore > _GameConstants.ScoreCap then
+			newScore = _GameConstants.ScoreCap
+		end
+		if newScore == self.MetaScore then return end
+		self.MetaScore = newScore
+		log("[MetaProgression] score +" .. tostring(score) .. " -> total " .. tostring(self.MetaScore))
+		if self.ownerUserId == "" then return end
+		local storage = _DataStorageService:GetUserDataStorage(self.ownerUserId)
+		storage:SetAsync("metaScore", tostring(self.MetaScore), function(errorCode, value)
+			if errorCode ~= 0 then
+				log_warning("[MetaProgression] save failed (err=" .. tostring(errorCode) .. ") — will retry next award")
+			else
+				log("[MetaProgression] score saved to UserDataStorage")
+			end
+		end)
+	end
+
+	method integer GetBonusLives()
+		-- 영구 강화 자동 보너스 (메타 트리 UI는 플레이스홀더): 점수 10당 최대 목숨 +1, 최대 +3.
+		local bonus = math.floor(self.MetaScore / 10)
+		if bonus > 3 then bonus = 3 end
+		return bonus
+	end
+
+	method number GetBonusAttack()
+		-- 영구 강화 자동 보너스: 점수 5당 공격력 +1, 최대 +10.
+		local bonus = math.floor(self.MetaScore / 5)
+		if bonus > 10 then bonus = 10 end
+		return bonus
+	end
+
+end

@@ -1,0 +1,24 @@
+{
+  "Id": "",
+  "GameId": "",
+  "EntryKey": "material://d1b60204-ac5c-4566-8e26-456c2a3fd9b0",
+  "ContentType": "x-mod/material",
+  "Content": "",
+  "Usage": 0,
+  "UsePublish": 1,
+  "UseService": 0,
+  "CoreVersion": "26.5.0.0",
+  "StudioVersion": "0.1.0.0",
+  "DynamicLoading": 0,
+  "ContentProto": {
+    "Use": "Json",
+    "Json": {
+      "name": "DashFxDefault",
+      "id": "d1b60204-ac5c-4566-8e26-456c2a3fd9b0",
+      "shadertype": "Default",
+      "LitMode": 0,
+      "IsUIMaterial": false,
+      "RequiresUIStencilStateChange": false
+    }
+  }
+}

@@ -1,0 +1,96 @@
+@Component
+script PlayerAbility extends Component
+
+	-- "" / "invincible"(임시 무적 1초) / "clearProjectiles"(전 투사체 무효화)
+	@Sync
+	property string AbilityId = ""
+
+	@Sync
+	property integer UsesLeft = 0
+
+	-- 서버: 능력 무적 종료 시각 (ServerElapsedSeconds)
+	property number abilityInvincibleUntil = -999.0
+
+	property any routerHandler = nil
+
+	@ExecSpace("ClientOnly")
+	method void OnBeginPlay()
+		-- 로컬 플레이어만 라우터 구독 (휠클릭 = ability 액션).
+		if self.Entity ~= _UserService.LocalPlayer then return end
+		self.routerHandler = _InputRouter:ConnectEvent(RouterActionEvent, self.OnRouterAction)
+		log("[PlayerAbility] OnBeginPlay: router connected")
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnEndPlay()
+		-- 라우터 구독 해제.
+		if self.routerHandler ~= nil then
+			_InputRouter:DisconnectEvent(RouterActionEvent, self.routerHandler)
+		end
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnRouterAction(RouterActionEvent event)
+		-- ability 액션(휠클릭) → 사용 요청. 미보유/소진 시 무시 (UI 피드백은 Phase 8).
+		if event.action ~= "ability" then return end
+		if self.AbilityId == "" then
+			log("[PlayerAbility] no ability equipped")
+			return
+		end
+		if self.UsesLeft <= 0 then
+			log("[PlayerAbility] no uses left this stage")
+			return
+		end
+		self:RequestUseAbility()
+	end
+
+	@ExecSpace("Server")
+	method void RequestUseAbility()
+		-- 서버 검증 + 효과 발동 (player_design §4).
+		if self.AbilityId == "" or self.UsesLeft <= 0 then return end
+		self.UsesLeft -= 1
+		if self.AbilityId == "invincible" then
+			self.abilityInvincibleUntil = _UtilLogic.ServerElapsedSeconds + _GameConstants.InvincibleAbilityDuration
+			log("[PlayerAbility] INVINCIBLE for " .. tostring(_GameConstants.InvincibleAbilityDuration) .. "s (left=" .. tostring(self.UsesLeft) .. ")")
+		elseif self.AbilityId == "clearProjectiles" then
+			local map = self.Entity.CurrentMap
+			local removed = 0
+			if isvalid(map) then
+				local projs = map:GetChildComponentsByTypeName("script.Projectile", true)
+				for _, compAny in ipairs(projs) do
+					---@type Projectile
+					local comp = compAny
+					if isvalid(comp.Entity) and comp.OwnerSide == "enemy" then
+						comp.Entity:Destroy()
+						removed += 1
+					end
+				end
+			end
+			log("[PlayerAbility] CLEAR PROJECTILES: removed=" .. tostring(removed) .. " (left=" .. tostring(self.UsesLeft) .. ")")
+		end
+	end
+
+	@ExecSpace("ServerOnly")
+	method boolean IsAbilityInvincible()
+		-- 능력 무적 판정 (PlayerHit이 호출).
+		return _UtilLogic.ServerElapsedSeconds < self.abilityInvincibleUntil
+	end
+
+	@ExecSpace("ServerOnly")
+	method void GrantAbility(string abilityId)
+		-- 능력 장착 (1슬롯 — 기존 능력 즉시 교체, player_design §4.2).
+		self.AbilityId = abilityId
+		log("[PlayerAbility] granted: " .. abilityId)
+	end
+
+	@ExecSpace("ServerOnly")
+	method void ResetUses(string stageType)
+		-- 스테이지 진입 시 사용 횟수 초기화 (일반 1 / 보스 2).
+		if stageType == "boss" then
+			self.UsesLeft = _GameConstants.AbilityUsesBoss
+		else
+			self.UsesLeft = _GameConstants.AbilityUsesNormal
+		end
+	end
+
+end

@@ -1,0 +1,161 @@
+@Component
+script EnemyRanged extends Component
+
+	property number DetectRadius = 5.0
+
+	property number AimTime = 1.0
+
+	property number FireCooldown = 1.0
+
+	property boolean ProjectileParryable = true
+
+	-- aim / cooldown (감지 중에만 사이클 진행; 이동은 병행)
+	property string cyclePhase = "aim"
+
+	property number cycleTimer = 0.0
+
+	property integer shotIndex = 0
+
+	@ExecSpace("ServerOnly")
+	method void OnBeginPlay()
+		-- 조준 사이클 초기화.
+		self.cyclePhase = "aim"
+		self.cycleTimer = self.AimTime
+	end
+
+	@ExecSpace("ServerOnly")
+	method void OnUpdate(number delta)
+		-- 원거리 적 AI: 감지(5) 내 플레이어를 향해 이동하며 조준 1s → 발사 1발 → 쿨 1s 반복. 감지 이탈 시 조준 취소.
+		---@type EnemyHealth
+		local hp = self.Entity:GetComponent("script.EnemyHealth")
+		if hp ~= nil and hp.IsDead == true then return end
+		if _StageManager:IsGraceActive() then
+			self:StopMove()
+			return
+		end
+		-- 섬광탄 기절: 이동·조준·발사 정지
+		if _BattlefieldFx:IsStunActive() then
+			self:StopMove()
+			return
+		end
+		local timeScale = _SlowMotion:Scale()
+		local scaledDelta = delta * timeScale
+		local player = self:FindPlayer()
+		-- 연막탄 은신: 감지/조준 해제 → 조준 사이클 리셋
+		if _BattlefieldFx:IsSmokeActive() then
+			self.cyclePhase = "aim"
+			self.cycleTimer = self.AimTime
+			self:StopMove()
+			return
+		end
+		if player == nil then
+			self:StopMove()
+			return
+		end
+		local myPos = self.Entity.TransformComponent.WorldPosition
+		local pp = player.TransformComponent.WorldPosition
+		local playerCenter = Vector2(pp.x, pp.y + 0.5)
+		local myCenter = Vector2(myPos.x, myPos.y + 0.5)
+		local dx = playerCenter.x - myCenter.x
+		local dy = playerCenter.y - myCenter.y
+		local dist = math.sqrt(dx * dx + dy * dy)
+
+		if dist > self.DetectRadius then
+			-- 감지 이탈: 조준 취소 후 대기
+			if self.cyclePhase == "aim" and self.cycleTimer < self.AimTime then
+				log("[EnemyRanged] aim canceled (player out of range)")
+			end
+			self.cyclePhase = "aim"
+			self.cycleTimer = self.AimTime
+			self:StopMove()
+			return
+		end
+
+		-- 감지 중: 플레이어 방향 이동 (낭떠러지 정지)
+		self:ChaseToward(playerCenter.x, myCenter.x, timeScale)
+
+		-- 조준/발사 사이클
+		self.cycleTimer -= scaledDelta
+		if self.cycleTimer <= 0 then
+			if self.cyclePhase == "aim" then
+				self:Fire(playerCenter, myCenter)
+				self.cyclePhase = "cooldown"
+				self.cycleTimer = self.FireCooldown
+			else
+				self.cyclePhase = "aim"
+				self.cycleTimer = self.AimTime
+			end
+		end
+	end
+
+	@ExecSpace("ServerOnly")
+	method void Fire(Vector2 targetCenter, Vector2 fromCenter)
+		-- 발사 시점 플레이어 위치를 향해 직선 투사체 1발 (유도 없음).
+		local map = self.Entity.CurrentMap
+		if isvalid(map) == false then return end
+		self.shotIndex += 1
+		local dir = _CombatPrimitives:DirectionTo(fromCenter, targetCenter)
+		local spawnPos = Vector3(fromCenter.x + dir.x * 0.4, fromCenter.y + dir.y * 0.4, 0)
+		local name = self.Entity.Name .. "_proj_" .. tostring(self.shotIndex)
+		local proj = _SpawnService:SpawnByModelId("enemyprojectile", name, spawnPos, map)
+		if proj == nil then
+			log_error("[EnemyRanged] SpawnByModelId('enemyprojectile') returned nil")
+			return
+		end
+		---@type Projectile
+		local comp = proj:GetComponent("script.Projectile")
+		if comp ~= nil then
+			comp:Launch(dir.x, dir.y, _GameConstants.ProjectileSpeed, 1, self.ProjectileParryable)
+			log("[EnemyRanged] " .. self.Entity.Name .. " fired projectile dir=(" .. string.format("%.2f", dir.x) .. "," .. string.format("%.2f", dir.y) .. ")")
+		end
+	end
+
+	@ExecSpace("ServerOnly")
+	method Entity FindPlayer()
+		-- 같은 맵의 첫 번째 유효 플레이어 반환.
+		local map = self.Entity.CurrentMap
+		if isvalid(map) == false then return nil end
+		local users = _UserService:GetUsersByMapComponent(map.MapComponent)
+		if users == nil then return nil end
+		for _, u in ipairs(users) do
+			if isvalid(u) then return u end
+		end
+		return nil
+	end
+
+	@ExecSpace("ServerOnly")
+	method void ChaseToward(number targetX, number myX, number timeScale)
+		-- 추격 이동: 낭떠러지에서 정지 (V2 — 전방 바닥 하향 Raycast 발판 검사).
+		local rb = self.Entity.RigidbodyComponent
+		if rb == nil then return end
+		if rb:IsOnGround() == false then return end
+		local dir = 1
+		if targetX < myX then dir = -1 end
+		local map = self.Entity.CurrentMap
+		if isvalid(map) and isvalid(map.FootholdComponent) then
+			local pos = self.Entity.TransformComponent.WorldPosition
+			local probe = Vector2(pos.x + dir * 0.5, pos.y + 0.3)
+			local ground = map.FootholdComponent:Raycast(probe, Vector2(0, -1), 1.0)
+			if ground == nil then
+				self:StopMove()
+				return
+			end
+		end
+		rb.MoveVelocity = Vector2(dir * timeScale, 0)
+		-- 스프라이트는 좌향 기본 → 우측 이동 시 FlipX
+		local sprite = self.Entity.SpriteRendererComponent
+		if isvalid(sprite) then
+			sprite.FlipX = dir > 0
+		end
+	end
+
+	@ExecSpace("ServerOnly")
+	method void StopMove()
+		-- 이동 정지.
+		local rb = self.Entity.RigidbodyComponent
+		if rb ~= nil then
+			rb.MoveVelocity = Vector2(0, 0)
+		end
+	end
+
+end

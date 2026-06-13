@@ -1,0 +1,96 @@
+@Logic
+script InputRouter extends Logic
+
+	-- 컨텍스트: Combat / Shop / Reward / Node / Popup / GameOver
+	property string CurrentContext = "Combat"
+
+	property any touchHandler = nil
+
+	property any keyDownHandler = nil
+
+	property any keyUpHandler = nil
+
+	@ExecSpace("ClientOnly")
+	method void OnBeginPlay()
+		-- 클라이언트 입력 이벤트 연결. 좌클릭=ScreenTouchEvent, 우/휠/숫자키=KeyDown/Up (이중 발화 방지 설계).
+		self.touchHandler = _InputService:ConnectEvent(ScreenTouchEvent, self.OnScreenTouch)
+		self.keyDownHandler = _InputService:ConnectEvent(KeyDownEvent, self.OnKeyDown)
+		self.keyUpHandler = _InputService:ConnectEvent(KeyUpEvent, self.OnKeyUp)
+		log("[InputRouter] OnBeginPlay: input handlers connected (context=" .. self.CurrentContext .. ")")
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnEndPlay()
+		-- 연결한 입력 핸들러 전부 해제.
+		if self.touchHandler ~= nil then _InputService:DisconnectEvent(ScreenTouchEvent, self.touchHandler) end
+		if self.keyDownHandler ~= nil then _InputService:DisconnectEvent(KeyDownEvent, self.keyDownHandler) end
+		if self.keyUpHandler ~= nil then _InputService:DisconnectEvent(KeyUpEvent, self.keyUpHandler) end
+	end
+
+	@ExecSpace("ClientOnly")
+	method void SetContext(string newContext)
+		-- 입력 컨텍스트 전환 (Combat/Shop/Reward/Node/Popup/GameOver).
+		log("[InputRouter] context: " .. self.CurrentContext .. " -> " .. newContext)
+		self.CurrentContext = newContext
+	end
+
+	@ExecSpace("ClientOnly")
+	method boolean IsCombat()
+		-- 현재 전투 컨텍스트인지.
+		return self.CurrentContext == "Combat"
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnScreenTouch(ScreenTouchEvent event)
+		-- 좌클릭/터치 → 전투 컨텍스트에서만 primary 액션 발행. UI 위 클릭은 무시.
+		if not self:IsCombat() then return end
+		if _InputService:IsPointerOverUI() then return end
+		local worldPos = _UILogic:ScreenToWorldPosition(event.TouchPoint)
+		self:Emit("primary", worldPos)
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnKeyDown(KeyDownEvent event)
+		-- 우클릭(대시 조준)/휠클릭(능력)/숫자키(아이템 슬롯) 분기.
+		if not self:IsCombat() then return end
+		if event.key == KeyboardKey.Mouse1 then
+			self:Emit("dashAim", self:CursorWorld())
+		elseif event.key == KeyboardKey.Mouse2 then
+			self:Emit("ability", self:CursorWorld())
+		elseif event.key == KeyboardKey.Alpha1 then
+			self:Emit("item1", self:CursorWorld())
+		elseif event.key == KeyboardKey.Alpha2 then
+			self:Emit("item2", self:CursorWorld())
+		elseif event.key == KeyboardKey.Alpha3 then
+			self:Emit("item3", self:CursorWorld())
+		elseif event.key == KeyboardKey.G then
+			self:Emit("debugSlow", self:CursorWorld())
+		end
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnKeyUp(KeyUpEvent event)
+		-- 우클릭 해제 → 대시 실행 (커서 방향).
+		if not self:IsCombat() then return end
+		if event.key == KeyboardKey.Mouse1 then
+			self:Emit("dashExec", self:CursorWorld())
+		end
+	end
+
+	@ExecSpace("ClientOnly")
+	method Vector2 CursorWorld()
+		-- 현재 커서의 월드 좌표.
+		return _UILogic:ScreenToWorldPosition(_InputService:GetCursorPosition())
+	end
+
+	@ExecSpace("ClientOnly")
+	method void Emit(string actionName, Vector2 worldPos)
+		-- RouterActionEvent 발행. 리스너는 _InputRouter:ConnectEvent(RouterActionEvent, ...)로 구독.
+		local evt = RouterActionEvent()
+		evt.action = actionName
+		evt.worldPos = worldPos
+		evt.context = self.CurrentContext
+		self:SendEvent(evt)
+	end
+
+end

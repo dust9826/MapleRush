@@ -1,0 +1,181 @@
+@Component
+script BossController extends Component
+
+	-- delay / windup (패턴 풀에서 랜덤 선택, 가변 개수 지원 — stage_design §1.4.3)
+	property string phase = "delay"
+
+	property number phaseTimer = 1.5
+
+	property string currentPattern = ""
+
+	property any pendingAttack = nil
+
+	property integer shotIndex = 0
+
+	@ExecSpace("ServerOnly")
+	method void OnUpdate(number delta)
+		-- 보스 AI: 그로기 중 완전 정지 / 패턴 풀 랜덤 사이클. 연막·섬광 무시 (보스 면역).
+		---@type EnemyHealth
+		local hp = self.Entity:GetComponent("script.EnemyHealth")
+		if hp ~= nil and hp.IsDead == true then return end
+		if _StageManager:IsGraceActive() then
+			self:StopMove()
+			return
+		end
+		---@type GroggyGauge
+		local gg = self.Entity:GetComponent("script.GroggyGauge")
+		if gg ~= nil and gg.IsGroggy == true then
+			self:StopMove()
+			return
+		end
+		local timeScale = _SlowMotion:Scale()
+		local scaledDelta = delta * timeScale
+		local player = self:FindPlayer()
+		if player == nil then
+			self:StopMove()
+			return
+		end
+		local myPos = self.Entity.TransformComponent.WorldPosition
+		local pp = player.TransformComponent.WorldPosition
+		local playerCenter = Vector2(pp.x, pp.y + 0.5)
+		local myCenter = Vector2(myPos.x, myPos.y + 0.5)
+		local dx = playerCenter.x - myCenter.x
+		local dist = math.abs(dx)
+
+		-- 추격 (패턴 윈드업 중에는 정지)
+		if self.phase ~= "windup" and dist > 1.8 then
+			self:ChaseToward(playerCenter.x, myCenter.x, timeScale)
+		elseif self.phase ~= "windup" then
+			self:StopMove()
+		end
+
+		self.phaseTimer -= scaledDelta
+		if self.phaseTimer > 0 then return end
+
+		if self.phase == "delay" then
+			-- 패턴 풀에서 랜덤 선택
+			self:StartPattern(playerCenter, myCenter)
+		elseif self.phase == "windup" then
+			self:ResolvePattern(player, playerCenter)
+		end
+	end
+
+	@ExecSpace("ServerOnly")
+	method void StartPattern(Vector2 playerCenter, Vector2 myCenter)
+		-- 더미 패턴 3종 풀: slam(노랑 근접) / tripleShot(노랑 3연사) / redSmash(빨강 광역).
+		local roll = _UtilLogic:RandomIntegerRange(1, 3)
+		if roll == 1 then
+			self.currentPattern = "slam"
+			self.phase = "windup"
+			self.phaseTimer = 0.8
+			self.pendingAttack = _CombatPrimitives:RegisterEnemyAttack(myCenter, 1.5, 1, true, 0.8)
+			self.pendingAttack.bossEntityId = self.Entity.Name
+			self:StopMove()
+			log("[BossController] pattern SLAM (yellow, windup 0.8s)")
+		elseif roll == 2 then
+			self.currentPattern = "tripleShot"
+			self.phase = "windup"
+			self.phaseTimer = 0.6
+			self:StopMove()
+			log("[BossController] pattern TRIPLE SHOT (yellow, windup 0.6s)")
+		else
+			self.currentPattern = "redSmash"
+			self.phase = "windup"
+			self.phaseTimer = 1.0
+			self.pendingAttack = _CombatPrimitives:RegisterEnemyAttack(myCenter, 2.0, 1, false, 1.0)
+			self:StopMove()
+			log("[BossController] pattern RED SMASH (red — unparryable, windup 1.0s)")
+		end
+	end
+
+	@ExecSpace("ServerOnly")
+	method void ResolvePattern(Entity player, Vector2 playerCenter)
+		-- 윈드업 종료: 패턴별 명중 판정 / 발사.
+		if self.currentPattern == "slam" or self.currentPattern == "redSmash" then
+			local rec = self.pendingAttack
+			if rec ~= nil and rec.canceled == false then
+				if _CombatPrimitives:CircleOverlap(rec.center, rec.radius, playerCenter, 0.5) then
+					---@type PlayerHit
+					local hitComp = player:GetComponent("script.PlayerHit")
+					if hitComp ~= nil then
+						hitComp:RequestHit("boss:" .. self.currentPattern)
+					end
+				end
+			elseif rec ~= nil and rec.canceled == true then
+				log("[BossController] " .. self.currentPattern .. " was PARRIED")
+			end
+			self.pendingAttack = nil
+		elseif self.currentPattern == "tripleShot" then
+			local map = self.Entity.CurrentMap
+			local myPos = self.Entity.TransformComponent.WorldPosition
+			local myCenter = Vector2(myPos.x, myPos.y + 0.5)
+			if isvalid(map) then
+				for i = -1, 1 do
+					self.shotIndex += 1
+					local dir = _CombatPrimitives:DirectionTo(myCenter, Vector2(playerCenter.x, playerCenter.y + i * 0.6))
+					local spawnPos = Vector3(myCenter.x + dir.x * 0.5, myCenter.y + dir.y * 0.5, 0)
+					local proj = _SpawnService:SpawnByModelId("enemyprojectile", "bossproj_" .. tostring(self.shotIndex), spawnPos, map)
+					if proj ~= nil then
+						---@type Projectile
+						local comp = proj:GetComponent("script.Projectile")
+						if comp ~= nil then
+							comp:Launch(dir.x, dir.y, _GameConstants.ProjectileSpeed, 1, true)
+						end
+					end
+				end
+				log("[BossController] tripleShot fired (3 projectiles)")
+			end
+		end
+		self.phase = "delay"
+		self.phaseTimer = _GameConstants.BossPatternDelay
+	end
+
+	@ExecSpace("ServerOnly")
+	method Entity FindPlayer()
+		-- 같은 맵의 첫 플레이어 (보스는 연막 무시 — 항상 감지).
+		local map = self.Entity.CurrentMap
+		if isvalid(map) == false then return nil end
+		local users = _UserService:GetUsersByMapComponent(map.MapComponent)
+		if users == nil then return nil end
+		for _, u in ipairs(users) do
+			if isvalid(u) then return u end
+		end
+		return nil
+	end
+
+	@ExecSpace("ServerOnly")
+	method void ChaseToward(number targetX, number myX, number timeScale)
+		-- 보스 추격 (낭떠러지 정지 동일).
+		local rb = self.Entity.RigidbodyComponent
+		if rb == nil then return end
+		if rb:IsOnGround() == false then return end
+		local dir = 1
+		if targetX < myX then dir = -1 end
+		local map = self.Entity.CurrentMap
+		if isvalid(map) and isvalid(map.FootholdComponent) then
+			local pos = self.Entity.TransformComponent.WorldPosition
+			local probe = Vector2(pos.x + dir * 0.7, pos.y + 0.3)
+			local ground = map.FootholdComponent:Raycast(probe, Vector2(0, -1), 1.0)
+			if ground == nil then
+				self:StopMove()
+				return
+			end
+		end
+		rb.MoveVelocity = Vector2(dir * timeScale * 0.7, 0)
+		-- 스프라이트는 좌향 기본 → 우측 이동 시 FlipX
+		local sprite = self.Entity.SpriteRendererComponent
+		if isvalid(sprite) then
+			sprite.FlipX = dir > 0
+		end
+	end
+
+	@ExecSpace("ServerOnly")
+	method void StopMove()
+		-- 이동 정지.
+		local rb = self.Entity.RigidbodyComponent
+		if rb ~= nil then
+			rb.MoveVelocity = Vector2(0, 0)
+		end
+	end
+
+end

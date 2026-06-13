@@ -1,0 +1,89 @@
+@Component
+script RewardController extends Component
+
+	property Entity rewardRoot = "1f38b808-8dc3-4b76-9522-a00dcaafc7e1"
+
+	property TextComponent mesoText = "b68d900a-4aec-4888-b9da-f3131b710cb0"
+
+	property ButtonComponent btnStat = "55d01f64-70bb-48e4-a6a9-f8799123a4ff"
+
+	property ButtonComponent btnItem = "b31091b9-d480-4f24-b425-63eb751f5b81"
+
+	property ButtonComponent btnAbility = "b8ebb68c-7808-4c29-81ba-38b97de021c3"
+
+	property ButtonComponent btnContinue = "12a848dd-26a9-4933-9d24-61972fcebef5"
+
+	property any hStat = nil
+
+	property any hItem = nil
+
+	property any hAbility = nil
+
+	property any hContinue = nil
+
+	@ExecSpace("ClientOnly")
+	method void OnBeginPlay()
+		-- StageManager에 자신을 등록 + 패널 숨김 + 버튼 연결.
+		_StageManager.rewardUI = self
+		if isvalid(self.rewardRoot) then self.rewardRoot.Enable = false end
+		self.hStat = self.btnStat.Entity:ConnectEvent(ButtonClickEvent, self.OnStatClick)
+		self.hItem = self.btnItem.Entity:ConnectEvent(ButtonClickEvent, self.OnItemClick)
+		self.hAbility = self.btnAbility.Entity:ConnectEvent(ButtonClickEvent, self.OnAbilityClick)
+		self.hContinue = self.btnContinue.Entity:ConnectEvent(ButtonClickEvent, self.OnContinueClick)
+		log("[RewardController] OnBeginPlay: registered + buttons connected")
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnEndPlay()
+		-- 버튼 이벤트 해제.
+		if self.hStat ~= nil then self.btnStat.Entity:DisconnectEvent(ButtonClickEvent, self.hStat) end
+		if self.hItem ~= nil then self.btnItem.Entity:DisconnectEvent(ButtonClickEvent, self.hItem) end
+		if self.hAbility ~= nil then self.btnAbility.Entity:DisconnectEvent(ButtonClickEvent, self.hAbility) end
+		if self.hContinue ~= nil then self.btnContinue.Entity:DisconnectEvent(ButtonClickEvent, self.hContinue) end
+	end
+
+	@ExecSpace("ClientOnly")
+	method void Open(number mesoGain, boolean statReward, boolean itemReward, boolean abilityReward)
+		-- 보상 팝업 열기: 메소 표시 + 등장 보상 버튼만 활성화 (stage_design §3.1).
+		self.rewardRoot.Enable = true
+		self.mesoText.Text = "메소 +" .. tostring(math.floor(mesoGain)) .. "  (보유: " .. tostring(math.floor(_GameStateManager.Meso)) .. ")"
+		self.btnStat.Entity.Enable = statReward
+		self.btnItem.Entity.Enable = itemReward
+		self.btnAbility.Entity.Enable = abilityReward
+		log("[RewardController] opened (meso+" .. tostring(mesoGain) .. " stat=" .. tostring(statReward) .. " item=" .. tostring(itemReward) .. " ability=" .. tostring(abilityReward) .. ")")
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnStatClick(ButtonClickEvent event)
+		-- 스탯 강화 수령 → 버튼 비활성 (1회 수령).
+		_RewardManager:ClaimStatReward()
+		self.btnStat.Entity.Enable = false
+		log("[RewardController] stat claimed")
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnItemClick(ButtonClickEvent event)
+		-- 아이템 수령 → 버튼 비활성.
+		_RewardManager:ClaimItemReward()
+		self.btnItem.Entity.Enable = false
+		log("[RewardController] item claimed")
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnAbilityClick(ButtonClickEvent event)
+		-- 능력 수령 → 버튼 비활성.
+		_RewardManager:ClaimAbilityReward()
+		self.btnAbility.Entity.Enable = false
+		log("[RewardController] ability claimed")
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnContinueClick(ButtonClickEvent event)
+		-- 계속: 팝업 닫기 + 전투 컨텍스트 + 다음 스테이지 요청.
+		self.rewardRoot.Enable = false
+		_InputRouter:SetContext("Combat")
+		_StageManager:RequestProceedNext()
+		log("[RewardController] continue -> next stage")
+	end
+
+end

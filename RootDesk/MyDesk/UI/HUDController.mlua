@@ -1,0 +1,113 @@
+@Component
+script HUDController extends Component
+
+	property TextComponent livesText = "508d0bdb-25f9-4e80-92e4-60ae101c165f"
+
+	property TextComponent dashText = "481e0444-cff3-415a-a7fe-125ab592ced3"
+
+	property TextComponent mesoText = "72e684e1-9d91-4e0f-9c8e-378e1362e978"
+
+	property TextComponent abilityText = "ef5d4b84-86c9-4d79-8137-de4b6c782dbb"
+
+	property TextComponent itemsText = "353f2b66-fc22-42f6-bb7a-b853be241a31"
+
+	property TextComponent bossText = "bd55e3e9-8b53-4b12-98bc-d97e4ab37155"
+
+	@ExecSpace("ClientOnly")
+	method void OnBeginPlay()
+		-- HUD 컨트롤러 시작 로그 (검증용).
+		log("[HUDController] OnBeginPlay")
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnUpdate(number delta)
+		-- 실제 시간 기준 HUD 갱신 (슬로우 모션 무관 — UI는 매 프레임 폴링).
+		local player = _UserService.LocalPlayer
+		if player == nil then return end
+		if self.dashText ~= nil then
+			---@type PlayerDash
+			local dash = player:GetComponent("script.PlayerDash")
+			if dash ~= nil then
+				self.dashText.Text = "대시 " .. tostring(dash.DashCount) .. "/" .. tostring(dash.MaxDash)
+			end
+		end
+		if self.livesText ~= nil then
+			self.livesText.Text = "목숨 " .. tostring(_GameStateManager.CurrentLives) .. "/" .. tostring(_GameStateManager.MaxLives)
+		end
+		if self.mesoText ~= nil and isvalid(self.mesoText) then
+			self.mesoText.Text = "메소 " .. tostring(math.floor(_GameStateManager.Meso))
+		end
+		if self.abilityText ~= nil and isvalid(self.abilityText) then
+			---@type PlayerAbility
+			local ability = player:GetComponent("script.PlayerAbility")
+			if ability ~= nil then
+				local abilityName = ability.AbilityId
+				if abilityName == "" then
+					abilityName = "없음"
+				elseif abilityName == "invincible" then
+					abilityName = "임시 무적"
+				elseif abilityName == "clearProjectiles" then
+					abilityName = "투사체 무효화"
+				end
+				self.abilityText.Text = "능력: " .. abilityName .. " (" .. tostring(ability.UsesLeft) .. ")"
+			end
+		end
+		if self.itemsText ~= nil and isvalid(self.itemsText) then
+			---@type PlayerItems
+			local items = player:GetComponent("script.PlayerItems")
+			if items ~= nil then
+				self.itemsText.Text = "아이템: " .. self:ItemLabel(items.Slot1, items.ActiveSlot == 1) .. " " .. self:ItemLabel(items.Slot2, items.ActiveSlot == 2) .. " " .. self:ItemLabel(items.Slot3, items.ActiveSlot == 3)
+			end
+		end
+		if self.bossText ~= nil and isvalid(self.bossText) then
+			self:UpdateBossText(player)
+		end
+	end
+
+	@ExecSpace("ClientOnly")
+	method void UpdateBossText(Entity player)
+		-- 보스 HP/그로기 게이지 표시 (보스 스테이지에서만 보임).
+		local map = player.CurrentMap
+		if isvalid(map) == false then
+			self.bossText.Text = ""
+			return
+		end
+		local list = map:GetChildComponentsByTypeName("script.EnemyHealth", true)
+		for _, compAny in ipairs(list) do
+			---@type EnemyHealth
+			local comp = compAny
+			if isvalid(comp.Entity) and comp.EnemyKind == "boss" and comp.IsDead == false then
+				local line = "보스 HP " .. tostring(math.floor(comp.HP)) .. "/" .. tostring(math.floor(comp.MaxHP))
+				---@type GroggyGauge
+				local gg = comp.Entity:GetComponent("script.GroggyGauge")
+				if gg ~= nil then
+					if gg.IsGroggy == true then
+						line = line .. "  [그로기!]"
+					else
+						local pct = 0
+						if gg.GaugeMax > 0 then pct = math.floor(gg.Gauge / gg.GaugeMax * 100) end
+						line = line .. "  그로기 " .. tostring(pct) .. "%"
+					end
+				end
+				self.bossText.Text = line
+				return
+			end
+		end
+		self.bossText.Text = ""
+	end
+
+	@ExecSpace("ClientOnly")
+	method string ItemLabel(string itemId, boolean active)
+		-- 아이템 슬롯 라벨 ([짱돌] 형식, 활성 시 ▶ 표시).
+		local label = "-"
+		if itemId == "rock" then label = "짱돌"
+		elseif itemId == "smoke" then label = "연막"
+		elseif itemId == "flash" then label = "섬광"
+		end
+		if active then
+			return "[▶" .. label .. "]"
+		end
+		return "[" .. label .. "]"
+	end
+
+end

@@ -1,0 +1,145 @@
+@Component
+script EnemyMelee extends Component
+
+	property number DetectRadius = 3.0
+
+	property number AttackRadius = 1.0
+
+	property number WindupTime = 0.6
+
+	property number AttackCooldown = 1.2
+
+	property boolean AttackParryable = true
+
+	-- idle / windup / cooldown (추격은 idle 상태에서 거리 기반)
+	property string aiState = "idle"
+
+	property number stateTimer = 0.0
+
+	property any pendingAttack = nil
+
+	@ExecSpace("ServerOnly")
+	method void OnUpdate(number delta)
+		-- 근거리 적 AI: 감지(3) → 추격 → 공격(1, 텔레그래프 0.6s) → 쿨다운. 슬로우 배율 적용, 낭떠러지 정지.
+		---@type EnemyHealth
+		local hp = self.Entity:GetComponent("script.EnemyHealth")
+		if hp ~= nil and hp.IsDead == true then return end
+		if _StageManager:IsGraceActive() then
+			self:StopMove()
+			return
+		end
+		-- 섬광탄 기절: 이동·공격 완전 정지 (공격 판정도 진행 안 함)
+		if _BattlefieldFx:IsStunActive() then
+			self:StopMove()
+			return
+		end
+		local timeScale = _SlowMotion:Scale()
+		local scaledDelta = delta * timeScale
+		local player = self:FindPlayer()
+		-- 연막탄 은신: 일반 적은 플레이어 감지 불가 (추격·조준 즉시 해제)
+		if _BattlefieldFx:IsSmokeActive() then
+			player = nil
+		end
+		if player == nil then
+			self:StopMove()
+			return
+		end
+		local myPos = self.Entity.TransformComponent.WorldPosition
+		local pp = player.TransformComponent.WorldPosition
+		local playerCenter = Vector2(pp.x, pp.y + 0.5)
+		local myCenter = Vector2(myPos.x, myPos.y + 0.5)
+		local dx = playerCenter.x - myCenter.x
+		local dy = playerCenter.y - myCenter.y
+		local dist = math.sqrt(dx * dx + dy * dy)
+
+		if self.aiState == "windup" then
+			self.stateTimer -= scaledDelta
+			if self.stateTimer <= 0 then
+				local rec = self.pendingAttack
+				if rec ~= nil and rec.canceled == false then
+					if _CombatPrimitives:CircleOverlap(rec.center, rec.radius, playerCenter, 0.5) then
+						---@type PlayerHit
+						local hitComp = player:GetComponent("script.PlayerHit")
+						if hitComp ~= nil then
+							hitComp:RequestHit("melee:" .. self.Entity.Name)
+						end
+					else
+						log("[EnemyMelee] attack missed (player evaded)")
+					end
+				elseif rec ~= nil and rec.canceled == true then
+					log("[EnemyMelee] attack was parried — negated")
+				end
+				self.pendingAttack = nil
+				self.aiState = "cooldown"
+				self.stateTimer = self.AttackCooldown
+			end
+		elseif self.aiState == "cooldown" then
+			self.stateTimer -= scaledDelta
+			if self.stateTimer <= 0 then
+				self.aiState = "idle"
+			end
+		else
+			if dist <= self.AttackRadius then
+				-- 공격 개시: 텔레그래프 등록 (슬로우 트리거/패링 대상)
+				self.aiState = "windup"
+				self.stateTimer = self.WindupTime
+				self.pendingAttack = _CombatPrimitives:RegisterEnemyAttack(myCenter, self.AttackRadius, 1, self.AttackParryable, self.WindupTime)
+				self:StopMove()
+				log("[EnemyMelee] " .. self.Entity.Name .. " windup start (parryable=" .. tostring(self.AttackParryable) .. ")")
+			elseif dist <= self.DetectRadius then
+				self:ChaseToward(playerCenter.x, myCenter.x, timeScale)
+			else
+				self:StopMove()
+			end
+		end
+	end
+
+	@ExecSpace("ServerOnly")
+	method Entity FindPlayer()
+		-- 같은 맵의 첫 번째 유효 플레이어 반환 (1인 1런 전제).
+		local map = self.Entity.CurrentMap
+		if isvalid(map) == false then return nil end
+		local users = _UserService:GetUsersByMapComponent(map.MapComponent)
+		if users == nil then return nil end
+		for _, u in ipairs(users) do
+			if isvalid(u) then return u end
+		end
+		return nil
+	end
+
+	@ExecSpace("ServerOnly")
+	method void ChaseToward(number targetX, number myX, number timeScale)
+		-- 추격 이동: 낭떠러지에서 정지 (V2 실측 — 전방 바닥 하향 Raycast로 발판 유무 검사. PredictFootholdEnd는 연결 세그먼트 경계를 끝으로 오판하므로 사용 금지).
+		local rb = self.Entity.RigidbodyComponent
+		if rb == nil then return end
+		if rb:IsOnGround() == false then return end
+		local dir = 1
+		if targetX < myX then dir = -1 end
+		local map = self.Entity.CurrentMap
+		if isvalid(map) and isvalid(map.FootholdComponent) then
+			local pos = self.Entity.TransformComponent.WorldPosition
+			local probe = Vector2(pos.x + dir * 0.5, pos.y + 0.3)
+			local ground = map.FootholdComponent:Raycast(probe, Vector2(0, -1), 1.0)
+			if ground == nil then
+				self:StopMove()
+				return
+			end
+		end
+		rb.MoveVelocity = Vector2(dir * timeScale, 0)
+		-- 스프라이트는 좌향 기본 → 우측 이동 시 FlipX
+		local sprite = self.Entity.SpriteRendererComponent
+		if isvalid(sprite) then
+			sprite.FlipX = dir > 0
+		end
+	end
+
+	@ExecSpace("ServerOnly")
+	method void StopMove()
+		-- 이동 정지.
+		local rb = self.Entity.RigidbodyComponent
+		if rb ~= nil then
+			rb.MoveVelocity = Vector2(0, 0)
+		end
+	end
+
+end
