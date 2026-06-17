@@ -54,15 +54,8 @@ script RewardManager extends Logic
 
 	@ExecSpace("ServerOnly")
 	method Entity FindRequester()
-		-- 1인 1런 전제: 현재 맵의 첫 플레이어.
-		local map = _EntityService:GetEntityByPath("/maps/map01")
-		if isvalid(map) == false then return nil end
-		local users = _UserService:GetUsersByMapComponent(map.MapComponent)
-		if users == nil then return nil end
-		for _, u in ipairs(users) do
-			if isvalid(u) then return u end
-		end
-		return nil
+		-- 1인 1런 전제: 추적 중인 플레이어 (멀티맵 — 현재 위치 무관).
+		return _StageManager:GetPlayer()
 	end
 
 end

@@ -115,9 +115,17 @@ script GameConstants extends Logic
 	property number RewardAbilityChance = 0.15
 
 	-- ========== 층 / 스테이지 진행 ==========
-	property integer Floor1NormalStages = 4
+	-- 데모: 일반 2회 → 상점 → 보스 → 클리어 (1층 단판).
+	property integer Floor1NormalStages = 2
 
-	property integer MaxFloors = 2
+	property integer MaxFloors = 1
+
+	-- 스테이지 타입별 전투/상점 맵 (데모: 일반=map02, 보스=map03, 상점=map04).
+	property string MapNormal = "map02"
+
+	property string MapBoss = "map03"
+
+	property string MapShop = "map04"
 
 	property integer AbilityUsesNormal = 1
 
@@ -159,6 +167,13 @@ script GameConstants extends Logic
 		if meso > self.MesoCap then return self.MesoCap end
 		if meso < 0 then return 0 end
 		return meso
+	end
+
+	method string MapIdForStage(string stageType)
+		-- 스테이지 타입 → 맵 id. 일반(map02) / 보스(map03) / 상점(map04).
+		if stageType == "boss" then return self.MapBoss end
+		if stageType == "shop" then return self.MapShop end
+		return self.MapNormal
 	end
 
 end

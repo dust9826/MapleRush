@@ -183,15 +183,10 @@ script FloorManager extends Logic
 
 	@ExecSpace("ServerOnly")
 	method PlayerComponent FirstPlayerComponent()
-		-- 1인 1런: 첫 플레이어의 PlayerComponent.
-		local map = _EntityService:GetEntityByPath("/maps/map01")
-		if isvalid(map) == false then return nil end
-		local users = _UserService:GetUsersByMapComponent(map.MapComponent)
-		if users == nil then return nil end
-		for _, u in ipairs(users) do
-			if isvalid(u) then return u.PlayerComponent end
-		end
-		return nil
+		-- 1인 1런: 추적 중인 플레이어의 PlayerComponent (멀티맵 — 현재 위치 무관).
+		local player = _StageManager:GetPlayer()
+		if player == nil then return nil end
+		return player.PlayerComponent
 	end
 
 end

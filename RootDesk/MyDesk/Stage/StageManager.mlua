@@ -28,9 +28,18 @@ script StageManager extends Logic
 	-- 클라: 게임오버 UI 컨트롤러 참조
 	property any gameOverUI = nil
 
+	-- 서버: 추적 중인 플레이어 엔티티 (1인 1런 전제, 멀티맵 조회용)
+	property any trackedPlayer = nil
+
+	-- 서버: 맵 전환 대기 상태 (전투 스테이지 진입 시 맵 도착 폴링)
+	property boolean awaitingMap = false
+
+	property string pendingMapId = ""
+
 	@ExecSpace("ServerOnly")
 	method void OnPlayerReady(Entity player)
 		-- 첫 플레이어 입장 → 런 시작 + 거울던전식 층 진행 시작 (PlayerBootstrap이 호출).
+		self.trackedPlayer = player
 		if _GameStateManager.RunActive then return end
 		_GameStateManager:StartRun()
 		_ShopManager:ResetPrices()
@@ -38,18 +47,71 @@ script StageManager extends Logic
 	end
 
 	@ExecSpace("ServerOnly")
+	method Entity GetPlayer()
+		-- 추적 중인 플레이어 (멀티맵 조회: FloorManager/RewardManager가 맵 무관하게 사용).
+		if self.trackedPlayer ~= nil and isvalid(self.trackedPlayer) then return self.trackedPlayer end
+		return nil
+	end
+
+	@ExecSpace("ServerOnly")
+	method void MovePlayerToMap(string mapId)
+		-- 플레이어를 대상 맵 시작 지점으로 이동 (이미 그 맵이면 생략).
+		local player = self:GetPlayer()
+		if player == nil then return end
+		local cm = player.CurrentMap
+		if cm ~= nil and isvalid(cm) and cm.Name == mapId then return end
+		player.PlayerComponent:MoveToMapPosition(mapId, Vector2(0, 0.3))
+		log("[StageManager] moving player -> " .. mapId)
+	end
+
+	@ExecSpace("ServerOnly")
 	method void StartStage(string stageType)
-		-- 새 스테이지 진입: 목숨 최대 갱신 + 구성 롤 + 단일 초기화 경유 스폰.
+		-- 새 스테이지 진입: 타입별 맵으로 플레이어 이동 → 도착 후 적 스폰 (멀티맵).
 		self.StageType = stageType
+		self.StageActive = false
 		_GameStateManager:RefillLives()
+		local mapId = _GameConstants:MapIdForStage(stageType)
+		-- 상점: 적 스폰 없이 맵 이동만 (상점 UI는 FloorManager가 표시).
+		if stageType == "shop" then
+			self.awaitingMap = false
+			self:MovePlayerToMap(mapId)
+			log("[StageManager] stage START type=shop map=" .. mapId)
+			return
+		end
+		-- 전투(일반/보스): 구성 롤.
 		if stageType == "boss" then
 			-- 보스 스테이지: 전용 보스 1기 (HP 500, 그로기/패턴 풀)
 			self.composition = { { model = "bossenemy", x = 6.0, y = 0.4 } }
 		else
 			self.composition = self:RollComposition()
 		end
-		self:ResetStage()
-		log("[StageManager] stage START type=" .. stageType .. " enemies=" .. tostring(self.SpawnedCount) .. " lives=" .. tostring(_GameStateManager.CurrentLives))
+		-- 이미 대상 맵이면 즉시 스폰, 아니면 이동 후 도착 폴링.
+		local player = self:GetPlayer()
+		local cm = nil
+		if player ~= nil then cm = player.CurrentMap end
+		if player ~= nil and cm ~= nil and isvalid(cm) and cm.Name == mapId then
+			self:ResetStage()
+		else
+			self.pendingMapId = mapId
+			self.awaitingMap = true
+			self:MovePlayerToMap(mapId)
+		end
+		log("[StageManager] stage START type=" .. stageType .. " map=" .. mapId .. " lives=" .. tostring(_GameStateManager.CurrentLives))
+	end
+
+	method void OnUpdate(number delta)
+		-- 서버: 맵 전환 완료를 폴링 → 도착 시 적 스폰 (전투 스테이지).
+		if self:IsServer() == false then return end
+		if self.awaitingMap == false then return end
+		local player = self:GetPlayer()
+		if player == nil then return end
+		local cm = player.CurrentMap
+		if cm == nil or isvalid(cm) == false then return end
+		if cm.Name == self.pendingMapId then
+			self.awaitingMap = false
+			log("[StageManager] player arrived at " .. self.pendingMapId .. " -> spawn")
+			self:ResetStage()
+		end
 	end
 
 	@ExecSpace("ServerOnly")
@@ -147,8 +209,9 @@ script StageManager extends Logic
 
 	@ExecSpace("ServerOnly")
 	method Entity GetMap()
-		-- 현재 전투 맵 (현재는 map01 고정 — Phase 8에서 랜덤 풀로 확장).
-		return _EntityService:GetEntityByPath("/maps/map01")
+		-- 현재 스테이지 타입에 해당하는 맵 (일반=map02 / 보스=map03 / 상점=map04).
+		local mapId = _GameConstants:MapIdForStage(self.StageType)
+		return _EntityService:GetEntityByPath("/maps/" .. mapId)
 	end
 
 	@ExecSpace("Client")
