@@ -18,6 +18,30 @@ script EnemyMelee extends Component
 
 	property any pendingAttack = nil
 
+	-- 모션 구동: 모델 기본 SpriteRUID(stand)를 캡처해 두고 상태별로 교체.
+	property string standClip = ""
+
+	property string currentClip = ""
+
+	@ExecSpace("ServerOnly")
+	method void OnBeginPlay()
+		-- stand 클립을 모델 기본 SpriteRUID에서 캡처.
+		local sprite = self.Entity.SpriteRendererComponent
+		if isvalid(sprite) then self.standClip = sprite.SpriteRUID end
+		self.currentClip = self.standClip
+	end
+
+	@ExecSpace("ServerOnly")
+	method void PlayClip(string ruid)
+		-- SpriteRUID를 ruid로 교체(변경 시에만 — 매 프레임 재set 시 애니가 0프레임에서 멈추는 것 방지). @Sync라 클라 자동 반영.
+		if ruid == "" or ruid == self.currentClip then return end
+		local sprite = self.Entity.SpriteRendererComponent
+		if isvalid(sprite) then
+			sprite.SpriteRUID = ruid
+			self.currentClip = ruid
+		end
+	end
+
 	@ExecSpace("ServerOnly")
 	method void OnUpdate(number delta)
 		-- 근거리 적 AI: 감지(3) → 추격 → 공격(1, 텔레그래프 0.6s) → 쿨다운. 슬로우 배율 적용, 낭떠러지 정지.
@@ -26,11 +50,13 @@ script EnemyMelee extends Component
 		if hp ~= nil and hp.IsDead == true then return end
 		if _StageManager:IsGraceActive() then
 			self:StopMove()
+			self:PlayClip(self.standClip)
 			return
 		end
 		-- 섬광탄 기절: 이동·공격 완전 정지 (공격 판정도 진행 안 함)
 		if _BattlefieldFx:IsStunActive() then
 			self:StopMove()
+			self:PlayClip(self.standClip)
 			return
 		end
 		local timeScale = _SlowMotion:Scale()
@@ -42,6 +68,7 @@ script EnemyMelee extends Component
 		end
 		if player == nil then
 			self:StopMove()
+			self:PlayClip(self.standClip)
 			return
 		end
 		local myPos = self.Entity.TransformComponent.WorldPosition
@@ -72,6 +99,7 @@ script EnemyMelee extends Component
 				self.pendingAttack = nil
 				self.aiState = "cooldown"
 				self.stateTimer = self.AttackCooldown
+				self:PlayClip(self.standClip)
 			end
 		elseif self.aiState == "cooldown" then
 			self.stateTimer -= scaledDelta
@@ -85,11 +113,14 @@ script EnemyMelee extends Component
 				self.stateTimer = self.WindupTime
 				self.pendingAttack = _CombatPrimitives:RegisterEnemyAttack(myCenter, self.AttackRadius, 1, self.AttackParryable, self.WindupTime)
 				self:StopMove()
+				self:PlayClip(_GameConstants.MeleeAttackClip)
 				log("[EnemyMelee] " .. self.Entity.Name .. " windup start (parryable=" .. tostring(self.AttackParryable) .. ")")
 			elseif dist <= self.DetectRadius then
 				self:ChaseToward(playerCenter.x, myCenter.x, timeScale)
+				self:PlayClip(_GameConstants.MeleeMoveClip)
 			else
 				self:StopMove()
+				self:PlayClip(self.standClip)
 			end
 		end
 	end

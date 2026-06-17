@@ -19,12 +19,14 @@ script BossController extends Component
 		local hp = self.Entity:GetComponent("script.EnemyHealth")
 		if hp ~= nil and hp.IsDead == true then return end
 		if _StageManager:IsGraceActive() then
+			self:CancelWindup()
 			self:StopMove()
 			return
 		end
 		---@type GroggyGauge
 		local gg = self.Entity:GetComponent("script.GroggyGauge")
 		if gg ~= nil and gg.IsGroggy == true then
+			self:CancelWindup()
 			self:StopMove()
 			return
 		end
@@ -57,6 +59,16 @@ script BossController extends Component
 			self:StartPattern(playerCenter, myCenter)
 		elseif self.phase == "windup" then
 			self:ResolvePattern(player, playerCenter)
+		end
+	end
+
+	@ExecSpace("ServerOnly")
+	method void CancelWindup()
+		-- 그로기/그레이스로 윈드업이 끊기면 묵은 공격 레코드 폐기 + 패턴 사이클 리셋 (재개 후 옛 위치 명중 방지).
+		if self.phase == "windup" then
+			self.pendingAttack = nil
+			self.phase = "delay"
+			self.phaseTimer = _GameConstants.BossPatternDelay
 		end
 	end
 

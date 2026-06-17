@@ -49,10 +49,16 @@ script GameConstants extends Logic
 
 	property number DashDuration = 0.1
 
-	property number DashDistance = 5.0
+	property number DashDistance = 4.0
 
 	-- 대시가 벽(수직 풋홀드) 앞에서 멈출 때 벽으로부터 띄울 여유 거리 (플레이어 반폭 고려).
 	property number DashWallMargin = 0.4
+
+	-- 플레이어 중심 높이 보정 (발밑→중심). 대시/공격 이펙트 배치에 공용.
+	property number PlayerCenterYOffset = 0.5
+
+	-- 대시 이동 경로 데미지 판정 반경 (선분 + 반경).
+	property number DashPathRadius = 0.5
 
 	property number SlowDuration = 1.0
 
@@ -138,24 +144,70 @@ script GameConstants extends Logic
 
 	property string MatFxDefault = "DashFxDefault"
 
-	-- 대시 잔상 이펙트 (animationclip RUID, 가로 모션 스트릭). 교체 가능.
-	property string DashAfterimageClip = "6e2703be75e04e10a554f95ad60228ca"
+	-- 대시 이펙트 (animationclip RUID). 쉐도우 어썰트 — 대시당 1회 재생되는 전방 베기 스킬.
+	property string DashEffectClip = "96cf396aa0824844a857ab2cef6f1175"
 
-	-- 잔상 생성 간격(실제 시간 s, _WallClock 기준)과 반투명도.
-	property number DashAfterimageInterval = 0.02
+	-- 대시 이펙트 반투명도(0~1).
+	property number DashEffectAlpha = 0.9
 
-	property number DashAfterimageAlpha = 0.5
-
-	-- 잔상 이펙트 배율(클립이 작으면 키울 것). 플레이어 SortingLayer 위(OrderInLayer)로 그림.
-	property number DashAfterimageScale = 2.5
+	-- 대시 이펙트 배율. 스킬 애니가 886×566px(≈8.86×5.66 유닛)로 커서 축소 적용.
+	property number DashEffectScale = 0.6
 
 	-- 대시 중 플레이어 아바타 반투명도(모션블러 느낌의 고스트). 종료 시 1.0 복원.
 	property number DashGhostAlpha = 0.55
 
-	-- 대시 조준 미리보기 (점선 궤적 + 착지 마커 스프라이트). 플레이어 자식으로 1회 스폰, 우클릭 조준 중 표시.
+	-- 대시 조준 미리보기 (방향성 스프라이트). 플레이어 자식으로 1회 스폰, 우클릭 조준 중 표시.
 	property string DashPreviewModelId = "dashaimpreview"
 
 	property string DashPreviewName = "DashAimPreview"
+
+	-- 프리뷰 스프라이트 자연폭(월드유닛). 가로 스케일 = 실제 대시거리 / 이 값 → 렌더폭이 대시거리와 일치.
+	-- 현재 스프라이트 1168px = 11.68유닛. 스프라이트 교체 시 (px/100)으로 갱신.
+	property number DashPreviewSpriteWidth = 11.68
+
+	-- 프리뷰 막대 두께(세로 스케일, 고정). 길이는 대시거리에 따라 가변, 두께는 일정.
+	property number DashPreviewHeightScale = 0.5
+
+	-- 대시 목적지 마커 (sprite, 착지점 표시). 플레이어 자식으로 1회 스폰, 조준 중 표시.
+	property string DashDestMarkerModelId = "dashdestmarker"
+
+	property string DashDestMarkerName = "DashDestMarker"
+
+	property number DashDestMarkerScale = 0.5
+
+	-- ========== 공격/피격 이펙트 ==========
+	-- 좌클릭 기본 공격 이펙트 (animationclip, 커서 방향 회전 재생).
+	property string AttackEffectClip = "74950ab5791c49e5b257cd65d6bd2c2e"
+
+	property number AttackEffectScale = 0.225
+
+	property number AttackEffectAlpha = 1.0
+
+	-- 공격 이펙트를 플레이어 중심에서 바라보는 방향으로 띄울 거리 (world unit). 칼이 몸 앞에서 나가는 느낌.
+	property number AttackEffectForwardOffset = 1.2
+
+	-- 공격 이펙트를 중심에서 아래로 내리는 거리 (world unit). ≈플레이어 키(2.0)의 1/8.
+	property number AttackEffectDownOffset = 0.25
+
+	-- 몬스터 피격 이펙트 (animationclip, 피격 지점 버스트). Multicast로 전 클라 재생.
+	property string EnemyHitEffectClip = "1351daaf09b54066aa6f6f6e1edb0ce4"
+
+	property number EnemyHitEffectScale = 1.5
+
+	-- 피격 이펙트 Y 보정 (적 발밑→중심 높이).
+	property number EnemyHitEffectYOffset = 0.5
+
+	-- ========== 적 애니메이션 클립 (SpriteRUID 교체로 stand/move/attack 전환) ==========
+	-- stand는 각 적 모델의 기본 SpriteRUID에서 런타임 캡처. move/attack만 상수로 보관.
+	-- 근접: mob/5120002 (stand/move/attack 단일 몹 — 공격 전후 크기 일관).
+	property string MeleeMoveClip = "e9f23737108846ccbb8fb54cea1f4381"
+
+	property string MeleeAttackClip = "e33f5bdf329640a68b909c892c087b93"
+
+	-- 원거리: 러스터픽시 (mob/5120000) move + attack1(실제 공격 클립).
+	property string RangedMoveClip = "7230c88964604573b9b687a919855b00"
+
+	property string RangedAttackClip = "d8d759053a5f4e338ccd47be39802179"
 
 	method integer NormalStagesForFloor(integer floor)
 		-- 층별 일반 스테이지 진행 횟수: 4 + 1*(층수-1) (stage_design_doc §2.2.3)

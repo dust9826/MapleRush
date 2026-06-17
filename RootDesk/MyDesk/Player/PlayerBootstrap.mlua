@@ -42,13 +42,20 @@ script PlayerBootstrap extends Logic
 
 	@ExecSpace("ServerOnly")
 	method void EnsureDashPreview(Entity player)
-		-- 대시 조준 미리보기 스프라이트를 플레이어 자식으로 1회 스폰 (기본 숨김; 클라가 조준 중 위치·회전·표시 제어).
-		if player:GetChildByName(_GameConstants.DashPreviewName, false) ~= nil then return end
-		local preview = _SpawnService:SpawnByModelId(_GameConstants.DashPreviewModelId, _GameConstants.DashPreviewName, Vector3(0, 0, 0), player)
-		if preview == nil then
-			log_error("[PlayerBootstrap] dash preview spawn FAILED (model '" .. _GameConstants.DashPreviewModelId .. "')")
+		-- 대시 조준 미리보기 라인 + 목적지 마커 스프라이트를 플레이어 자식으로 1회씩 스폰 (기본 숨김; 클라가 조준 중 제어).
+		self:SpawnChildSprite(player, _GameConstants.DashPreviewModelId, _GameConstants.DashPreviewName)
+		self:SpawnChildSprite(player, _GameConstants.DashDestMarkerModelId, _GameConstants.DashDestMarkerName)
+	end
+
+	@ExecSpace("ServerOnly")
+	method void SpawnChildSprite(Entity player, string modelId, string name)
+		-- 지정 모델을 플레이어 자식으로 1회 스폰 (중복 방지).
+		if player:GetChildByName(name, false) ~= nil then return end
+		local e = _SpawnService:SpawnByModelId(modelId, name, Vector3(0, 0, 0), player)
+		if e == nil then
+			log_error("[PlayerBootstrap] child sprite spawn FAILED (model '" .. modelId .. "')")
 		else
-			log("[PlayerBootstrap] dash preview spawned under " .. player.Name)
+			log("[PlayerBootstrap] child sprite '" .. name .. "' spawned under " .. player.Name)
 		end
 	end
 

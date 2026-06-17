@@ -25,6 +25,7 @@ script EnemyHealth extends Component
 		if self.IsDead then return end
 		self.HP = self.HP - amount
 		log("[EnemyHealth] " .. self.Entity.Name .. " took " .. tostring(amount) .. " dmg from " .. source .. " -> HP=" .. tostring(self.HP))
+		self:PlayHitEffect()
 		if self.EnemyKind == "boss" then
 			---@type GroggyGauge
 			local gg = self.Entity:GetComponent("script.GroggyGauge")
@@ -49,6 +50,18 @@ script EnemyHealth extends Component
 		log("[EnemyHealth] " .. self.Entity.Name .. " died (killed by " .. source .. ")")
 		_StageManager:OnEnemyKilled(self.EnemyKind)
 		self.Entity:Destroy()
+	end
+
+	@ExecSpace("Multicast")
+	method void PlayHitEffect()
+		-- 전 클라: 피격 지점(적 중심)에 히트 이펙트 버스트 1회 재생. 서버 TakeDamage가 매 피격 호출.
+		if isvalid(self.Entity) == false then return end
+		local pos = self.Entity.TransformComponent.WorldPosition
+		local center = Vector3(pos.x, pos.y + _GameConstants.EnemyHitEffectYOffset, pos.z)
+		local s = _GameConstants.EnemyHitEffectScale
+		local options = {}
+		options["Alpha"] = 1.0
+		_EffectService:PlayEffect(_GameConstants.EnemyHitEffectClip, self.Entity, center, 0, Vector3(s, s, 1), false, options)
 	end
 
 end

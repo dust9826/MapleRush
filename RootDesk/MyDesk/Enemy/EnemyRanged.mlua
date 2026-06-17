@@ -16,11 +16,30 @@ script EnemyRanged extends Component
 
 	property integer shotIndex = 0
 
+	-- 모션 구동: 모델 기본 SpriteRUID(stand) 캡처 후 상태별 교체.
+	property string standClip = ""
+
+	property string currentClip = ""
+
 	@ExecSpace("ServerOnly")
 	method void OnBeginPlay()
-		-- 조준 사이클 초기화.
+		-- 조준 사이클 초기화 + stand 클립 캡처.
 		self.cyclePhase = "aim"
 		self.cycleTimer = self.AimTime
+		local sprite = self.Entity.SpriteRendererComponent
+		if isvalid(sprite) then self.standClip = sprite.SpriteRUID end
+		self.currentClip = self.standClip
+	end
+
+	@ExecSpace("ServerOnly")
+	method void PlayClip(string ruid)
+		-- SpriteRUID 교체(변경 시에만 — 매 프레임 재set 시 애니 0프레임 정지 방지). @Sync라 클라 자동 반영.
+		if ruid == "" or ruid == self.currentClip then return end
+		local sprite = self.Entity.SpriteRendererComponent
+		if isvalid(sprite) then
+			sprite.SpriteRUID = ruid
+			self.currentClip = ruid
+		end
 	end
 
 	@ExecSpace("ServerOnly")
@@ -31,11 +50,13 @@ script EnemyRanged extends Component
 		if hp ~= nil and hp.IsDead == true then return end
 		if _StageManager:IsGraceActive() then
 			self:StopMove()
+			self:PlayClip(self.standClip)
 			return
 		end
 		-- 섬광탄 기절: 이동·조준·발사 정지
 		if _BattlefieldFx:IsStunActive() then
 			self:StopMove()
+			self:PlayClip(self.standClip)
 			return
 		end
 		local timeScale = _SlowMotion:Scale()
@@ -46,10 +67,12 @@ script EnemyRanged extends Component
 			self.cyclePhase = "aim"
 			self.cycleTimer = self.AimTime
 			self:StopMove()
+			self:PlayClip(self.standClip)
 			return
 		end
 		if player == nil then
 			self:StopMove()
+			self:PlayClip(self.standClip)
 			return
 		end
 		local myPos = self.Entity.TransformComponent.WorldPosition
@@ -68,11 +91,16 @@ script EnemyRanged extends Component
 			self.cyclePhase = "aim"
 			self.cycleTimer = self.AimTime
 			self:StopMove()
+			self:PlayClip(self.standClip)
 			return
 		end
 
-		-- 감지 중: 플레이어 방향 이동 (낭떠러지 정지)
-		self:ChaseToward(playerCenter.x, myCenter.x, timeScale)
+		-- 조준(aim) 중엔 정지 캐스팅, 쿨다운엔 플레이어 방향 이동 (걸으며 캐스팅 방지)
+		if self.cyclePhase == "aim" then
+			self:StopMove()
+		else
+			self:ChaseToward(playerCenter.x, myCenter.x, timeScale)
+		end
 
 		-- 조준/발사 사이클
 		self.cycleTimer -= scaledDelta
@@ -85,6 +113,13 @@ script EnemyRanged extends Component
 				self.cyclePhase = "aim"
 				self.cycleTimer = self.AimTime
 			end
+		end
+
+		-- 모션: 조준(aim, 1s 캐스팅) 단계에 공격 클립 → 발사 직전까지 잘 보임. 쿨다운(발사 후)엔 move로 복귀.
+		if self.cyclePhase == "aim" then
+			self:PlayClip(_GameConstants.RangedAttackClip)
+		else
+			self:PlayClip(_GameConstants.RangedMoveClip)
 		end
 	end
 

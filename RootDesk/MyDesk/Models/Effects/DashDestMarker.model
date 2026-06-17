@@ -1,7 +1,7 @@
 {
   "Id": "",
   "GameId": "",
-  "EntryKey": "model://dashaimpreview",
+  "EntryKey": "model://dashdestmarker",
   "ContentType": "x-mod/model",
   "Content": "",
   "Usage": 0,
@@ -14,9 +14,9 @@
     "Use": "Json",
     "Json": {
       "Version": 1,
-      "Name": "DashAimPreview",
+      "Name": "DashDestMarker",
       "BaseModelId": null,
-      "Id": "dashaimpreview",
+      "Id": "dashdestmarker",
       "Components": [
         "MOD.Core.TransformComponent",
         "MOD.Core.SpriteRendererComponent"
@@ -30,7 +30,7 @@
             "$type": "MODNativeType",
             "type": "System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
           },
-          "Value": "7c72caa09f5d48049539b321969010be"
+          "Value": "548acc99bc8545d3bb4c773006b68c94"
         },
         {
           "TargetType": "MOD.Core.SpriteRendererComponent",
@@ -59,9 +59,9 @@
           },
           "Value": {
             "$type": "MOD.Core.MODVector3, MOD.Core",
-            "x": 0,
-            "y": 0,
-            "z": 0
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
           }
         }
       ],

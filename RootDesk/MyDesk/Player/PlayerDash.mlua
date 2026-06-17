@@ -1,48 +1,53 @@
 @Component
 script PlayerDash extends Component
 
+	-- ========== 공개 상태 (다른 스크립트/HUD가 읽는 계약) ==========
+	-- 현재 대시 충전 수 — HUDController가 표시.
 	property integer DashCount = 2
 
+	-- 최대 대시 충전 수 — OnBeginPlay에서 _GameConstants.BaseMaxDash로 초기화. HUDController가 표시.
 	property integer MaxDash = 2
 
+	-- 대시 이동 중 여부 — PlayerCombat/PlayerItems가 행동 차단 판정에 사용.
 	property boolean IsDashing = false
 
-	-- 슬로우 모션 발동 시 1회 강화 대시 (Phase 2에서 설정)
+	-- 슬로우 모션 발동 시 1회 강화 대시 — SlowMotion이 부여/만료시킴.
 	property boolean EmpoweredReady = false
 
-	property number dashStartTime = -999.0
+	-- ========== 내부 런타임 상태 (인스펙터 비노출) ==========
+	@HideFromInspector property number dashStartTime = -999.0
 
-	property Vector2 dashDir = Vector2(1, 0)
+	@HideFromInspector property Vector2 dashDir = Vector2(1, 0)
 
-	property Vector2 dashStartPos = Vector2(0, 0)
+	@HideFromInspector property Vector2 dashStartPos = Vector2(0, 0)
 
 	-- 이번 대시의 실제 이동 거리 (커서까지 클램프 + 벽 정지 반영)
-	property number dashLen = 5.0
+	@HideFromInspector property number dashLen = 5.0
 
-	property number recoverAnchor = -999.0
+	@HideFromInspector property number recoverAnchor = -999.0
 
-	property boolean prevControllerEnable = true
-
-	property boolean prevKinematicMove = false
+	@HideFromInspector property boolean prevControllerEnable = true
 
 	-- 서버측 대시 무적(i-frame) 종료 시각 (ServerElapsedSeconds 기준)
-	property number InvincibleUntilServer = -999.0
+	@HideFromInspector property number InvincibleUntilServer = -999.0
 
-	property any routerHandler = nil
-
-	-- 대시 잔상 마지막 생성 시각 (_WallClock 실제 시간 기준)
-	property number lastAfterimage = -999.0
+	@HideFromInspector property any routerHandler = nil
 
 	-- 대시 조준 미리보기 상태 (우클릭 누름~해제 동안 표시)
-	property boolean isAiming = false
+	@HideFromInspector property boolean isAiming = false
 
 	-- 미리보기 엔티티(플레이어 자식) 캐시
-	property any previewCache = nil
+	@HideFromInspector property any previewCache = nil
 
+	-- 목적지 마커 엔티티(플레이어 자식) 캐시
+	@HideFromInspector property any markerCache = nil
+
+	-- ========== 생명주기 / 입력 라우팅 ==========
 	@ExecSpace("ClientOnly")
 	method void OnBeginPlay()
 		-- 로컬 플레이어에게만 입력 라우터 구독 + 대시 횟수 초기화.
 		if self.Entity ~= _UserService.LocalPlayer then return end
+		self.MaxDash = _GameConstants.BaseMaxDash
 		self.DashCount = self.MaxDash
 		self.routerHandler = _InputRouter:ConnectEvent(RouterActionEvent, self.OnRouterAction)
 		log("[PlayerDash] OnBeginPlay: router connected, dash=" .. tostring(self.DashCount) .. "/" .. tostring(self.MaxDash))
@@ -67,6 +72,7 @@ script PlayerDash extends Component
 		end
 	end
 
+	-- ========== 조준 미리보기 ==========
 	@ExecSpace("ClientOnly")
 	method void StartAimPreview()
 		-- 우클릭 누름: 조준 시작 + 즉시 1회 갱신.
@@ -83,6 +89,7 @@ script PlayerDash extends Component
 		if preview ~= nil and isvalid(preview) and isvalid(preview.SpriteRendererComponent) then
 			preview.SpriteRendererComponent.Enable = false
 		end
+		self:UpdateMarker(false, 0, 0, 0)
 		log("[PlayerDash] aim preview STOP")
 	end
 
@@ -94,6 +101,34 @@ script PlayerDash extends Component
 		end
 		self.previewCache = self.Entity:GetChildByName(_GameConstants.DashPreviewName, false)
 		return self.previewCache
+	end
+
+	@ExecSpace("ClientOnly")
+	method any GetMarker()
+		-- 플레이어 자식 목적지 마커 엔티티 조회(캐시). 서버 스폰 직후엔 nil일 수 있어 매번 재시도.
+		if self.markerCache ~= nil and isvalid(self.markerCache) then
+			return self.markerCache
+		end
+		self.markerCache = self.Entity:GetChildByName(_GameConstants.DashDestMarkerName, false)
+		return self.markerCache
+	end
+
+	@ExecSpace("ClientOnly")
+	method void UpdateMarker(boolean show, number x, number y, number z)
+		-- 목적지 마커 표시/숨김 + 착지점 위치 갱신.
+		local marker = self:GetMarker()
+		if marker == nil or isvalid(marker) == false then return end
+		local sr = marker.SpriteRendererComponent
+		if isvalid(sr) == false then return end
+		if show == false then
+			sr.Enable = false
+			return
+		end
+		local mtf = marker.TransformComponent
+		mtf.WorldPosition = Vector3(x, y, z)
+		local ms = _GameConstants.DashDestMarkerScale
+		mtf.Scale = Vector3(ms, ms, 1)
+		sr.Enable = true
 	end
 
 	@ExecSpace("ClientOnly")
@@ -122,6 +157,7 @@ script PlayerDash extends Component
 		-- 사용 가능한 대시가 없으면(강화 대시도 아님) 숨김 — 오조준 방지
 		if self.EmpoweredReady == false and self.DashCount <= 0 then
 			sr.Enable = false
+			self:UpdateMarker(false, 0, 0, 0)
 			return
 		end
 		local pos = self.Entity.TransformComponent.WorldPosition
@@ -133,13 +169,16 @@ script PlayerDash extends Component
 		local tf = preview.TransformComponent
 		tf.WorldPosition = Vector3(p2.x + dir.x * half, p2.y + dir.y * half, pos.z)
 		tf.WorldZRotation = math.deg(math.atan(dir.y, dir.x))
-		-- 스프라이트 자연폭 = 사거리(5유닛). 실제 거리에 맞춰 가로 스케일 축소(점선 압축 + 착지 링이 실제 착지점).
-		local sx = L / _GameConstants.DashDistance
+		-- 렌더폭 = 실제 대시거리 L. 가로 스케일 = L / 스프라이트 자연폭. 세로는 고정 두께.
+		local sx = L / _GameConstants.DashPreviewSpriteWidth
 		if sx < 0.001 then sx = 0.001 end
-		tf.Scale = Vector3(sx, 1, 1)
+		tf.Scale = Vector3(sx, _GameConstants.DashPreviewHeightScale, 1)
 		sr.Enable = true
+		-- 목적지 마커: 착지점(시작점 + 방향×실제거리)에 표시
+		self:UpdateMarker(true, p2.x + dir.x * L, p2.y + dir.y * L, pos.z)
 	end
 
+	-- ========== 대시 실행 / 갱신 ==========
 	@ExecSpace("ClientOnly")
 	method void TryDash(Vector2 targetWorldPos)
 		-- 대시 실행: 360° 커서 방향, 거리 5, 0.1s, 이동 중 무적. 강화 대시는 횟수 미소모.
@@ -201,48 +240,10 @@ script PlayerDash extends Component
 			local d = self.dashLen * t
 			local p = Vector2(self.dashStartPos.x + self.dashDir.x * d, self.dashStartPos.y + self.dashDir.y * d)
 			self.Entity.MovementComponent:SetWorldPosition(p)
-			-- 잔상: 실제 시간 간격마다 현재 위치에 반투명 모션 이펙트 1회 재생
-			if _WallClock:Elapsed(self.lastAfterimage) >= _GameConstants.DashAfterimageInterval then
-				self.lastAfterimage = _WallClock:Now()
-				self:SpawnAfterimage()
-			end
 			if t >= 1 then
 				self:EndDash()
 			end
 		end
-	end
-
-	@ExecSpace("ClientOnly")
-	method void StartDashFx()
-		-- 대시 연출 시작: 아바타 반투명 고스트(모션블러 느낌) + 잔상 타이머 리셋 후 첫 잔상 1개.
-		-- (MotionBlur 셰이더는 AvatarRenderer 비호환 LWA-3009 → SetAlpha 고스트로 대체)
-		local av = self.Entity.AvatarRendererComponent
-		if isvalid(av) then
-			av:SetAlpha(_GameConstants.DashGhostAlpha)
-		else
-			log("[PlayerDash] no AvatarRendererComponent on player (ghost skipped)")
-		end
-		self.lastAfterimage = _WallClock:Now()
-		self:SpawnAfterimage()
-	end
-
-	@ExecSpace("ClientOnly")
-	method void StopDashFx()
-		-- 대시 연출 종료: 아바타 알파 1.0 복원.
-		local av = self.Entity.AvatarRendererComponent
-		if isvalid(av) then
-			av:SetAlpha(1.0)
-		end
-	end
-
-	@ExecSpace("ClientOnly")
-	method void SpawnAfterimage()
-		-- 대시 잔상 1개: 현재 월드 위치에 반투명 모션 스트릭 이펙트를 진행 방향으로 1회 재생(자동 소멸).
-		local pos = self.Entity.TransformComponent.WorldPosition
-		local options = {}
-		options["Alpha"] = _GameConstants.DashAfterimageAlpha
-		options["FlipX"] = self.dashDir.x > 0
-		_EffectService:PlayEffect(_GameConstants.DashAfterimageClip, self.Entity, pos, 0, Vector3.one, false, options)
 	end
 
 	@ExecSpace("ClientOnly")
@@ -255,13 +256,60 @@ script PlayerDash extends Component
 		log("[PlayerDash] dash end at (" .. string.format("%.2f", pos.x) .. "," .. string.format("%.2f", pos.y) .. ")")
 	end
 
+	-- ========== 연출(FX) ==========
+	@ExecSpace("ClientOnly")
+	method void StartDashFx()
+		-- 대시 연출 시작: 아바타 반투명 고스트(모션블러 느낌) + 대시 이펙트(쉐도우 어썰트) 1회.
+		-- (MotionBlur 셰이더는 AvatarRenderer 비호환 LWA-3009 → SetAlpha 고스트로 대체)
+		local av = self.Entity.AvatarRendererComponent
+		if isvalid(av) then
+			av:SetAlpha(_GameConstants.DashGhostAlpha)
+		else
+			log("[PlayerDash] no AvatarRendererComponent on player (ghost skipped)")
+		end
+		self:PlayDashEffect()
+	end
+
+	@ExecSpace("ClientOnly")
+	method void StopDashFx()
+		-- 대시 연출 종료: 아바타 알파 1.0 복원.
+		local av = self.Entity.AvatarRendererComponent
+		if isvalid(av) then
+			av:SetAlpha(1.0)
+		end
+	end
+
+	@ExecSpace("ClientOnly")
+	method void PlayDashEffect()
+		-- 대시 이펙트(쉐도우 어썰트) 1회: 대시 시작 위치(중심 높이)에 진행 방향으로 회전 재생(맵 앵커, 자동 소멸).
+		-- 에셋은 기본 좌향 + 상하 구분 → 좌우는 FlipX로, 회전은 ±90°로 제한해 상하 뒤집힘 방지.
+		local pos = self.Entity.TransformComponent.WorldPosition
+		local center = Vector3(pos.x, pos.y + _GameConstants.PlayerCenterYOffset, pos.z)
+		local s = _GameConstants.DashEffectScale
+		local dir = self.dashDir
+		local flipX = dir.x > 0
+		local rot = 0.0
+		if flipX then
+			-- 오른쪽 반구: +X 기준 각도 (-90~90)
+			rot = math.deg(math.atan(dir.y, dir.x))
+		else
+			-- 왼쪽 반구: -X 기준 각도 (-90~90)
+			rot = math.deg(math.atan(-dir.y, -dir.x))
+		end
+		local options = {}
+		options["Alpha"] = _GameConstants.DashEffectAlpha
+		options["FlipX"] = flipX
+		_EffectService:PlayEffect(_GameConstants.DashEffectClip, self.Entity, center, rot, Vector3(s, s, 1), false, options)
+	end
+
+	-- ========== 서버 권위: 무적 / 경로 데미지 / 슬로우 트리거 ==========
 	@ExecSpace("Server")
 	method void ServerDashStarted(number startX, number startY, number dirX, number dirY, boolean empowered, number dashLen)
 		-- 서버: 대시 무적 윈도우 기록 + 슬로우 트리거 판정 + 경로 데미지 적용 (일반 ATK×50% / 강화 ATK×150%).
 		self.InvincibleUntilServer = _UtilLogic.ServerElapsedSeconds + _GameConstants.DashDuration
 		-- 슬로우 모션 트리거: 대시 시작 지점 반지름 1 내 적 공격/투사체 존재 시 발동
 		if empowered == false then
-			local dashStart = Vector2(startX, startY + 0.5)
+			local dashStart = Vector2(startX, startY + _GameConstants.PlayerCenterYOffset)
 			if _CombatPrimitives:AnyThreatNear(self.Entity.CurrentMap, dashStart, _GameConstants.RadiusSlowTrigger) then
 				_SlowMotion:Activate(self.Entity)
 			end
@@ -276,7 +324,7 @@ script PlayerDash extends Component
 		local pathStart = Vector2(startX, startY)
 		local pathEnd = Vector2(startX + dirX * dashLen, startY + dirY * dashLen)
 		local hitCount = _CombatPrimitives:DamageEnemiesAlongPath(
-			self.Entity.CurrentMap, pathStart, pathEnd, 0.5, damage, source)
+			self.Entity.CurrentMap, pathStart, pathEnd, _GameConstants.DashPathRadius, damage, source)
 		log("[PlayerDash] server dash resolved: hit=" .. tostring(hitCount) .. " dmg=" .. tostring(damage) .. " empowered=" .. tostring(empowered))
 	end
 

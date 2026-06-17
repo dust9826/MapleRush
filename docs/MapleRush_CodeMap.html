@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MapleRush 코드 맵 — 어디를 봐야 하는가</title>
+<style>
+  :root{
+    --bg:#0f1117; --panel:#171a23; --panel2:#1d2130; --border:#2a2f40;
+    --txt:#d7dbe6; --muted:#8b93a7; --accent:#6db1ff; --accent2:#ffcf6d;
+    --logic:#7c5cff; --comp:#2bb673; --event:#ff7ab6; --srv:#ff8a5c; --cli:#5cc8ff;
+    --warn:#ff6b6b; --code:#11141c;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:"Segoe UI",-apple-system,"Malgun Gothic",sans-serif;line-height:1.65;font-size:15px}
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+  .layout{display:flex;max-width:1500px;margin:0 auto}
+  /* sidebar */
+  nav.toc{position:sticky;top:0;align-self:flex-start;width:280px;height:100vh;
+    overflow-y:auto;padding:24px 18px;background:var(--panel);border-right:1px solid var(--border);font-size:13.5px}
+  nav.toc h2{font-size:13px;color:var(--accent2);text-transform:uppercase;letter-spacing:1px;margin:18px 0 8px}
+  nav.toc h2:first-child{margin-top:0}
+  nav.toc a{display:block;color:var(--muted);padding:3px 8px;border-radius:6px}
+  nav.toc a:hover{background:var(--panel2);color:var(--txt);text-decoration:none}
+  /* main */
+  main{flex:1;padding:36px 48px;min-width:0}
+  h1{font-size:30px;margin:0 0 6px;color:#fff}
+  .sub{color:var(--muted);margin-bottom:28px}
+  h2.sec{font-size:23px;margin:46px 0 14px;padding-bottom:8px;border-bottom:2px solid var(--border);color:#fff}
+  h3{font-size:18px;margin:28px 0 10px;color:var(--accent)}
+  p{margin:10px 0}
+  code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"Cascadia Code",Consolas,monospace;font-size:13px;color:#e6c07b}
+  pre{background:var(--code);border:1px solid var(--border);border-radius:10px;padding:16px;overflow-x:auto;font-size:13px;line-height:1.5}
+  pre code{background:none;padding:0;color:#c8d0e0}
+  table{border-collapse:collapse;width:100%;margin:14px 0;font-size:14px}
+  th,td{border:1px solid var(--border);padding:9px 12px;text-align:left;vertical-align:top}
+  th{background:var(--panel2);color:var(--accent2);font-weight:600}
+  tr:nth-child(even) td{background:rgba(255,255,255,.015)}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:18px 22px;margin:16px 0}
+  .badge{display:inline-block;font-size:11px;font-weight:700;padding:1px 8px;border-radius:20px;color:#0f1117;margin-right:5px;vertical-align:middle}
+  .b-logic{background:var(--logic);color:#fff}.b-comp{background:var(--comp)}.b-event{background:var(--event)}
+  .b-srv{background:var(--srv)}.b-cli{background:var(--cli)}
+  .pill{display:inline-block;font-size:11.5px;padding:1px 7px;border:1px solid var(--border);border-radius:6px;color:var(--muted);margin:2px 3px 2px 0;background:var(--panel2)}
+  .warn{border-left:4px solid var(--warn);background:rgba(255,107,107,.07);padding:12px 16px;border-radius:0 8px 8px 0;margin:14px 0}
+  .tip{border-left:4px solid var(--accent);background:rgba(109,177,255,.07);padding:12px 16px;border-radius:0 8px 8px 0;margin:14px 0}
+  .flow{font-family:"Cascadia Code",Consolas,monospace;font-size:13px;white-space:pre;background:var(--code);border:1px solid var(--border);border-radius:10px;padding:18px;overflow-x:auto;color:#c8d0e0}
+  .fname{color:var(--accent2);font-weight:600;font-family:"Cascadia Code",Consolas,monospace}
+  .legend{display:flex;gap:18px;flex-wrap:wrap;font-size:13px;color:var(--muted);margin:10px 0 0}
+  .k{color:#e06c75}.s{color:#98c379}.c{color:#5c6370;font-style:italic}.fn{color:#61afef}
+  hr{border:none;border-top:1px solid var(--border);margin:30px 0}
+  .small{font-size:13px;color:var(--muted)}
+  .anchor{scroll-margin-top:20px}
+</style>
+</head>
+<body>
+<div class="layout">
+
+<nav class="toc">
+  <h2>시작</h2>
+  <a href="#overview">0. 한눈에 보기</a>
+  <a href="#authority">1. 서버/클라 권위 모델</a>
+  <a href="#tree">2. 파일 트리 & 도메인</a>
+  <h2>기능 → 코드</h2>
+  <a href="#reverse">3. "어디를 봐야 하나" 역인덱스</a>
+  <h2>흐름</h2>
+  <a href="#flow-boot">4. 부팅 & 컴포넌트 부착</a>
+  <a href="#flow-input">5. 입력 파이프라인</a>
+  <a href="#flow-loop">6. 게임 루프 (층/스테이지)</a>
+  <a href="#flow-combat">7. 전투 판정 파이프라인</a>
+  <h2>도메인 상세</h2>
+  <a href="#d-core">8. Core (인프라)</a>
+  <a href="#d-player">9. Player</a>
+  <a href="#d-enemy">10. Enemy / Boss</a>
+  <a href="#d-stage">11. Stage / Meta / Shop</a>
+  <a href="#d-ui">12. UI</a>
+  <h2>참고</h2>
+  <a href="#patterns">13. 반복되는 패턴</a>
+  <a href="#pitfalls">14. 주의점 & 보류 항목</a>
+</nav>
+
+<main>
+  <h1>MapleRush 코드 맵</h1>
+  <div class="sub">MSW 로그라이트 (map01 = MapleTile 사이드뷰) · 전체 34개 <code>.mlua</code> 기준 · "무엇을 고치려면 어디를 봐야 하는가"에 초점</div>
+
+  <div class="legend">
+    <span><span class="badge b-logic">@Logic</span> 월드 싱글톤(맵 전환 생존)</span>
+    <span><span class="badge b-comp">@Component</span> 엔티티 부착(액터 수명)</span>
+    <span><span class="badge b-event">@Event</span> 이벤트 타입</span>
+    <span><span class="badge b-srv">SERVER</span> 권위/판정</span>
+    <span><span class="badge b-cli">CLIENT</span> 입력/연출/UI</span>
+  </div>
+
+  <!-- ============ 0 ============ -->
+  <h2 class="sec anchor" id="overview">0. 한눈에 보기</h2>
+  <div class="card">
+    <p><b>장르</b>: 1인 1런 로그라이트. 한 맵(<code>/maps/map01</code>, 사이드뷰+풋홀드)에서 <b>스테이지를 갈아끼우는</b> 방식 — 새 맵으로 이동하지 않고 적/투사체를 비우고 재스폰한다(<span class="fname">StageManager.ResetStage</span>).</p>
+    <p><b>핵심 루프</b>: 테마 선택 → 노드(일반 N회) → 상점 → 보스 → 다음 층 → … → 전층 클리어. 클리어 시 영구 강화 점수 적립(<span class="fname">MetaProgression</span>).</p>
+    <p><b>전투 한 줄 요약</b>: 좌클릭=평타, 우클릭=대시(조준→실행), 휠클릭=능력, 1/2/3=아이템. <b>플레이어는 1피격 즉사</b>, 적은 HP제. 대시 시작 시 근처에 적 위협이 있으면 <b>슬로우모션 + 강화대시 1회</b> 보상.</p>
+  </div>
+  <table>
+    <tr><th>축</th><th>구성요소</th><th>대표 파일</th></tr>
+    <tr><td>인프라(Core)</td><td>입력 라우팅 · 시계 · 상수 · 전투 판정 유틸</td><td>InputRouter, WallClock, GameConstants, CombatPrimitives</td></tr>
+    <tr><td>플레이어(Player)</td><td>부착 6컴포넌트 + 부트스트랩 + 슬로우모션</td><td>PlayerBootstrap, PlayerCombat/Dash/Hit/Ability/Items, SlowMotion</td></tr>
+    <tr><td>적(Enemy)</td><td>HP · 근접/원거리 AI · 투사체 · 보스(패턴+그로기)</td><td>EnemyHealth, EnemyMelee, EnemyRanged, Projectile, BossController, GroggyGauge</td></tr>
+    <tr><td>진행(Stage)</td><td>스테이지/층 상태 머신 · 런 상태 · 보상 · 전장효과</td><td>StageManager, FloorManager, GameStateManager, RewardManager, BattlefieldFx</td></tr>
+    <tr><td>메타/경제</td><td>영구강화 저장 · 상점</td><td>MetaProgression, ShopManager</td></tr>
+    <tr><td>UI</td><td>HUD + 6개 팝업 컨트롤러 + 공용 토스트/팝업</td><td>HUDController, *Controller, UIToast, UIPopup</td></tr>
+  </table>
+
+  <!-- ============ 1 ============ -->
+  <h2 class="sec anchor" id="authority">1. 서버 / 클라 권위 모델 (가장 먼저 이해할 것)</h2>
+  <p>이 코드를 읽을 때 <b>"이 메서드는 어느 쪽에서 도느냐"</b>가 전부다. <code>@ExecSpace</code>로 강제된다.</p>
+  <table>
+    <tr><th>@ExecSpace</th><th>의미</th><th>이 프로젝트에서 담당</th></tr>
+    <tr><td><span class="badge b-cli">ClientOnly</span></td><td>클라에서만</td><td>입력 감지, 연출(이펙트/고스트/타임스케일), HUD/팝업 갱신</td></tr>
+    <tr><td><span class="badge b-srv">ServerOnly</span></td><td>서버에서만</td><td>데미지/명중/무적/죽음/스폰/저장 — 모든 <b>권위 판정</b></td></tr>
+    <tr><td><b>Server</b></td><td>클라가 부르면 서버로 RPC</td><td><code>RequestXxx</code> — 클라 입력을 서버 판정으로 넘기는 관문</td></tr>
+    <tr><td><b>Client</b></td><td>서버가 부르면 특정 클라로 RPC</td><td><code>ClientShowXxx</code> — 서버 결과를 한 유저 화면에 반영</td></tr>
+    <tr><td><b>Multicast</b></td><td>전 클라 동시</td><td><span class="fname">EnemyHealth.PlayHitEffect</span> (모두에게 피격 이펙트)</td></tr>
+  </table>
+  <div class="tip"><b>읽기 요령</b>: 의심나는 동작은 <code>RequestXxx</code>(클라→서버) / <code>ClientShowXxx</code>(서버→클라) 이름만 따라가면 클라-서버 왕복을 추적할 수 있다. 데미지 숫자가 이상하면 <b>무조건 서버 메서드</b>(<span class="fname">CombatPrimitives</span>, <code>RequestAttack</code>, <code>ServerDashStarted</code>)부터 본다.</p></div>
+
+  <!-- ============ 2 ============ -->
+  <h2 class="sec anchor" id="tree">2. 파일 트리 & 도메인</h2>
+  <pre><code>RootDesk/MyDesk/
+├─ Core/            <span class="c">— 전역 인프라 (모두 @Logic / @Event)</span>
+│   ├─ InputRouter.mlua        <span class="c">원시입력→액션 이벤트 허브 (클라)</span>
+│   ├─ RouterActionEvent.mlua  <span class="c">@Event: action/worldPos/context</span>
+│   ├─ WallClock.mlua          <span class="c">실제·서버 시간 래퍼 (타임스케일 무관)</span>
+│   ├─ GameConstants.mlua      <span class="c">모든 튜닝값·RUID·머티리얼명 중앙집중</span>
+│   └─ CombatPrimitives.mlua   <span class="c">서버 권위 판정 라이브러리(범위/패링/레이캐스트)</span>
+├─ Player/          <span class="c">— 런타임 부착 컴포넌트 + 부트스트랩</span>
+│   ├─ PlayerBootstrap.mlua    <span class="badge b-logic">@Logic</span> <span class="c">입장 시 6컴포넌트 부착·미리보기 스폰</span>
+│   ├─ PlayerInputSetup.mlua   <span class="c">WASD 키 매핑</span>
+│   ├─ PlayerCombat.mlua       <span class="c">좌클릭 평타 + 자동 패링</span>
+│   ├─ PlayerDash.mlua         <span class="c">★ 대시(조준/실행/무적/슬로우트리거) — 가장 복잡</span>
+│   ├─ PlayerHit.mlua          <span class="c">1피격 즉사 중앙처리</span>
+│   ├─ PlayerAbility.mlua      <span class="c">휠클릭 능력(무적/투사체제거)</span>
+│   ├─ PlayerItems.mlua        <span class="c">3슬롯 아이템(짱돌/연막/섬광)</span>
+│   └─ SlowMotion.mlua         <span class="badge b-logic">@Logic</span> <span class="c">서버 감속+클라 타임스케일/흑백</span>
+├─ Enemy/
+│   ├─ EnemyHealth.mlua        <span class="c">HP·데미지·사망·피격이펙트 (모든 적 공통)</span>
+│   ├─ EnemyMelee.mlua         <span class="c">근접 AI: 감지→추격→텔레그래프 공격</span>
+│   ├─ EnemyRanged.mlua        <span class="c">원거리 AI: 정지캐스팅→발사</span>
+│   ├─ Projectile.mlua         <span class="c">직선 투사체 + 반사(패링) 전환</span>
+│   └─ Boss/
+│       ├─ BossController.mlua <span class="c">패턴 풀(slam/tripleShot/redSmash)</span>
+│       └─ GroggyGauge.mlua    <span class="c">그로기 게이지(충전/감소/3초 그로기)</span>
+├─ Stage/
+│   ├─ StageManager.mlua       <span class="badge b-logic">@Logic</span> <span class="c">★ 스테이지 생사 머신·스폰·클리어·사망</span>
+│   ├─ FloorManager.mlua       <span class="badge b-logic">@Logic</span> <span class="c">★ 층 진행 머신(테마→노드→상점→보스)</span>
+│   ├─ GameStateManager.mlua   <span class="badge b-logic">@Logic</span> <span class="c">런 상태(메소/목숨/공격력) @Sync</span>
+│   ├─ RewardManager.mlua      <span class="badge b-logic">@Logic</span> <span class="c">보상 롤 + 수령</span>
+│   └─ BattlefieldFx.mlua      <span class="badge b-logic">@Logic</span> <span class="c">연막/섬광 서버 효과 상태</span>
+├─ Meta/MetaProgression.mlua   <span class="badge b-logic">@Logic</span> <span class="c">영구강화 점수 DataStorage 영속</span>
+├─ Shop/ShopManager.mlua       <span class="badge b-logic">@Logic</span> <span class="c">가격(2배 인상) + 구매 RPC</span>
+└─ UI/
+    ├─ HUDController.mlua       <span class="c">목숨/대시/메소/능력/아이템/보스 HP 폴링</span>
+    ├─ RewardController.mlua    <span class="c">보상 팝업</span>
+    ├─ ShopController.mlua      <span class="c">상점 팝업</span>
+    ├─ ThemeSelectController.mlua / NodeSelectController.mlua
+    ├─ GameOverController.mlua / GameClearController.mlua
+    └─ (루트) UIToast.mlua / UIPopup.mlua  <span class="c">공용 토스트·확인팝업(@Logic)</span></code></pre>
+  <p class="small">★ 표시 = 시스템 허브. 동작이 꼬이면 십중팔구 이 파일들이 원인이거나 진입점.</p>
+
+  <!-- ============ 3 ============ -->
+  <h2 class="sec anchor" id="reverse">3. "어디를 봐야 하나" — 기능 → 코드 역인덱스</h2>
+  <p>고치고 싶은 동작에서 출발해 파일·메서드로 바로 점프하는 표. <b>이 문서의 핵심.</b></p>
+
+  <h3>전투 / 플레이어 행동</h3>
+  <table>
+    <tr><th>이걸 바꾸고 싶다</th><th>여기를 본다 (파일 · 메서드)</th></tr>
+    <tr><td>평타 데미지·범위·쿨타임</td><td><span class="fname">PlayerCombat</span> <code>TryAttack</code>/<code>RequestAttack</code> + <span class="fname">GameConstants</span> <code>DmgAttackPct</code>/<code>RadiusAttack</code>/<code>AttackCooldown</code></td></tr>
+    <tr><td>평타 자동 패링(무효화/반사)</td><td><span class="fname">CombatPrimitives</span> <code>TryParry</code> · <span class="fname">GameConstants</span> <code>DmgReflectPct</code></td></tr>
+    <tr><td>평타 이펙트 회전/크기</td><td><span class="fname">PlayerCombat</span> <code>PlayAttackEffect</code> + <code>AttackEffectClip/Scale/Alpha</code></td></tr>
+    <tr><td>대시 거리/시간/충전수/회복</td><td><span class="fname">PlayerDash</span> <code>TryDash</code>/<code>OnUpdate</code> + <code>DashDistance</code>/<code>DashDuration</code>/<code>BaseMaxDash</code>/<code>BaseDashRecoverTime</code></td></tr>
+    <tr><td>대시 벽 정지 / 사거리 클램프</td><td><span class="fname">PlayerDash</span> <code>ComputeDashLength</code> → <span class="fname">CombatPrimitives</span> <code>RaycastWallDistance</code></td></tr>
+    <tr><td>대시 조준 미리보기/목적지 마커</td><td><span class="fname">PlayerDash</span> <code>UpdateAimPreview</code>/<code>UpdateMarker</code> + <code>DashPreview*</code>/<code>DashDestMarker*</code> 상수 · 스폰은 <span class="fname">PlayerBootstrap</span> <code>EnsureDashPreview</code></td></tr>
+    <tr><td>대시 경로 데미지(일반/강화)</td><td><span class="fname">PlayerDash</span> <code>ServerDashStarted</code> → <code>DamageEnemiesAlongPath</code> · <code>DmgDashPct</code>/<code>DmgEmpoweredDashPct</code></td></tr>
+    <tr><td>대시 연출(고스트/쉐도우어썰트)</td><td><span class="fname">PlayerDash</span> <code>StartDashFx</code>/<code>PlayDashEffect</code> + <code>DashEffectClip</code>/<code>DashGhostAlpha</code></td></tr>
+    <tr><td>대시 무적(i-frame) 판정</td><td><span class="fname">PlayerDash</span> <code>ServerDashStarted</code>(기록)·<code>IsInvincibleNow</code> ← <span class="fname">PlayerHit</span>이 호출</td></tr>
+    <tr><td>슬로우모션 발동 조건/배율/지속</td><td><span class="fname">SlowMotion</span> <code>Activate</code> + <span class="fname">CombatPrimitives</span> <code>AnyThreatNear</code> · <code>SlowScale</code>/<code>SlowDuration</code>/<code>RadiusSlowTrigger</code></td></tr>
+    <tr><td>강화 대시 부여/소멸</td><td><span class="fname">SlowMotion</span> <code>ClientSlowStart</code>(부여)/<code>ClientSlowEnd</code>(소멸) ↔ <span class="fname">PlayerDash</span> <code>EmpoweredReady</code></td></tr>
+    <tr><td>플레이어 피격/죽음 규칙</td><td><span class="fname">PlayerHit</span> <code>RequestHit</code> → <span class="fname">StageManager</span> <code>OnPlayerDeath</code></td></tr>
+    <tr><td>능력(무적/투사체제거) 효과</td><td><span class="fname">PlayerAbility</span> <code>RequestUseAbility</code> · 무적판정 <code>IsAbilityInvincible</code></td></tr>
+    <tr><td>아이템(짱돌/연막/섬광) 효과</td><td><span class="fname">PlayerItems</span> <code>RequestUseItem</code> (연막/섬광은 <span class="fname">BattlefieldFx</span>로 위임)</td></tr>
+    <tr><td>WASD/키 매핑</td><td><span class="fname">PlayerInputSetup</span> · 클릭/키 분기는 <span class="fname">InputRouter</span> <code>OnKeyDown</code>/<code>OnScreenTouch</code></td></tr>
+  </table>
+
+  <h3>적 / 보스</h3>
+  <table>
+    <tr><th>이걸 바꾸고 싶다</th><th>여기를 본다</th></tr>
+    <tr><td>적 HP / 사망 처리 / 피격 이펙트</td><td><span class="fname">EnemyHealth</span> <code>TakeDamage</code>/<code>Die</code>/<code>PlayHitEffect</code> · <code>MeleeEnemyHP</code>/<code>RangedEnemyHP</code>/<code>BossHP</code></td></tr>
+    <tr><td>근접 적 감지/추격/공격 타이밍</td><td><span class="fname">EnemyMelee</span> <code>OnUpdate</code> · <code>DetectRadius</code>/<code>AttackRadius</code>/<code>WindupTime</code>/<code>AttackCooldown</code></td></tr>
+    <tr><td>원거리 적 조준/발사 사이클</td><td><span class="fname">EnemyRanged</span> <code>OnUpdate</code>/<code>Fire</code> · <code>AimTime</code>/<code>FireCooldown</code></td></tr>
+    <tr><td>적 애니메이션(stand/move/attack)</td><td>각 AI의 <code>PlayClip</code> (SpriteRUID 교체) + <code>MeleeMove/AttackClip</code>·<code>RangedMove/AttackClip</code></td></tr>
+    <tr><td>적 낭떠러지 정지 로직</td><td>각 AI <code>ChaseToward</code> (전방 하향 Raycast)</td></tr>
+    <tr><td>투사체 속도/충돌/맵경계/반사</td><td><span class="fname">Projectile</span> <code>OnUpdate</code>/<code>Reflect</code> · <code>ProjectileSpeed</code> <span class="warn" style="display:inline;padding:1px 6px">맵경계 -12/14/-6/8 하드코딩(map01 전용)</span></td></tr>
+    <tr><td>보스 패턴(종류/윈드업/판정)</td><td><span class="fname">BossController</span> <code>StartPattern</code>/<code>ResolvePattern</code></td></tr>
+    <tr><td>보스 그로기(충전/감소/지속)</td><td><span class="fname">GroggyGauge</span> <code>Charge</code>/<code>OnUpdate</code> · <code>GroggyGaugeRatio</code>/<code>GroggyDuration</code>/<code>GroggyDecayPerSec</code></td></tr>
+    <tr><td class="small" style="color:var(--warn)">보스 공격 애니메이션(미구현)</td><td>현재 없음 — 근/원거리처럼 <code>PlayClip</code> 패턴 추가 필요(보류 항목)</td></tr>
+  </table>
+
+  <h3>진행 / 경제 / 메타</h3>
+  <table>
+    <tr><th>이걸 바꾸고 싶다</th><th>여기를 본다</th></tr>
+    <tr><td>스테이지 적 구성/스폰 위치</td><td><span class="fname">StageManager</span> <code>RollComposition</code>/<code>ResetStage</code></td></tr>
+    <tr><td>스테이지 클리어 판정·메소 지급</td><td><span class="fname">StageManager</span> <code>OnEnemyKilled</code>/<code>StageClear</code></td></tr>
+    <tr><td>층 진행 순서(테마→노드→상점→보스)</td><td><span class="fname">FloorManager</span> <code>NextNode</code>/<code>OnStageRewardDone</code></td></tr>
+    <tr><td>층 수·일반 스테이지 횟수</td><td><span class="fname">GameConstants</span> <code>MaxFloors</code>/<code>NormalStagesForFloor</code></td></tr>
+    <tr><td>런 상태(메소/목숨/공격력) 초기화</td><td><span class="fname">GameStateManager</span> <code>StartRun</code>/<code>RefillLives</code></td></tr>
+    <tr><td>보상 등장 확률·수령 효과</td><td><span class="fname">RewardManager</span> <code>RollRewards</code>/<code>Claim*Reward</code> · <code>Reward*Chance</code></td></tr>
+    <tr><td>상점 가격·구매 효과</td><td><span class="fname">ShopManager</span> <code>RequestBuy*</code> · <code>Price*</code></td></tr>
+    <tr><td>영구 강화 보너스/저장</td><td><span class="fname">MetaProgression</span> <code>GetBonusLives/Attack</code>·<code>AwardScore</code>(DataStorage)</td></tr>
+    <tr><td>연막/섬광 지속·보스 면역</td><td><span class="fname">BattlefieldFx</span> <code>ActivateSmoke</code>/<code>ActivateStun</code> · <code>Smoke/FlashStunDuration</code></td></tr>
+  </table>
+
+  <h3>UI</h3>
+  <table>
+    <tr><th>이걸 바꾸고 싶다</th><th>여기를 본다</th></tr>
+    <tr><td>HUD 표기(목숨/대시/메소/능력/아이템/보스)</td><td><span class="fname">HUDController</span> <code>OnUpdate</code>/<code>UpdateBossText</code>/<code>ItemLabel</code></td></tr>
+    <tr><td>보상/상점/테마/노드/게임오버/클리어 팝업</td><td>각 <span class="fname">*Controller</span> <code>Open</code>/<code>On*Click</code> (UUID 바인딩은 상단 property)</td></tr>
+    <tr><td>공용 확인 팝업 / 토스트</td><td><span class="fname">UIPopup</span> <code>Open</code> / <span class="fname">UIToast</span> <code>ShowMessage</code></td></tr>
+    <tr><td>UI ↔ 서버 등록 연결</td><td>각 컨트롤러 <code>OnBeginPlay</code>에서 <code>_StageManager.rewardUI=self</code> 식으로 자기등록</td></tr>
+  </table>
+  <div class="warn"><b>UI 수정 시</b>: <code>.ui</code> 파일 편집은 반드시 <code>msw-ui-system</code> 스킬의 <b>UIBuilder</b>를 통해야 한다(raw JSON 직접 편집 금지). 위 컨트롤러의 property에 박힌 UUID는 <code>.ui</code> 노드와 연결된 바인딩이다.</div>
+
+  <!-- ============ 4 ============ -->
+  <h2 class="sec anchor" id="flow-boot">4. 부팅 & 컴포넌트 부착</h2>
+  <div class="flow">유저 입장 <span class="c">(UserEnterEvent)</span>
+  └─ <span class="fn">PlayerBootstrap.HandleUserEnter</span> <span class="badge b-srv">SERVER</span>
+       ├─ MetaProgression.LoadFor(userId)         <span class="c">// 영구강화 로드</span>
+       ├─ AttachCombatComponents(player)
+       │    └─ AddComponent × 6                    <span class="c">// Combat/Dash/InputSetup/Hit/Ability/Items</span>
+       ├─ EnsureDashPreview(player)                <span class="c">// 조준선 + 목적지 마커 자식 스폰(1회)</span>
+       └─ StageManager.OnPlayerReady(player)
+            └─ GameStateManager.StartRun() + ShopManager.ResetPrices() + FloorManager.StartGameFlow()</div>
+  <div class="tip"><b>왜 런타임 부착?</b> 플레이어 본체는 <code>Global/DefaultPlayer.model</code>(읽기 전용)이라 전투 컴포넌트를 모델에 넣을 수 없다. 그래서 입장 시 <code>AddComponent</code>로 붙인다. → 새 플레이어 능력 추가 시 <span class="fname">PlayerBootstrap.AttachCombatComponents</span>에 한 줄 추가하는 패턴.</div>
+
+  <!-- ============ 5 ============ -->
+  <h2 class="sec anchor" id="flow-input">5. 입력 파이프라인</h2>
+  <p>모든 입력은 <span class="fname">InputRouter</span>(@Logic, 클라) 하나를 거쳐 <span class="fname">RouterActionEvent</span>(action 문자열)로 방송된다. 각 플레이어 컴포넌트는 <b>로컬 플레이어일 때만</b> 구독.</p>
+  <table>
+    <tr><th>원시 입력</th><th>액션</th><th>구독자 · 동작</th></tr>
+    <tr><td>좌클릭/터치</td><td><code>primary</code></td><td>PlayerCombat 평타 / PlayerItems 활성 슬롯 사용(평타보다 우선)</td></tr>
+    <tr><td>우클릭 누름 → 해제</td><td><code>dashAim</code> → <code>dashExec</code></td><td>PlayerDash 조준 시작 → 대시 실행</td></tr>
+    <tr><td>휠클릭 (Mouse2)</td><td><code>ability</code></td><td>PlayerAbility 사용</td></tr>
+    <tr><td>숫자키 1/2/3</td><td><code>item1/2/3</code></td><td>PlayerItems 슬롯 토글</td></tr>
+    <tr><td><b>G키</b></td><td><code>debugSlow</code></td><td><span class="warn" style="display:inline;padding:1px 6px">PlayerCombat → 슬로우 강제발동 (테스트용, 출시 제거)</span></td></tr>
+    <tr><td>WASD</td><td>—</td><td>PlayerInputSetup이 화살표 액션 복사 → MovementComponent 기본 처리</td></tr>
+  </table>
+  <div class="tip"><b>컨텍스트 게이팅</b>: <code>InputRouter.CurrentContext</code>가 <code>"Combat"</code>일 때만 액션 발행. 상점/보상/팝업/게임오버에서는 입력 차단. 새 화면 만들면 <code>SetContext</code> 호출 잊지 말 것.</div>
+
+  <!-- ============ 6 ============ -->
+  <h2 class="sec anchor" id="flow-loop">6. 게임 루프 (층 / 스테이지 상태 머신)</h2>
+  <p>두 매니저가 짝을 이룬다: <span class="fname">FloorManager</span>(<b>무엇을 할지</b> — 테마/노드/상점/보스 분기) ↔ <span class="fname">StageManager</span>(<b>전투 한 판</b> — 스폰/클리어/사망).</p>
+  <div class="flow"><span class="fn">FloorManager.StartGameFlow</span>
+  → ShowThemeSelect → [테마 팝업] → RequestSelectTheme
+  → <span class="fn">NextNode</span> ──┬─ 일반 N회 미만? → [노드 팝업] → RequestSelectNode → <span class="fn">StageManager.StartStage("normal")</span>
+                 ├─ 상점 미완료? → StartStage("shop") + [상점 팝업] → RequestLeaveShop
+                 └─ 그 외       → StartStage("boss")
+
+<span class="fn">StageManager.StartStage</span> → RollComposition → <span class="fn">ResetStage</span> <span class="c">(적 비우고 재스폰 + 1.5s 진입유예)</span>
+  → 전투 → 적 전멸 시 <span class="fn">OnEnemyKilled</span> → <span class="fn">StageClear</span> (메소+보상롤) → [보상 팝업]
+  → RequestProceedNext → <span class="fn">FloorManager.OnStageRewardDone</span>
+       └─ boss 클리어 & 마지막 층? → GameClear → MetaProgression.AwardScore
+          boss 클리어 & 더 있음?  → CurrentFloor++ → ShowThemeSelect
+          normal 클리어?          → NormalsCleared++ → NextNode
+
+플레이어 사망: <span class="fn">PlayerHit.RequestHit</span> → <span class="fn">StageManager.OnPlayerDeath</span>
+       └─ 목숨>0 → 목숨-- + ResetStage(재시작) / 목숨0 → GameOver → [게임오버 팝업]</div>
+  <div class="tip"><b>스테이지 전환의 단일 진실</b>은 <span class="fname">StageManager.ResetStage</span>. 적/투사체 소멸, 슬로우/전장효과 해제, 카운터 리셋, 재스폰, 플레이어 위치/능력 리셋이 전부 여기 모여있다. 전환 버그는 여기부터.</div>
+
+  <!-- ============ 7 ============ -->
+  <h2 class="sec anchor" id="flow-combat">7. 전투 판정 파이프라인</h2>
+  <p>모든 데미지/명중은 <b>서버</b>에서 <span class="fname">CombatPrimitives</span>를 통해 처리된다. 클라는 연출만.</p>
+  <div class="flow"><b>플레이어 평타</b>
+  좌클릭 → PlayerCombat.TryAttack <span class="badge b-cli">CLIENT</span> <span class="c">(쿨/대시중/아이템중 가드)</span>
+    → PlayAttackEffect(연출) + RequestAttack <span class="badge b-srv">SERVER</span>
+       → CombatPrimitives.DamageEnemiesInCircle  <span class="c">// 반경 내 EnemyHealth.TakeDamage</span>
+       → CombatPrimitives.TryParry               <span class="c">// 노란 공격 무효 / 투사체 반사</span>
+
+<b>적 공격 (텔레그래프 모델)</b>
+  EnemyMelee.OnUpdate → RegisterEnemyAttack(공격레코드 등록, hitDelay) <span class="c">// 슬로우 트리거·패링 대상</span>
+    → windup 종료 → CircleOverlap로 명중 확인 → PlayerHit.RequestHit
+  ※ activeAttacks 레코드는 CombatPrimitives.OnUpdate가 만료 정리
+
+<b>투사체</b>
+  EnemyRanged.Fire / BossController(tripleShot) → SpawnByModelId("enemyprojectile")
+    → Projectile.OnUpdate(서버 직선 시뮬) → 플레이어 명중 시 RequestHit
+    → 패링되면 Reflect() → OwnerSide="player"로 전환되어 적에게 데미지
+
+<b>보스 그로기</b>
+  EnemyHealth.TakeDamage(boss) → GroggyGauge.Charge → 100% → IsGroggy 3초(완전정지)
+  근접 패링 시 CombatPrimitives.TryParry가 GroggyGauge.Charge(ATK×2) 직접 호출</div>
+  <div class="card">
+    <b>핵심 유틸 (CombatPrimitives)</b> — 범위 판정은 전부 이 함수들만 쓴다:
+    <span class="pill">CircleOverlap (모든 원형 겹침)</span>
+    <span class="pill">DamageEnemiesInCircle</span>
+    <span class="pill">DamageEnemiesAlongPath (대시)</span>
+    <span class="pill">TryParry / AnyThreatNear</span>
+    <span class="pill">RaycastWallDistance (대시 벽정지)</span>
+    <span class="pill">DirectionTo / PointSegmentDistance</span>
+  </div>
+
+  <!-- ============ 8 ============ -->
+  <h2 class="sec anchor" id="d-core">8. Core (인프라) 상세</h2>
+  <table>
+    <tr><th>파일</th><th>타입</th><th>봐야 할 핵심</th></tr>
+    <tr><td><span class="fname">InputRouter</span></td><td><span class="badge b-logic">@Logic</span><span class="badge b-cli">CLI</span></td><td><code>OnScreenTouch</code>/<code>OnKeyDown</code>/<code>OnKeyUp</code>(입력 분기), <code>Emit</code>(이벤트 발행), <code>CurrentContext</code>(게이팅), <code>CursorWorld</code></td></tr>
+    <tr><td><span class="fname">RouterActionEvent</span></td><td><span class="badge b-event">@Event</span></td><td><code>action</code>/<code>worldPos</code>/<code>context</code> 3필드. 모든 입력 액션의 운반체</td></tr>
+    <tr><td><span class="fname">WallClock</span></td><td><span class="badge b-logic">@Logic</span></td><td><code>Now</code>/<code>Elapsed</code>/<code>IsExpired</code>(클라 실제시간), <code>ServerNow</code>/<code>IsServerExpired</code>. <b>delta 누산 금지, 스냅샷 차분만</b></td></tr>
+    <tr><td><span class="fname">GameConstants</span></td><td><span class="badge b-logic">@Logic</span></td><td>모든 튜닝값. 스탯/반경/데미지%/타이머/이펙트 RUID/머티리얼명. <code>NormalStagesForFloor</code>/<code>ClampMeso</code> 헬퍼</td></tr>
+    <tr><td><span class="fname">CombatPrimitives</span></td><td><span class="badge b-logic">@Logic</span><span class="badge b-srv">SRV</span></td><td>위 7장 유틸 목록 + <code>RegisterEnemyAttack</code>(공격레코드)·<code>activeAttacks</code> 관리</td></tr>
+  </table>
+  <div class="tip"><b>WallClock가 왜 중요?</b> 슬로우모션이 <code>SetClientTimeScale(0.25)</code>로 클라 시간을 늦추기 때문에, 쿨다운을 delta로 누산하면 망가진다. 그래서 모든 타이머가 <code>IsExpired(anchor, dur)</code>(시점 스냅샷 차분) 형태로 통일됨. 새 타이머 만들 때 이 규율 반드시 따를 것.</div>
+
+  <!-- ============ 9 ============ -->
+  <h2 class="sec anchor" id="d-player">9. Player 상세</h2>
+  <p>전부 <span class="fname">PlayerBootstrap</span>(@Logic)이 부착하는 <span class="badge b-comp">@Component</span>. 각 컴포넌트는 <code>OnBeginPlay</code>에서 <b>로컬 플레이어 체크</b> 후 라우터 구독.</p>
+  <table>
+    <tr><th>컴포넌트</th><th>공개 계약(다른 코드가 읽는 것)</th><th>핵심 메서드</th></tr>
+    <tr><td><span class="fname">PlayerCombat</span></td><td>—</td><td><code>TryAttack</code> → <code>RequestAttack</code>(서버 판정). <code>RequestDebugSlow</code>(테스트)</td></tr>
+    <tr><td><span class="fname">PlayerDash</span> ★</td><td><code>IsDashing</code>·<code>DashCount/MaxDash</code>·<code>EmpoweredReady</code>·<code>IsInvincibleNow()</code></td><td>조준(<code>UpdateAimPreview</code>) / 실행(<code>TryDash</code>·<code>OnUpdate</code> 보간) / 서버(<code>ServerDashStarted</code>)</td></tr>
+    <tr><td><span class="fname">PlayerHit</span></td><td><code>IsDead</code>(@Sync)</td><td><code>RequestHit</code> — 1피격 즉사, i-frame/능력무적 면제 후 <code>OnPlayerDeath</code></td></tr>
+    <tr><td><span class="fname">PlayerAbility</span></td><td><code>AbilityId</code>/<code>UsesLeft</code>(@Sync)·<code>IsAbilityInvincible()</code></td><td><code>RequestUseAbility</code>·<code>GrantAbility</code>·<code>ResetUses</code></td></tr>
+    <tr><td><span class="fname">PlayerItems</span></td><td><code>Slot1~3</code>(@Sync)·<code>ActiveSlot</code>·<code>IsItemActive()</code></td><td><code>ToggleSlot</code>·<code>RequestUseItem</code>·<code>GrantItem</code></td></tr>
+    <tr><td><span class="fname">PlayerInputSetup</span></td><td>—</td><td><code>OnBeginPlay</code>에서 WASD 매핑만</td></tr>
+    <tr><td><span class="fname">SlowMotion</span></td><td><span class="badge b-logic">@Logic</span> <code>Scale()</code>(적/투사체가 폴링)</td><td>서버 <code>Activate</code>/<code>DeactivateServer</code>·<code>ApplyEnemyPlayRate</code> / 클라 <code>ClientSlowStart/End</code>·<code>ApplyEnemyGrayscale</code></td></tr>
+  </table>
+  <div class="card"><b>컴포넌트 간 느슨한 결합</b>: 서로를 <code>GetComponent("script.PlayerXxx")</code>로 조회해 상태만 읽는다. 예) 평타가 <code>dash.IsDashing</code>·<code>items:IsItemActive()</code>를 확인해 차단. → 의존 추적은 <code>GetComponent</code> 호출을 grep하면 보인다.</div>
+
+  <!-- ============ 10 ============ -->
+  <h2 class="sec anchor" id="d-enemy">10. Enemy / Boss 상세</h2>
+  <table>
+    <tr><th>파일</th><th>봐야 할 핵심</th></tr>
+    <tr><td><span class="fname">EnemyHealth</span></td><td>모든 적 공통 HP. <code>TakeDamage</code>(보스면 그로기 충전)·<code>Die</code>(→OnEnemyKilled)·<code>PlayHitEffect</code>(<span class="badge b-event">Multicast</span>)</td></tr>
+    <tr><td><span class="fname">EnemyMelee</span></td><td>상태머신 idle→windup→cooldown. <code>OnUpdate</code>에 그레이스/섬광/연막/슬로우 가드 + <code>RegisterEnemyAttack</code> 텔레그래프</td></tr>
+    <tr><td><span class="fname">EnemyRanged</span></td><td>aim(정지캐스팅)↔cooldown(이동) 사이클. <code>Fire</code>로 투사체 스폰. 감지 이탈 시 조준 리셋</td></tr>
+    <tr><td><span class="fname">Projectile</span></td><td><code>OnUpdate</code> 직선 시뮬+충돌. <code>Reflect</code>(패링 시 player 소유 전환). 적 투사체만 슬로우 배율</td></tr>
+    <tr><td><span class="fname">BossController</span></td><td>delay↔windup. 패턴 풀 <code>StartPattern</code>(slam/tripleShot/redSmash)→<code>ResolvePattern</code>. 그로기/그레이스 시 <code>CancelWindup</code></td></tr>
+    <tr><td><span class="fname">GroggyGauge</span></td><td><code>Charge</code>(그로기 중 충전 무시)·<code>OnUpdate</code>(초당 2% 감소, 섬광 시 정지)·100%→3초 그로기</td></tr>
+  </table>
+  <div class="card"><b>3개 AI가 거의 동일한 헬퍼를 복제</b>한다: <code>FindPlayer</code> / <code>ChaseToward</code>(낭떠러지 정지) / <code>StopMove</code> / <code>PlayClip</code>(SpriteRUID 교체). → 적 이동/애니 동작을 일괄 바꾸려면 세 파일 모두 손대야 함(공유 베이스 리팩토링이 보류 항목으로 잡혀 있음).</div>
+
+  <!-- ============ 11 ============ -->
+  <h2 class="sec anchor" id="d-stage">11. Stage / Meta / Shop 상세</h2>
+  <table>
+    <tr><th>파일</th><th>봐야 할 핵심</th></tr>
+    <tr><td><span class="fname">StageManager</span> ★</td><td><code>OnPlayerReady</code>(런 시작)·<code>StartStage</code>·<code>ResetStage</code>(단일 초기화)·<code>OnEnemyKilled</code>·<code>StageClear</code>·<code>OnPlayerDeath</code>·<code>GameOver</code>. <code>IsGraceActive</code>(적 AI 폴링)</td></tr>
+    <tr><td><span class="fname">FloorManager</span> ★</td><td><code>StartGameFlow</code>·<code>NextNode</code>(노드 분기)·<code>OnStageRewardDone</code>(다음층/클리어)·테마/노드/상점 클라 팝업 호출</td></tr>
+    <tr><td><span class="fname">GameStateManager</span></td><td>전부 <span class="badge b-event">@Sync</span> 런 상태: Meso/Lives/AttackStat/Floor/Clears. <code>StartRun</code>·<code>AddMeso</code>·<code>SpendMeso</code></td></tr>
+    <tr><td><span class="fname">RewardManager</span></td><td><code>RollRewards</code>(확률)·<code>ClaimStat/Item/AbilityReward</code>. <code>FindRequester</code>(1인1런 전제)</td></tr>
+    <tr><td><span class="fname">BattlefieldFx</span></td><td>연막/섬광 서버 상태. <code>IsSmokeActive</code>/<code>IsStunActive</code>/<code>IsGroggyDecayPaused</code>를 적 AI·그로기가 폴링</td></tr>
+    <tr><td><span class="fname">MetaProgression</span></td><td><code>LoadFor</code>(GetAndWait)·<code>AwardScore</code>(SetAsync, 변경 시에만)·<code>GetBonusLives/Attack</code></td></tr>
+    <tr><td><span class="fname">ShopManager</span></td><td><code>RequestBuy*</code>(SpendMeso 후 효과, 가격 2배)·<code>ResetPrices</code></td></tr>
+  </table>
+
+  <!-- ============ 12 ============ -->
+  <h2 class="sec anchor" id="d-ui">12. UI 상세</h2>
+  <p>HUD를 빼면 모두 <b>동일한 팝업 컨트롤러 패턴</b>: <code>OnBeginPlay</code>에서 (1) 매니저에 자기등록 (2) 루트 숨김 (3) 버튼 <code>ConnectEvent</code> → <code>Open()</code>으로 표시 → <code>On*Click</code>에서 <code>RequestXxx</code> 호출.</p>
+  <table>
+    <tr><th>컨트롤러</th><th>등록 대상</th><th>주 동작</th></tr>
+    <tr><td><span class="fname">HUDController</span></td><td>—(매 프레임 폴링)</td><td><code>OnUpdate</code>: 목숨/대시/메소/능력/아이템/보스HP 텍스트 갱신</td></tr>
+    <tr><td><span class="fname">RewardController</span></td><td><code>StageManager.rewardUI</code></td><td>등장 보상만 버튼 활성, 수령 시 비활성, 계속→<code>RequestProceedNext</code></td></tr>
+    <tr><td><span class="fname">ShopController</span></td><td><code>FloorManager.shopUI</code></td><td><code>OnUpdate</code>로 가격 폴링, 구매→<code>ShopManager.RequestBuy*</code></td></tr>
+    <tr><td><span class="fname">ThemeSelectController</span></td><td><code>FloorManager.themeUI</code></td><td>미플레이 테마만 활성→<code>RequestSelectTheme</code></td></tr>
+    <tr><td><span class="fname">NodeSelectController</span></td><td><code>FloorManager.nodeUI</code></td><td>3분기 선택→<code>RequestSelectNode</code></td></tr>
+    <tr><td><span class="fname">GameOverController</span></td><td><code>StageManager.gameOverUI</code></td><td>재시작→<code>RequestRestartRun</code></td></tr>
+    <tr><td><span class="fname">GameClearController</span></td><td><code>FloorManager.gameClearUI</code></td><td>점수 표시 + 재시작</td></tr>
+    <tr><td><span class="fname">UIToast</span> / <span class="fname">UIPopup</span></td><td><span class="badge b-logic">@Logic</span> 공용</td><td>토스트(<code>ShowMessage</code>) / 확인 콜백 팝업(<code>Open(msg,onOk,onCancel)</code>), 자체 트윈</td></tr>
+  </table>
+  <div class="tip">UI 컨트롤러는 매니저가 <code>nil</code> 체크 후 호출하므로, 컨트롤러 미등록 시 <code>log_warning</code> 후 자동 진행(auto-proceed)한다 — UI 없이도 게임 루프가 굴러가게 설계됨. 디버깅 시 이 경고 로그가 단서.</div>
+
+  <!-- ============ 13 ============ -->
+  <h2 class="sec anchor" id="patterns">13. 반복되는 패턴 (한 번 익히면 전체가 읽힘)</h2>
+  <div class="card">
+    <p><b>① 로컬 플레이어 게이트</b> — 클라 컴포넌트 <code>OnBeginPlay</code> 첫 줄:</p>
+    <pre><code><span class="k">if</span> self.Entity ~= _UserService.LocalPlayer <span class="k">then return end</span></code></pre>
+    <p><b>② 클라 입력 → 서버 판정 관문</b> — <code>TryXxx</code>(클라 가드/연출) → <code>RequestXxx</code>(<code>@ExecSpace("Server")</code> 권위 처리).</p>
+    <p><b>③ 서버 결과 → 특정 클라 화면</b> — <code>ClientShowXxx</code>(<code>@ExecSpace("Client")</code>) + <code>InputRouter.SetContext</code>.</p>
+    <p><b>④ 스냅샷 타이머</b> — <code>anchor = WallClock:Now()</code> 저장 후 <code>WallClock:IsExpired(anchor, dur)</code>. delta 누산 금지.</p>
+    <p><b>⑤ 폴링 게이트</b> — 적 AI가 매 프레임 <code>StageManager:IsGraceActive()</code>·<code>BattlefieldFx:IsStunActive()</code>·<code>SlowMotion:Scale()</code>를 물어 행동 제어.</p>
+    <p><b>⑥ SpriteRUID 교체 애니</b> — <code>PlayClip(ruid)</code>가 <b>변경 시에만</b> set(@Sync라 클라 자동 반영). 매 프레임 set하면 0프레임 정지.</p>
+    <p><b>⑦ 컴포넌트 조회 결합</b> — <code>GetComponent("script.Xxx")</code>로 형제 상태 읽기(차단/면제 판정).</p>
+  </div>
+
+  <!-- ============ 14 ============ -->
+  <h2 class="sec anchor" id="pitfalls">14. 주의점 & 보류 항목</h2>
+  <div class="warn">
+    <b>디버그 코드 (출시 전 제거)</b><br>
+    · <code>G키 → debugSlow</code> (<span class="fname">InputRouter.OnKeyDown</span>)<br>
+    · <span class="fname">PlayerCombat.RequestDebugSlow</span> — 조건 무시 슬로우 강제발동(ungated)
+  </div>
+  <div class="warn">
+    <b>1인 1런 가정이 박혀 있음</b> (동시 멀티 시 깨짐)<br>
+    · <span class="fname">GameStateManager</span>의 Meso/Lives/AttackStat가 <code>@Sync</code>(전 클라 방송) → 멀티면 한 명 값이 모두에게 보임. 사설 통화는 <code>@TargetUserSync</code>여야.<br>
+    · <span class="fname">MetaProgression</span>의 단일 <code>ownerUserId</code> → 둘째 유저가 덮어씀.<br>
+    · <span class="fname">RewardManager.FindRequester</span>·<span class="fname">FloorManager.FirstPlayerComponent</span>이 "맵의 첫 플레이어"를 씀(RPC 호출자 아님).<br>
+    <span class="small">→ 현재 단일 플레이어 설계상 의도된 것. 멀티 도입 시에만 마이그레이션 필요.</span>
+  </div>
+  <div class="warn">
+    <b>map01 전용 하드코딩</b><br>
+    · <span class="fname">Projectile.OnUpdate</span> 맵 경계 <code>-12/14/-6/8</code><br>
+    · <span class="fname">StageManager.GetMap</span>/스폰 포인트가 <code>/maps/map01</code> 고정 (Phase 8에서 맵 풀 확장 예정)<br>
+    · 미사용 상수 <code>GameConstants.EnemyMoveSpeed</code>
+  </div>
+  <div class="warn">
+    <b>미구현</b><br>
+    · <b>보스 공격 애니메이션 없음</b> — 근/원거리는 <code>PlayClip</code>으로 stand/move/attack 전환하지만 보스는 미적용<br>
+    · 노드 3분기가 현재 전부 일반 스테이지(임시), 테마2는 자리표시자
+  </div>
+  <div class="tip">
+    <b>리팩토링 후보(보류)</b>: ① 적 AI 헬퍼(FindPlayer/ChaseToward/StopMove/PlayClip) 3중복 → 공유 베이스. ② UI 팝업 컨트롤러 6개 보일러플레이트 → <code>PopupControllerBase</code>.
+  </div>
+
+  <hr>
+  <p class="small">생성: 코드 정적 분석 기준 (런타임 미검증). 동작 확인이 필요하면 Maker <code>play</code> → <code>logs</code>로 검증. 각 파일 상단 주석에 <code>player_design_doc</code>/<code>stage_design_doc</code> 조항 번호가 달려 있으니 설계 의도는 그쪽 참조.</p>
+</main>
+</div>
+</body>
+</html>
