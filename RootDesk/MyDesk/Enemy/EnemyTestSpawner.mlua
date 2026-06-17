@@ -1,0 +1,38 @@
+@Component
+script EnemyTestSpawner extends Component
+
+	-- map02 적 테스트 하네스: Play 시 근/원/보스 1기씩 스폰 (정식 게임 흐름과 무관, map02 전용).
+	property number SpawnDelay = 1.0
+
+	property boolean spawned = false
+
+	@ExecSpace("ServerOnly")
+	method void OnUpdate(number delta)
+		-- 플레이어가 같은 맵에 입장한 뒤 1회만 적 3종 스폰.
+		if self.spawned then return end
+		self.SpawnDelay -= delta
+		if self.SpawnDelay > 0 then return end
+		local map = self.Entity.CurrentMap
+		if isvalid(map) == false then return end
+		local users = _UserService:GetUsersByMapComponent(map.MapComponent)
+		if users == nil or #users == 0 then return end
+		self.spawned = true
+		-- 플레이어 시작 위치(0, 0.3) 기준: 근접은 감지(3) 안, 원거리는 감지(5) 안, 보스는 우측.
+		self:SpawnOne("meleeenemy", "TestMelee", Vector3(-2.5, 0.3, 0), map)
+		self:SpawnOne("rangedenemy", "TestRanged", Vector3(3.5, 0.3, 0), map)
+		self:SpawnOne("bossenemy", "TestBoss", Vector3(6.5, 0.3, 0), map)
+		log("[EnemyTestSpawner] spawned melee/ranged/boss on map=" .. map.Name)
+	end
+
+	@ExecSpace("ServerOnly")
+	method void SpawnOne(string modelId, string entityName, Vector3 pos, Entity map)
+		-- 단일 적 스폰 + nil 체크 (디버그 로그).
+		local e = _SpawnService:SpawnByModelId(modelId, entityName, pos, map)
+		if e == nil then
+			log_error("[EnemyTestSpawner] spawn failed: " .. modelId)
+		else
+			log("[EnemyTestSpawner] spawned " .. entityName .. " (" .. modelId .. ")")
+		end
+	end
+
+end
