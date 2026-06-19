@@ -1,8 +1,8 @@
 ---
 id: MR-S
 title: 타일맵 모드 비교 스파이크 (MapleTile vs SideViewRectTile)
-status: todo
-owner: unassigned
+status: in-progress
+owner: dust9826
 area: map
 touches:
   - map/
