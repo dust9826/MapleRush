@@ -6,6 +6,11 @@ script CombatPrimitives extends Logic
 
 	property integer nextAttackId = 0
 
+	-- 대시 방-영역(RoomRegion) 캐시 — 조준 중 매 프레임 호출되므로 맵별 1회만 마커 열거 후 캐시 (클라).
+	property any roomCacheMapName = nil
+
+	property any roomCacheRegions = nil
+
 	@ExecSpace("ServerOnly")
 	method void OnUpdate(number delta)
 		-- 만료된 공격 레코드 정리 (서버, 매 프레임).
@@ -198,57 +203,173 @@ script CombatPrimitives extends Logic
 		return hitCount
 	end
 
-	method number RaycastWallDistance(Entity map, Vector2 origin, Vector2 dir, number maxDist)
-		-- origin에서 dir(정규화) 방향 maxDist까지 경로상 벽과의 최근접 거리. 벽 없으면 maxDist. 기하 쿼리(양측 공용).
-		-- MapleTile: 수직 풋홀드 레이캐스트 / RectTile·SideView: 충돌 타일 레이마치. 둘 중 가까운 값.
-		if map == nil then return maxDist end
-		local best = maxDist
-		-- (A) MapleTile 경로: 수직(벽) 풋홀드와의 교차
-		local fhc = map.FootholdComponent
-		if isvalid(fhc) == false then
-			fhc = map:GetFirstChildComponentByTypeName("MOD.Core.FootholdComponent", true)
-		end
-		if isvalid(fhc) then
-			local hits = fhc:RaycastAll(origin, dir, maxDist)
-			if hits ~= nil then
-				for _, fh in ipairs(hits) do
-					if fh ~= nil and fh:IsVertical() then
-						-- ray(origin + t*dir) ∩ 선분(StartPoint→EndPoint): t = 교차까지 거리(dir 정규화이므로 월드 단위)
-						local a = fh.StartPoint
-						local b = fh.EndPoint
-						local ex = b.x - a.x
-						local ey = b.y - a.y
-						local qx = a.x - origin.x
-						local qy = a.y - origin.y
-						local det = ex * dir.y - dir.x * ey
-						if det > 0.00001 or det < -0.00001 then
-							local t = (ex * qy - qx * ey) / det
-							local s = (dir.x * qy - dir.y * qx) / det
-							if t > 0.001 and t <= maxDist and s >= -0.001 and s <= 1.001 then
-								if t < best then best = t end
-							end
-						end
+	method table BuildRoomRegions(Entity map)
+		-- 맵에 배치된 RoomRegionMarker 컴포넌트를 열거해 영역 목록 생성. (캐시 미스 시 1회 호출)
+		-- 영역 = 같은 엔티티의 TriggerComponent 콜라이더. BoxSize=방 가로/세로(월드유닛), ColliderOffset=중심 오프셋.
+		-- IsLegacy=false 콜라이더는 Transform 크기 영향을 받으므로 BoxSize×Scale로 실제 박스를 복원.
+		local regions = {}
+		if map == nil or isvalid(map) == false then return regions end
+		local markers = map:GetChildComponentsByTypeName("script.RoomRegionMarker", true)
+		if markers ~= nil then
+			for _, compAny in ipairs(markers) do
+				local e = compAny.Entity
+				if isvalid(e) then
+					local tc = e.TriggerComponent
+					local tf = e.TransformComponent
+					if isvalid(tc) and isvalid(tf) then
+						local p = tf.WorldPosition
+						local sc = tf.Scale
+						local sz = tc.BoxSize
+						local off = tc.ColliderOffset
+						table.insert(regions, {
+							kind = "rect",
+							cx = p.x + off.x * sc.x,
+							cy = p.y + off.y * sc.y,
+							halfW = sz.x * sc.x * 0.5,
+							halfH = sz.y * sc.y * 0.5,
+						})
 					end
 				end
 			end
 		end
-		-- (B) RectTile/SideViewRectTile 경로: 충돌 타일까지 레이마치 (풋홀드가 비어있는 SideView 맵에서 동작)
-		---@type RectTileMapComponent
-		local rtm = map:GetFirstChildComponentByTypeName("MOD.Core.RectTileMapComponent", true)
-		if isvalid(rtm) then
-			local step = 0.2
-			local t = step
-			while t <= maxDist do
-				local cell = rtm:ToCellPosition(Vector3(origin.x + dir.x * t, origin.y + dir.y * t, 0))
-				local info = rtm:GetTile(cell)
-				if info ~= nil and info.IsCollidable then
-					if t < best then best = t end
-					break
+		return regions
+	end
+
+	method boolean RegionContains(table region, Vector2 point)
+		-- 점이 영역 안에 있는지. (rect=AABB 포함 판정. 추후 kind="poly" 분기 추가 가능)
+		if region.kind == "rect" then
+			return point.x >= region.cx - region.halfW and point.x <= region.cx + region.halfW
+				and point.y >= region.cy - region.halfH and point.y <= region.cy + region.halfH
+		end
+		return false
+	end
+
+	method number RegionClampRay(table region, Vector2 origin, Vector2 dir, number maxLen)
+		-- origin에서 dir 방향으로 영역을 처음 벗어나는 거리와 maxLen 중 작은 값. (rect=슬랩)
+		if region.kind == "rect" then
+			local tx = math.huge
+			if dir.x > 0 then tx = (region.cx + region.halfW - origin.x) / dir.x
+			elseif dir.x < 0 then tx = (region.cx - region.halfW - origin.x) / dir.x end
+			local ty = math.huge
+			if dir.y > 0 then ty = (region.cy + region.halfH - origin.y) / dir.y
+			elseif dir.y < 0 then ty = (region.cy - region.halfH - origin.y) / dir.y end
+			local exitDist = math.min(tx, ty)
+			if exitDist < 0 then exitDist = 0 end
+			if exitDist < maxLen then return exitDist end
+		end
+		return maxLen
+	end
+
+	method number OBBRayEntry(any hitComp, Vector2 origin, Vector2 dir, number maxLen)
+		-- raycast로 맞은 블록 콜라이더 박스에 레이가 처음 '진입'하는 거리(슬랩 tmin). 회전 박스(OBB) 지원.
+		-- 박스 = 같은 엔티티의 TriggerComponent(BoxSize/ColliderOffset) + Transform(WorldPosition/Scale/WorldZRotation).
+		-- origin이 박스 안(tmin<0)이면 0(즉시 정지), 박스가 뒤/빗나감이면 maxLen(무시).
+		if hitComp == nil then return maxLen end
+		local e = hitComp.Entity
+		if isvalid(e) == false then return maxLen end
+		local tc = e.TriggerComponent
+		local tf = e.TransformComponent
+		if isvalid(tc) == false or isvalid(tf) == false then return maxLen end
+		local p = tf.WorldPosition
+		local sc = tf.Scale
+		local sz = tc.BoxSize
+		local off = tc.ColliderOffset
+		local a = math.rad(tf.WorldZRotation)
+		local ca = math.cos(a)
+		local sa = math.sin(a)
+		-- 박스 중심(월드): ColliderOffset도 박스 회전을 따라 회전
+		local oxw = off.x * sc.x
+		local oyw = off.y * sc.y
+		local cx = p.x + (oxw * ca - oyw * sa)
+		local cy = p.y + (oxw * sa + oyw * ca)
+		local halfW = sz.x * sc.x * 0.5
+		local halfH = sz.y * sc.y * 0.5
+		-- 레이를 박스 로컬좌표로 변환(중심 빼고 -a 회전)
+		local rx = origin.x - cx
+		local ry = origin.y - cy
+		local lox = rx * ca + ry * sa
+		local loy = -rx * sa + ry * ca
+		local ldx = dir.x * ca + dir.y * sa
+		local ldy = -dir.x * sa + dir.y * ca
+		local EPS = 0.00000001
+		local tmin = -math.huge
+		local tmax = math.huge
+		if math.abs(ldx) < EPS then
+			if lox < -halfW or lox > halfW then return maxLen end
+		else
+			local t1 = (-halfW - lox) / ldx
+			local t2 = (halfW - lox) / ldx
+			if t1 > t2 then local tmp = t1 t1 = t2 t2 = tmp end
+			if t1 > tmin then tmin = t1 end
+			if t2 < tmax then tmax = t2 end
+		end
+		if math.abs(ldy) < EPS then
+			if loy < -halfH or loy > halfH then return maxLen end
+		else
+			local t1 = (-halfH - loy) / ldy
+			local t2 = (halfH - loy) / ldy
+			if t1 > t2 then local tmp = t1 t1 = t2 t2 = tmp end
+			if t1 > tmin then tmin = t1 end
+			if t2 < tmax then tmax = t2 end
+		end
+		if tmax < 0 or tmin > tmax then return maxLen end
+		local entry = tmin
+		if entry < 0 then entry = 0 end
+		if entry < maxLen then return entry end
+		return maxLen
+	end
+
+	method number ClampRayToCurrentRoom(Entity map, Vector2 playerPos, Vector2 origin, Vector2 dir, number maxDist)
+		-- 대시 거리 클램프. result=maxDist에서 시작해 (1) allow-box 논리 영역, (2) 블록 존 raycast 중 더 가까운 곳으로 줄임.
+		-- 둘 다 없으면 maxDist 그대로(폴백 = 기존 최대 사거리, 안전).
+		if map == nil or isvalid(map) == false then return maxDist end
+		local result = maxDist
+		-- (1) allow-box(감싸는 방) 논리 클램프 — 플레이어를 포함하는 방의 경계 이탈거리. 마커 열거는 맵별 1회 캐시.
+		if self.roomCacheMapName ~= map.Name then
+			self.roomCacheRegions = self:BuildRoomRegions(map)
+			self.roomCacheMapName = map.Name
+		end
+		local regions = self.roomCacheRegions
+		if regions ~= nil and #regions > 0 then
+			for _, region in ipairs(regions) do
+				if self:RegionContains(region, playerPos) then
+					local exitD = self:RegionClampRay(region, origin, dir, result)
+					if exitD < result then result = exitD end
 				end
-				t = t + step
 			end
 		end
-		return best
+		-- (2) 블록 존(대시 불가지역) raycast — 전용 DashBlock 그룹만 쿼리(플레이어/적/allow박스 제외). 맞으면 OBB 진입거리로 클램프.
+		-- 가드: DashBlock 그룹이 프로젝트에 등록돼 있을 때만 쿼리. 미등록이면 블록 경로를 건너뛰고 폴백(allow-box/최대사거리)으로 안전.
+		-- 그룹 '객체'를 넘긴다(이름 문자열 X) — 커스텀 그룹 Id는 GUID라 이름 해석 모호성이 있으므로 CollisionGroup 오버로드가 안전.
+		local grp = CollisionGroups[_GameConstants.DashBlockGroup]
+		if grp ~= nil then
+			local sim = _CollisionService:GetSimulator(map)
+			if sim ~= nil then
+				local hit = sim:Raycast(grp, origin, dir, result)
+				if hit ~= nil and isvalid(hit.Entity) then
+					local entry = self:OBBRayEntry(hit, origin, dir, result)
+					if entry < result then result = entry end
+				end
+			end
+		end
+		return result
+	end
+
+	method Vector2 ApplyFloorAimAssist(Vector2 dir, boolean onGround, number facingX)
+		-- 접지 상태에서 너무 가파른 하향 조준이면 최소 각도(DashFloorMinSin)까지만 내려가도록 보정.
+		-- (raycast 클램프가 발밑 바닥을 즉시 맞춰 대시 0거리 되는 것 방지 — 조작감) 공중/상향/수평/SideView(rb 없음→onGround=false)는 불변.
+		-- dir: DirectionTo가 반환한 단위벡터. facingX: dir.x==0 동률일 때 평탄화 방향(±1).
+		if onGround == false then return dir end
+		local minY = -_GameConstants.DashFloorMinSin
+		if dir.y >= minY then return dir end
+		local sx = 0.0
+		if dir.x > 0 then sx = 1.0 elseif dir.x < 0 then sx = -1.0 end
+		if sx == 0.0 then
+			if facingX < 0 then sx = -1.0 else sx = 1.0 end
+			return Vector2(sx, 0)
+		end
+		local hx = math.sqrt(1.0 - minY * minY)
+		return Vector2(sx * hx, minY)
 	end
 
 	@ExecSpace("ClientOnly")

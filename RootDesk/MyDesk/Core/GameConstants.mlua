@@ -54,6 +54,14 @@ script GameConstants extends Logic
 	-- 대시가 벽(수직 풋홀드) 앞에서 멈출 때 벽으로부터 띄울 여유 거리 (플레이어 반폭 고려).
 	property number DashWallMargin = 0.4
 
+	-- 대시 불가지역(블록 존) 전용 CollisionGroup 이름. raycast 필터에 사용 — 플레이어/적/allow박스가 속하지 않은
+	-- 전용 그룹이라야 self-hit 없이 블록 존만 깨끗하게 반환됨. Maker 프로젝트 설정 > Collision에서 동일 이름으로 생성 필요.
+	property string DashBlockGroup = "DashBlock"
+
+	-- 접지 상태에서 허용하는 최소 하향 조준 각도의 sin값(=sin15°). 이보다 가파른 하향 조준은 이 각도까지만
+	-- 내려가도록 보정(바닥에 박혀 대시 0거리 되는 것 방지). 매 조준 프레임 호출 → math.sin 회피 위해 sin값 직접 보관.
+	property number DashFloorMinSin = 0.2588
+
 	-- 플레이어 중심 높이 보정 (발밑→중심). 대시/공격 이펙트 배치에 공용.
 	property number PlayerCenterYOffset = 0.5
 
@@ -126,9 +134,8 @@ script GameConstants extends Logic
 
 	property integer MaxFloors = 1
 
-	-- 스테이지 타입별 전투/상점 맵 (MR-S 비교: 일반=mapSV(SideView), 보스=map03, 상점=map04).
-	-- 원복하려면 MapNormal을 "map02"로 되돌릴 것.
-	property string MapNormal = "mapSV"
+	-- 스테이지 타입별 전투/상점 맵 (일반=map02, 보스=map03, 상점=map04).
+	property string MapNormal = "map02"
 
 	property string MapBoss = "map03"
 
@@ -136,10 +143,6 @@ script GameConstants extends Logic
 
 	-- SideView(RectTile) 맵에서 적 추격 속도(MovementComponent.InputSpeed). MapleTile은 Rigidbody.MoveVelocity 사용(별개).
 	property number EnemyChaseSpeed = 2.0
-
-	-- MR-S 비교: 일반 스테이지 타일맵 런타임 선택 ("mapSV"=SideView / "map02"=MapleTile). 노드 선택에서 설정.
-	@Sync
-	property string NormalMapChoice = "mapSV"
 
 	property integer AbilityUsesNormal = 1
 
@@ -238,10 +241,9 @@ script GameConstants extends Logic
 	end
 
 	method string MapIdForStage(string stageType)
-		-- 스테이지 타입 → 맵 id. 보스(map03) / 상점(map04) / 일반(NormalMapChoice 런타임 선택, 미설정 시 MapNormal).
+		-- 스테이지 타입 → 맵 id. 보스(map03) / 상점(map04) / 일반(map02).
 		if stageType == "boss" then return self.MapBoss end
 		if stageType == "shop" then return self.MapShop end
-		if self.NormalMapChoice ~= nil and self.NormalMapChoice ~= "" then return self.NormalMapChoice end
 		return self.MapNormal
 	end
 

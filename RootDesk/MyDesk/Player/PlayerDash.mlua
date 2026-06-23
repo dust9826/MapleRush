@@ -191,17 +191,33 @@ script PlayerDash extends Component
 
 	@ExecSpace("ClientOnly")
 	method number ComputeDashLength(Vector2 p2, Vector2 dir, Vector2 target)
-		-- 대시 거리 = min(커서까지 거리, 최대 사거리). 경로상 벽(수직 풋홀드)이 더 가까우면 거기서 멈춤.
+		-- 대시 거리 = min(커서까지 거리, 최대 사거리). 현재 방(RoomRegion) 경계가 더 가까우면 거기서 멈춤.
+		-- 방향/사거리는 중앙(p2) 기준이나, 방 클램프는 실제 이동 라인인 발 기준으로 측정(클리어런스↔이동 라인 일치).
 		local dx = target.x - p2.x
 		local dy = target.y - p2.y
 		local L = math.sqrt(dx * dx + dy * dy)
 		if L > _GameConstants.DashDistance then L = _GameConstants.DashDistance end
-		local wallDist = _CombatPrimitives:RaycastWallDistance(self.Entity.CurrentMap, p2, dir, L)
-		if wallDist < L then
-			L = wallDist - _GameConstants.DashWallMargin
+		local pos = self.Entity.TransformComponent.WorldPosition
+		local foot = Vector2(pos.x, pos.y)
+		local roomDist = _CombatPrimitives:ClampRayToCurrentRoom(self.Entity.CurrentMap, foot, foot, dir, L)
+		if roomDist < L then
+			L = roomDist - _GameConstants.DashWallMargin
 			if L < 0 then L = 0 end
 		end
 		return L
+	end
+
+	@ExecSpace("ClientOnly")
+	method Vector2 ComputeAimDir(Vector2 center, Vector2 target)
+		-- 대시 방향 = 커서 방향 + 접지 하향 조준 보정(바닥 박힘 0거리 방지). 프리뷰·실행 공통(둘이 어긋나지 않게).
+		local dir = _CombatPrimitives:DirectionTo(center, target)
+		local onGround = false
+		local rb = self.Entity.RigidbodyComponent
+		if isvalid(rb) then onGround = rb:IsOnGround() end
+		local facingX = 1.0
+		local mc = self.Entity.MovementComponent
+		if isvalid(mc) and mc:IsFaceLeft() then facingX = -1.0 end
+		return _CombatPrimitives:ApplyFloorAimAssist(dir, onGround, facingX)
 	end
 
 	@ExecSpace("ClientOnly")
@@ -222,7 +238,7 @@ script PlayerDash extends Component
 		-- 대시 기준점 = 플레이어 중앙(키/2). 조준 방향·미리보기·사거리·착지 모두 중앙 기준.
 		local center = Vector2(pos.x, pos.y + _GameConstants.PlayerCenterYOffset)
 		local cursor = _InputRouter:CursorWorld()
-		local dir = _CombatPrimitives:DirectionTo(center, cursor)
+		local dir = self:ComputeAimDir(center, cursor)
 		local L = self:ComputeDashLength(center, dir, cursor)
 		local half = L * 0.5
 		local tf = preview.TransformComponent
@@ -266,7 +282,7 @@ script PlayerDash extends Component
 		local foot = Vector2(pos.x, pos.y)
 		-- 방향/사거리는 중앙(키/2) 기준으로 계산(조준 일관성), 이동 원점은 발(엔티티 원점) 유지.
 		local center = Vector2(pos.x, pos.y + _GameConstants.PlayerCenterYOffset)
-		self.dashDir = _CombatPrimitives:DirectionTo(center, targetWorldPos)
+		self.dashDir = self:ComputeAimDir(center, targetWorldPos)
 		self.dashStartPos = foot
 		self.dashLen = self:ComputeDashLength(center, self.dashDir, targetWorldPos)
 		self.dashIsSideView = self:IsDashSideView()
