@@ -1,14 +1,14 @@
 ---
 id: MR-J
 title: 게임 HUD 요소 바인딩 (목숨/대시/아이템/능력/메소)
-status: todo
-owner: unassigned
+status: in-progress
+owner: D4LGONA
 area: ui
 touches:
   - ui/HUD.ui
   - RootDesk/MyDesk/UI/HUDController.mlua
 depends_on: []
-branch: ""
+branch: "D4LGONA/hud-element-binding"
 created: 2026-06-26
 updated: 2026-06-26
 ---
