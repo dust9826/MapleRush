@@ -1,7 +1,7 @@
 ---
 id: MR-J
 title: 게임 HUD 요소 바인딩 (목숨/대시/아이템/능력/메소)
-status: in-progress
+status: review
 owner: D4LGONA
 area: ui
 touches:
@@ -10,7 +10,7 @@ touches:
 depends_on: []
 branch: "D4LGONA/hud-element-binding"
 created: 2026-06-26
-updated: 2026-06-26
+updated: 2026-06-27
 ---
 
 # 게임 HUD 요소 바인딩
@@ -20,7 +20,7 @@ updated: 2026-06-26
 
 ## Acceptance criteria
 - [x] 목숨: 아이콘(HP 스프라이트) + "× N" Text가 `GameStateManager.CurrentLives` 반영
-- [x] 대시: Filled 게이지(SpriteGUIRenderer FillAmount) + "N/M" 텍스트가 `PlayerDash.DashCount / MaxDash` 반영 *(설계의 ◇ pip → Filled 바로 구현)*
+- [x] 대시: pip 사각형 N칸이 `PlayerDash.DashCount / MaxDash` 반영 — MaxDash 초과 칸 비활성(Enable=false), 현재 DashCount만큼 금색 채움
 - [x] 아이템 슬롯 ×3: 카드 Button이 `PlayerItems.Slot1~3` 라벨 반영(활성 ▶ 강조)
 - [x] 능력: 우측 Button 라벨이 `PlayerAbility.AbilityId / UsesLeft` 반영
 - [x] 메소: 우상단 코인 아이콘 + Text가 `GameStateManager.Meso` 반영
@@ -38,7 +38,8 @@ updated: 2026-06-26
 - 공통 규칙: UIGroup GroupOrder HUD=1(항상 바닥), 게이지는 SpriteGUIRenderer Filled 모드.
 - 출처: `docs/maplerush_UI_ver1.pdf` p.6.
 - 변경 파일: `ui/HUD.ui`(재구성), `RootDesk/MyDesk/UI/HUDController.mlua`(재작성).
-- 설계 편차: 대시 "◇ pip ×N" → 견고성 위해 Filled 게이지 바 + 카운트 텍스트로 구현. 아이템 카드는 클릭 핸들러 없음(아이템 사용은 키 입력 라우터 경유).
+- 대시 표시: 설계의 "◇ pip ×N"을 사각형 pip 4칸으로 구현 — MaxDash 초과 칸은 Enable=false로 숨김, 현재 충전 수만큼 금색. 아이템 카드는 클릭 핸들러 없음(아이템 사용은 키 입력 라우터 경유).
+- 아이템 활성 슬롯 표시: 깨지던 '▶' 문자 제거 → 활성 슬롯 카드 배경을 금색(대시 pip와 동일 톤)으로 강조 + 글자 대비 처리 (2026-06-27).
 - ⏳ 시각 레이아웃은 런타임 로그로는 확인 불가 — Maker play 화면에서 사용자 육안/스크린샷 확인 필요. 보스 텍스트(MR-K)는 기존대로 유지.
 
 ## Verify
