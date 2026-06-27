@@ -168,14 +168,23 @@ script GizmoManager extends Logic
 
 	@ExecSpace("ClientOnly")
 	method void ApplyLine(any e, table pts, boolean loop, Color color, number width)
-		-- 홀더를 월드원점·무회전·단위스케일로 Anchor(부모=player 추종 상쇄) 후 월드좌표 pts={{x,y},..}를 LinePoint로 투입.
+		-- 홀더는 player 자식이라 월드좌표 앵커(WorldPosition=0,0) write가 부모 추종에 덮여 안 먹는다(실측).
+		-- → 홀더를 플레이어 위치에 두고(write 먹든 안먹든 기본값이 player), 월드좌표 pts를 '플레이어-상대 로컬좌표'로 변환해 투입.
+		--   LineRenderer가 홀더 로컬공간으로 렌더 → player + (worldPt-playerPos) = worldPt. 플레이어 이동 시 홀더가 따라가 항상 정확.
 		-- MaterialId 미변경(LWA-3009 회피). nil/유효성 가드.
 		if e == nil or isvalid(e) == false then return end
 		local lrc = e.LineRendererComponent
 		if lrc == nil or isvalid(lrc) == false then return end
+		local px = 0.0
+		local py = 0.0
+		if self.boundPlayer ~= nil and isvalid(self.boundPlayer) then
+			local pwp = self.boundPlayer.TransformComponent.WorldPosition
+			px = pwp.x
+			py = pwp.y
+		end
 		local tf = e.TransformComponent
 		if isvalid(tf) then
-			tf.WorldPosition = Vector3(0, 0, self.gizmoZ)
+			tf.WorldPosition = Vector3(px, py, self.gizmoZ)
 			tf.WorldZRotation = 0
 			tf.Scale = Vector3(1, 1, 1)
 		end
@@ -185,7 +194,7 @@ script GizmoManager extends Logic
 			for i = 1, #pts do
 				local p = pts[i]
 				if p ~= nil then
-					lrc.Points:Add(LinePoint(Vector2(p.x, p.y), color, width))
+					lrc.Points:Add(LinePoint(Vector2(p.x - px, p.y - py), color, width))
 				end
 			end
 		end
