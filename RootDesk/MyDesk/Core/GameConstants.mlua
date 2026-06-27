@@ -152,6 +152,9 @@ script GameConstants extends Logic
 
 	property string MapShop = "map04"
 
+	-- 노드 분기로 선택된 이번 일반 스테이지 맵 (MR-S 비교: map02=MapleTile / mapSV=SideView). FloorManager.RequestSelectNode가 설정.
+	property string NormalMapChoice = "map02"
+
 	-- SideView(RectTile) 맵에서 적 추격 속도(MovementComponent.InputSpeed). MapleTile은 Rigidbody.MoveVelocity 사용(별개).
 	property number EnemyChaseSpeed = 2.0
 
