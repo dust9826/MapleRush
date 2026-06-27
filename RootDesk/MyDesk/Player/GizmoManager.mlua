@@ -2,27 +2,33 @@
 script GizmoManager extends Logic
 
 	-- 중앙 즉시모드(immediate-mode) 기즈모 매니저. @Logic OnUpdate가 모든 @Component.OnUpdate보다 먼저 실행되는 보장을 이용해
-	-- 프레임 시작에 '지난 프레임 사용분만' 숨기고(usage-bounded, 풀 전체 스캔 안 함) 커서를 0으로 리셋한다.
-	-- 그 뒤 같은 프레임에 소스(@Component PlayerDashGizmo/CombatGizmo)가 :Circle/:Line/:PolyBox/:Dot를 호출 → 풀에서 다음 홀더 할당(커서++).
-	-- ClientOnly·로컬플레이어 전용. 라인 홀더(LineRendererComponent)/점 홀더(SpriteRendererComponent)는 PlayerBootstrap이
-	-- DrawGizmo 게이팅으로 player 자식 풀로 스폰(이름=prefix+index, 0-base). LineRenderer는 런타임 AddComponent 불가 → 풀 크기는 스폰 시 고정.
-	-- 좌표: 라인 홀더는 매 프레임 월드원점·무회전·단위스케일 Anchor 후 월드좌표 LinePoint 투입(부모=player 추종 상쇄). 점은 WorldPosition 직접.
-	-- MaterialId는 절대 건드리지 않음(LineRenderer 내장 기본 셰이더 — Default 셰이더 머티리얼은 LWA-3009로 거부됨, 실측).
+	-- 프레임 시작에 '지난 프레임 사용분만' 숨기고(usage-bounded) 커서를 0으로 리셋한다.
+	-- 그 뒤 같은 프레임에 소스(@Component PlayerDashGizmo/CombatGizmo)가 :Circle/:Line/:PolyBox/:Dot 호출 → 풀에서 다음 홀더 할당(커서++).
+	-- ClientOnly·로컬플레이어 전용.
+	--
+	-- ★ 홀더는 '맵 자식'으로 스폰한다(실측: LineRenderer가 플레이어 자식이면 렌더 안 됨 — 아바타 렌더 계층 간섭. 맵 자식이면 정상).
+	--   LineRenderer는 런타임 AddComponent 불가 → dashgizmoline(.model)을 스폰. 맵 전환마다 풀이 필요하므로,
+	--   매니저가 현재 맵에 풀이 없으면 서버 RPC(RequestEnsurePool)로 그 맵에 1회 스폰(맵별 idempotent). 클라는 맵 자식에서 이름으로 조회.
+	-- 좌표: LineRenderer Points는 월드좌표 공간으로 렌더(실측) → 월드좌표 그대로 투입. 점 스프라이트는 WorldPosition 직접.
+	-- SortingLayer "Effect"+큰 OrderInLayer로 지형 위에 그림(모델 기본 "Default"/60은 지형에 가려짐 — 실측).
+	-- MaterialId는 모델에 주입됨(빈 머티리얼이면 라인 렌더 안 됨 — 실측). 런타임 미변경.
 
 	@HideFromInspector property any lineHolders = nil      -- slot(idx+1) -> 라인 홀더 엔티티 캐시
 	@HideFromInspector property any dotHolders = nil       -- slot(idx+1) -> 점 홀더 엔티티 캐시
-	@HideFromInspector property any boundPlayer = nil       -- 현재 바인딩된 LocalPlayer
-	@HideFromInspector property integer lineCursor = 0      -- 이번 프레임 할당된 라인 수(= 다음 인덱스)
-	@HideFromInspector property integer dotCursor = 0       -- 이번 프레임 할당된 점 수
+	@HideFromInspector property any boundMap = nil          -- 현재 바인딩된 맵(홀더 부모)
+	@HideFromInspector property string holdersMapName = ""  -- 캐시가 가리키는 맵 이름(맵 바뀌면 캐시 리셋)
+	@HideFromInspector property string requestedMapName = "" -- 풀 스폰을 서버에 요청한 맵 이름(중복 요청 방지)
+	@HideFromInspector property integer lineCursor = 0
+	@HideFromInspector property integer dotCursor = 0
 	@HideFromInspector property integer linePoolSize = 0
 	@HideFromInspector property integer dotPoolSize = 0
-	@HideFromInspector property number gizmoZ = 0.0         -- 프레임 시작에 캡처한 로컬플레이어 깊이(z) — 라인 앵커/점 공용
+	@HideFromInspector property number gizmoZ = 0.0
 	@HideFromInspector property boolean lineOverflowed = false
 	@HideFromInspector property boolean dotOverflowed = false
 
 	@ExecSpace("ClientOnly")
 	method void OnBeginPlay()
-		-- 클라 1회 초기화. 풀 크기 상수 캐시. 플레이어는 아직 없을 수 있어 Rebind는 OnUpdate에서 지연 수행.
+		-- 클라 1회 초기화.
 		self.lineHolders = {}
 		self.dotHolders = {}
 		self.lineCursor = 0
@@ -30,27 +36,15 @@ script GizmoManager extends Logic
 		self.linePoolSize = _GameConstants.GizmoLinePoolSize
 		self.dotPoolSize = _GameConstants.GizmoDotPoolSize
 		self.gizmoZ = 0.0
-		self.boundPlayer = nil
+		self.boundMap = nil
+		self.holdersMapName = ""
+		self.requestedMapName = ""
 		log("[GizmoManager] OnBeginPlay (linePool=" .. tostring(self.linePoolSize) .. ", dotPool=" .. tostring(self.dotPoolSize) .. ")")
 	end
 
 	@ExecSpace("ClientOnly")
-	method void Rebind(any player)
-		-- LocalPlayer 최초 획득/교체 시 홀더 캐시·커서 재설정(서버 비동기 스폰/맵전환 대비; 보통 player 유지로 미발생).
-		self.boundPlayer = player
-		self.lineHolders = {}
-		self.dotHolders = {}
-		self.lineCursor = 0
-		self.dotCursor = 0
-		self.linePoolSize = _GameConstants.GizmoLinePoolSize
-		self.dotPoolSize = _GameConstants.GizmoDotPoolSize
-		log("[GizmoManager] rebound to local player")
-	end
-
-	@ExecSpace("ClientOnly")
 	method void HideUsed()
-		-- 지난 프레임 할당분(커서 값)만 숨긴다 — 풀 전체를 매 프레임 스캔하지 않음(효율). 캐시 직접 사용.
-		-- 재사용 홀더는 같은 프레임에 그리기 호출이 다시 채우므로 화면 잔상 0, 미사용 잉여만 숨김 유지.
+		-- 지난 프레임 할당분(커서 값)만 숨김. 캐시 직접 사용.
 		local n = self.lineCursor
 		local i = 0
 		while i < n do
@@ -78,14 +72,18 @@ script GizmoManager extends Logic
 
 	@ExecSpace("ClientOnly")
 	method void OnUpdate(number delta)
-		-- 프레임 시작: 플레이어 재획득 → 지난 프레임 사용분만 숨김 → 커서 0. DrawGizmo off면 1회 정리 후 종료(잔상 제거).
+		-- 프레임 시작: 현재 맵 바인딩 + 풀 보장 → 지난 프레임 사용분 숨김 → 커서 0. DrawGizmo off면 정리 후 종료.
 		local player = _UserService.LocalPlayer
-		if player == nil or isvalid(player) == false then
-			self.boundPlayer = nil
-			return
-		end
-		if self.boundPlayer ~= player then
-			self:Rebind(player)
+		if player == nil or isvalid(player) == false then return end
+		local map = player.CurrentMap
+		if map == nil or isvalid(map) == false then return end
+
+		-- 맵 변경 감지 → 홀더 캐시 리셋(새 맵의 홀더로 다시 조회).
+		if self.holdersMapName ~= map.Name then
+			self.boundMap = map
+			self.holdersMapName = map.Name
+			self.lineHolders = {}
+			self.dotHolders = {}
 		end
 		if self.lineHolders == nil then self.lineHolders = {} end
 		if self.dotHolders == nil then self.dotHolders = {} end
@@ -97,6 +95,17 @@ script GizmoManager extends Logic
 			return
 		end
 
+		-- 풀 보장: 현재 맵에 라인 홀더0이 없으면 서버에 1회 스폰 요청(맵별 중복 방지).
+		if self.requestedMapName ~= map.Name then
+			local first = map:GetChildByName(_GameConstants.GizmoLinePoolPrefix .. "0", false)
+			if first == nil or isvalid(first) == false then
+				self.requestedMapName = map.Name
+				self:RequestEnsurePool(map)
+			else
+				self.requestedMapName = map.Name
+			end
+		end
+
 		local tf = player.TransformComponent
 		if isvalid(tf) then self.gizmoZ = tf.WorldPosition.z end
 
@@ -105,38 +114,60 @@ script GizmoManager extends Logic
 		self.dotCursor = 0
 		self.lineOverflowed = false
 		self.dotOverflowed = false
-		-- 이후 같은 프레임에 소스 컴포넌트들이 그린다(@Logic-before-@Component 보장).
+	end
+
+	@ExecSpace("Server")
+	method void RequestEnsurePool(Entity mapEntity)
+		-- 클라 요청 → 서버가 해당 맵에 기즈모 풀을 idempotent 스폰.
+		self:EnsurePoolOnMap(mapEntity)
+	end
+
+	@ExecSpace("ServerOnly")
+	method void EnsurePoolOnMap(Entity map)
+		-- 맵 자식으로 라인 풀 + 점 풀 스폰(이름=prefix+index, 0-base). 이미 있으면 스킵.
+		if map == nil or isvalid(map) == false then return end
+		if _GameConstants.DrawGizmo == false then return end
+		if map:GetChildByName(_GameConstants.GizmoLinePoolPrefix .. "0", false) ~= nil then return end
+		local lineModel = _GameConstants.DashGizmoLineModelId
+		for i = 0, _GameConstants.GizmoLinePoolSize - 1 do
+			_SpawnService:SpawnByModelId(lineModel, _GameConstants.GizmoLinePoolPrefix .. tostring(i), Vector3(0, 0, 0), map)
+		end
+		local dotModel = _GameConstants.DashDestMarkerModelId
+		for i = 0, _GameConstants.GizmoDotPoolSize - 1 do
+			_SpawnService:SpawnByModelId(dotModel, _GameConstants.GizmoDotPoolPrefix .. tostring(i), Vector3(0, 0, 0), map)
+		end
+		log("[GizmoManager] gizmo pool spawned under map '" .. tostring(map.Name) .. "' (" .. tostring(_GameConstants.GizmoLinePoolSize) .. " line + " .. tostring(_GameConstants.GizmoDotPoolSize) .. " dot)")
 	end
 
 	@ExecSpace("ClientOnly")
 	method any LineHolder(integer idx)
-		-- 인덱스 라인 홀더 조회(캐시 + isvalid 재조회; 서버 비동기 스폰 대비). 범위 밖이면 nil.
+		-- 인덱스 라인 홀더 조회(맵 자식, 캐시 + isvalid 재조회). 범위 밖이면 nil.
 		if idx < 0 or idx >= self.linePoolSize then return nil end
 		local slot = idx + 1
 		local e = self.lineHolders[slot]
 		if e ~= nil and isvalid(e) then return e end
-		if self.boundPlayer == nil or isvalid(self.boundPlayer) == false then return nil end
-		e = self.boundPlayer:GetChildByName(_GameConstants.GizmoLinePoolPrefix .. tostring(idx), false)
+		if self.boundMap == nil or isvalid(self.boundMap) == false then return nil end
+		e = self.boundMap:GetChildByName(_GameConstants.GizmoLinePoolPrefix .. tostring(idx), false)
 		self.lineHolders[slot] = e
 		return e
 	end
 
 	@ExecSpace("ClientOnly")
 	method any DotHolder(integer idx)
-		-- 인덱스 점 홀더 조회(캐시 + isvalid 재조회).
+		-- 인덱스 점 홀더 조회(맵 자식, 캐시 + isvalid 재조회).
 		if idx < 0 or idx >= self.dotPoolSize then return nil end
 		local slot = idx + 1
 		local e = self.dotHolders[slot]
 		if e ~= nil and isvalid(e) then return e end
-		if self.boundPlayer == nil or isvalid(self.boundPlayer) == false then return nil end
-		e = self.boundPlayer:GetChildByName(_GameConstants.GizmoDotPoolPrefix .. tostring(idx), false)
+		if self.boundMap == nil or isvalid(self.boundMap) == false then return nil end
+		e = self.boundMap:GetChildByName(_GameConstants.GizmoDotPoolPrefix .. tostring(idx), false)
 		self.dotHolders[slot] = e
 		return e
 	end
 
 	@ExecSpace("ClientOnly")
 	method any AllocLine()
-		-- 라인 홀더 1개 할당(커서++). 풀 초과 시 1회 경고 후 nil(무시). 홀더 미준비면 nil(이번 프레임 스킵).
+		-- 라인 홀더 1개 할당(커서++). 풀 초과 시 1회 경고 후 nil. 홀더 미준비(스폰 대기)면 nil(이번 프레임 스킵).
 		local idx = self.lineCursor
 		if idx >= self.linePoolSize then
 			if self.lineOverflowed == false then
@@ -168,33 +199,20 @@ script GizmoManager extends Logic
 
 	@ExecSpace("ClientOnly")
 	method void ApplyLine(any e, table pts, boolean loop, Color color, number width)
-		-- 홀더는 player 자식이라 월드좌표 앵커(WorldPosition=0,0) write가 부모 추종에 덮여 안 먹는다(실측).
-		-- → 홀더를 플레이어 위치에 두고(write 먹든 안먹든 기본값이 player), 월드좌표 pts를 '플레이어-상대 로컬좌표'로 변환해 투입.
-		--   LineRenderer가 홀더 로컬공간으로 렌더 → player + (worldPt-playerPos) = worldPt. 플레이어 이동 시 홀더가 따라가 항상 정확.
-		-- MaterialId 미변경(LWA-3009 회피). nil/유효성 가드.
+		-- 월드좌표 pts 그대로 투입(LineRenderer Points=월드공간, 실측). 홀더는 맵 자식이라 (0,0)에 고정.
+		-- SortingLayer "Effect"로 지형 위. MaterialId 미변경(모델 주입).
 		if e == nil or isvalid(e) == false then return end
 		local lrc = e.LineRendererComponent
 		if lrc == nil or isvalid(lrc) == false then return end
-		local px = 0.0
-		local py = 0.0
-		if self.boundPlayer ~= nil and isvalid(self.boundPlayer) then
-			local pwp = self.boundPlayer.TransformComponent.WorldPosition
-			px = pwp.x
-			py = pwp.y
-		end
-		local tf = e.TransformComponent
-		if isvalid(tf) then
-			tf.WorldPosition = Vector3(px, py, self.gizmoZ)
-			tf.WorldZRotation = 0
-			tf.Scale = Vector3(1, 1, 1)
-		end
+		lrc.SortingLayer = "Effect"
+		lrc.OrderInLayer = 32000
 		lrc.Loop = loop
 		lrc.Points:Clear()
 		if pts ~= nil then
 			for i = 1, #pts do
 				local p = pts[i]
 				if p ~= nil then
-					lrc.Points:Add(LinePoint(Vector2(p.x - px, p.y - py), color, width))
+					lrc.Points:Add(LinePoint(Vector2(p.x, p.y), color, width))
 				end
 			end
 		end
@@ -211,7 +229,7 @@ script GizmoManager extends Logic
 
 	@ExecSpace("ClientOnly")
 	method void PolyBox(table corners, Color color, number width, boolean loop)
-		-- 즉시모드 폴리라인: corners={{x,y},..} 그대로(loop=true면 마지막→첫 자동 연결=닫힌 박스).
+		-- 즉시모드 폴리라인: corners 그대로(loop=true면 닫힌 박스).
 		local e = self:AllocLine()
 		if e == nil then return end
 		self:ApplyLine(e, corners, loop, color, width)
@@ -219,7 +237,7 @@ script GizmoManager extends Logic
 
 	@ExecSpace("ClientOnly")
 	method void Circle(Vector2 center, number radius, Color color, number width)
-		-- 즉시모드 원 = GizmoCircleSegments 분할 닫힌 근사 폴리라인. 풀에서 라인 홀더 1개 할당.
+		-- 즉시모드 원 = GizmoCircleSegments 분할 닫힌 근사 폴리라인.
 		local e = self:AllocLine()
 		if e == nil then return end
 		local segs = _GameConstants.GizmoCircleSegments
@@ -236,7 +254,7 @@ script GizmoManager extends Logic
 
 	@ExecSpace("ClientOnly")
 	method void Dot(Vector2 pos, Color color, number scale)
-		-- 즉시모드 점: 스프라이트 홀더(dashdestmarker 재사용)를 WorldPosition 직접 배치(Anchor 불필요).
+		-- 즉시모드 점: 스프라이트 홀더(맵 자식)를 WorldPosition 직접 배치.
 		local e = self:AllocDot()
 		if e == nil or isvalid(e) == false then return end
 		local sr = e.SpriteRendererComponent
@@ -246,6 +264,8 @@ script GizmoManager extends Logic
 			tf.WorldPosition = Vector3(pos.x, pos.y, self.gizmoZ)
 			tf.Scale = Vector3(scale, scale, 1)
 		end
+		sr.SortingLayer = "Effect"
+		sr.OrderInLayer = 32000
 		sr.Color = color
 		sr.Enable = true
 	end

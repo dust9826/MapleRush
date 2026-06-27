@@ -43,6 +43,15 @@
         },
         {
           "TargetType": "MOD.Core.LineRendererComponent",
+          "Name": "MaterialId",
+          "ValueType": {
+            "$type": "MODNativeType",
+            "type": "System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
+          },
+          "Value": "d1b60204-ac5c-4566-8e26-456c2a3fd9b0"
+        },
+        {
+          "TargetType": "MOD.Core.LineRendererComponent",
           "Name": "Loop",
           "ValueType": {
             "$type": "MODNativeType",

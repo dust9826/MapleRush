@@ -108,7 +108,7 @@ script PlayerDashGizmo extends Component
 		self:DrawBlocks()
 
 		-- (2) 최대 사거리 원
-		_GizmoManager:Circle(center, _GameConstants.DashDistance, Color(0.4, 0.7, 1.0, 0.5), _GameConstants.DashGizmoLineWidth)
+		_GizmoManager:Circle(center, _GameConstants.DashDistance, Color(0.3, 0.8, 1.0, 0.95), _GameConstants.DashGizmoLineWidth)
 
 		-- (3) 레이 + 원점/도착 점
 		local rayColor = Color(0.2, 1.0, 0.3, 0.9)

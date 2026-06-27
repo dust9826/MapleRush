@@ -54,25 +54,7 @@ script PlayerBootstrap extends Logic
 		self:SpawnChildSprite(player, _GameConstants.DashPreviewModelId, _GameConstants.DashPreviewName)
 		self:SpawnChildSprite(player, _GameConstants.DashDestMarkerModelId, _GameConstants.DashDestMarkerName)
 		self:SpawnChildSprite(player, _GameConstants.DashRangeModelId, _GameConstants.DashRangeName)
-		if _GameConstants.DrawGizmo then
-			self:EnsureGizmoPool(player)
-		end
-	end
-
-	@ExecSpace("ServerOnly")
-	method void EnsureGizmoPool(Entity player)
-		-- 중앙 GizmoManager용 홀더 풀을 플레이어 자식으로 1회 스폰: 라인(LineRenderer) N + 점(Sprite) K. 이름 = prefix + 인덱스(0-base).
-		-- LineRendererComponent는 런타임 AddComponent 불가 → dashgizmoline(.model authoring) 재사용. 매니저가 클라에서 LocalPlayer 자식에서 이름으로 조회 후 .Points 세팅.
-		-- 소스 컴포넌트(PlayerDashGizmo/CombatGizmo)는 AttachCombatComponents에서 부착(LWA-3048 회피). GizmoManager는 @Logic 자동등록.
-		local lineModel = _GameConstants.DashGizmoLineModelId
-		for i = 0, _GameConstants.GizmoLinePoolSize - 1 do
-			self:SpawnChildSprite(player, lineModel, _GameConstants.GizmoLinePoolPrefix .. tostring(i))
-		end
-		local dotModel = _GameConstants.DashDestMarkerModelId
-		for i = 0, _GameConstants.GizmoDotPoolSize - 1 do
-			self:SpawnChildSprite(player, dotModel, _GameConstants.GizmoDotPoolPrefix .. tostring(i))
-		end
-		log("[PlayerBootstrap] gizmo pool spawned (" .. tostring(_GameConstants.GizmoLinePoolSize) .. " line + " .. tostring(_GameConstants.GizmoDotPoolSize) .. " dot)")
+		-- 기즈모 풀(라인/점)은 GizmoManager가 '맵 자식'으로 맵별 스폰한다(LineRenderer는 플레이어 자식이면 렌더 안 됨 — 실측). 여기선 스폰 안 함.
 	end
 
 	@ExecSpace("ServerOnly")
