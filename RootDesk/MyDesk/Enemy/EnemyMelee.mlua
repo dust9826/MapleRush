@@ -113,7 +113,7 @@ script EnemyMelee extends Component
 				-- 공격 개시: 텔레그래프 등록 (슬로우 트리거/패링 대상)
 				self.aiState = "windup"
 				self.stateTimer = self.WindupTime
-				self.pendingAttack = _CombatPrimitives:RegisterEnemyAttack(myCenter, self.AttackRadius, 1, self.AttackParryable, self.WindupTime)
+				self.pendingAttack = _CombatPrimitives:RegisterEnemyAttack(myCenter, self.AttackRadius, 1, self.AttackParryable, self.WindupTime, self.Entity)
 				self:StopMove()
 				self:PlayClip(_GameConstants.MeleeAttackClip)
 				log("[EnemyMelee] " .. self.Entity.Name .. " windup start (parryable=" .. tostring(self.AttackParryable) .. ")")

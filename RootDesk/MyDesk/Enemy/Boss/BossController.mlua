@@ -96,6 +96,9 @@ script BossController extends Component
 	method void CancelWindup()
 		-- 그로기/그레이스로 윈드업이 끊기면 묵은 공격 레코드 폐기 + 패턴 사이클 리셋 (재개 후 옛 위치 명중 방지).
 		if self.phase == "windup" then
+			if self.pendingAttack ~= nil and self.pendingAttack.id ~= nil then
+				_CombatPrimitives:BroadcastCancel(self.Entity.CurrentMap, self.pendingAttack.id)
+			end
 			self.pendingAttack = nil
 			self.phase = "delay"
 			self.phaseTimer = _GameConstants.BossPatternDelay
@@ -110,7 +113,7 @@ script BossController extends Component
 			self.currentPattern = "slam"
 			self.phase = "windup"
 			self.phaseTimer = 0.8
-			self.pendingAttack = _CombatPrimitives:RegisterEnemyAttack(myCenter, 1.5, 1, true, 0.8)
+			self.pendingAttack = _CombatPrimitives:RegisterEnemyAttack(myCenter, 1.5, 1, true, 0.8, self.Entity)
 			self.pendingAttack.bossEntityId = self.Entity.Name
 			self:StopMove()
 			self:PlayClip(_GameConstants.BossAttackClip)
@@ -126,7 +129,7 @@ script BossController extends Component
 			self.currentPattern = "redSmash"
 			self.phase = "windup"
 			self.phaseTimer = 1.0
-			self.pendingAttack = _CombatPrimitives:RegisterEnemyAttack(myCenter, 2.0, 1, false, 1.0)
+			self.pendingAttack = _CombatPrimitives:RegisterEnemyAttack(myCenter, 2.0, 1, false, 1.0, self.Entity)
 			self:StopMove()
 			self:PlayClip(_GameConstants.BossSkillClip)
 			log("[BossController] pattern RED SMASH (red — unparryable, windup 1.0s)")

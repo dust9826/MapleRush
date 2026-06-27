@@ -1,0 +1,82 @@
+@Component
+script CombatGizmo extends Component
+
+	-- 전투 디버그 기즈모 '소스'(@Component ClientOnly LocalPlayer). 전부 _GizmoManager:Circle로 그림. 게이트 = _GameConstants.DrawGizmo.
+	-- (1) 플레이어 공격 플래시원(하늘색) — 형제 PlayerCombat.lastAttackTime 폴링(쿨/대시/아이템 게이트 통과한 공격만 기록됨).
+	-- (2) 적 투사체 원(주황) — map의 script.Projectile 열거, OwnerSide=="enemy" 필터(반사 시 'player' 동기→자동 제외). 브로드캐스트 불필요.
+	-- (3) 적 근접/보스 공격원(windup=노랑 / 명중임박·무패링=빨강) — 서버 브로드캐스트 수신분(_CombatPrimitives.clientEnemyAttacks).
+
+	@HideFromInspector property any combat = nil
+
+	@ExecSpace("ClientOnly")
+	method void OnBeginPlay()
+		-- 로컬 플레이어 전용. PlayerCombat 형제 참조 캐시.
+		if self.Entity ~= _UserService.LocalPlayer then return end
+		self.combat = self.Entity:GetComponent("script.PlayerCombat")
+		log("[CombatGizmo] OnBeginPlay (combat=" .. tostring(self.combat ~= nil) .. ", draw=" .. tostring(_GameConstants.DrawGizmo) .. ")")
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnUpdate(number delta)
+		-- 전투 기즈모 매 프레임 갱신. 매니저가 프레임 시작에 클리어 → 여기선 그릴 원만 호출.
+		if _GameConstants.DrawGizmo == false then return end
+		local player = _UserService.LocalPlayer
+		if player == nil or isvalid(player) == false or self.Entity ~= player then return end
+		local width = _GameConstants.GizmoCombatWidth
+
+		-- (1) 플레이어 공격 플래시원 (발 중심, 반지름 RadiusAttack, 짧은 시간)
+		if self.combat == nil then self.combat = self.Entity:GetComponent("script.PlayerCombat") end
+		if self.combat ~= nil then
+			---@type PlayerCombat
+			local pc = self.combat
+			if _WallClock:IsExpired(pc.lastAttackTime, _GameConstants.GizmoAttackFlash) == false then
+				local pp = self.Entity.TransformComponent.WorldPosition
+				_GizmoManager:Circle(Vector2(pp.x, pp.y), _GameConstants.RadiusAttack, Color(0.3, 0.8, 1.0, 0.85), width)
+			end
+		end
+
+		local map = player.CurrentMap
+		if isvalid(map) == false then return end
+
+		-- (2) 적 투사체 원 (주황)
+		local list = map:GetChildComponentsByTypeName("script.Projectile", true)
+		if list ~= nil then
+			for _, compAny in ipairs(list) do
+				---@type Projectile
+				local comp = compAny
+				local e = comp.Entity
+				if isvalid(e) and comp.OwnerSide == "enemy" then
+					local p = e.TransformComponent.WorldPosition
+					_GizmoManager:Circle(Vector2(p.x, p.y), _GameConstants.RadiusProjectile, Color(1.0, 0.5, 0.1, 0.9), width)
+				end
+			end
+		end
+
+		-- (3) 브로드캐스트 적 근접/보스 공격원 (windup=노랑 / 명중임박·무패링=빨강). 만료(life 경과) 제거도 여기서.
+		local atks = _CombatPrimitives:GetClientEnemyAttacks()
+		if atks ~= nil then
+			local now = _WallClock:Now()
+			for i = #atks, 1, -1 do
+				local a = atks[i]
+				local elapsed = now - a.recvAt
+				if elapsed >= a.life then
+					table.remove(atks, i)
+				else
+					local color
+					if a.parryable == false then
+						-- 패링 불가(redSmash) — 전 구간 빨강
+						color = Color(1.0, 0.2, 0.2, 0.9)
+					elseif (a.windup - elapsed) > 0.15 then
+						-- 텔레그래프 중 — 노랑
+						color = Color(1.0, 0.9, 0.2, 0.85)
+					else
+						-- 명중 임박/명중 — 빨강
+						color = Color(1.0, 0.2, 0.2, 0.9)
+					end
+					_GizmoManager:Circle(a.center, a.radius, color, width)
+				end
+			end
+		end
+	end
+
+end

@@ -1,0 +1,244 @@
+@Logic
+script GizmoManager extends Logic
+
+	-- 중앙 즉시모드(immediate-mode) 기즈모 매니저. @Logic OnUpdate가 모든 @Component.OnUpdate보다 먼저 실행되는 보장을 이용해
+	-- 프레임 시작에 '지난 프레임 사용분만' 숨기고(usage-bounded, 풀 전체 스캔 안 함) 커서를 0으로 리셋한다.
+	-- 그 뒤 같은 프레임에 소스(@Component PlayerDashGizmo/CombatGizmo)가 :Circle/:Line/:PolyBox/:Dot를 호출 → 풀에서 다음 홀더 할당(커서++).
+	-- ClientOnly·로컬플레이어 전용. 라인 홀더(LineRendererComponent)/점 홀더(SpriteRendererComponent)는 PlayerBootstrap이
+	-- DrawGizmo 게이팅으로 player 자식 풀로 스폰(이름=prefix+index, 0-base). LineRenderer는 런타임 AddComponent 불가 → 풀 크기는 스폰 시 고정.
+	-- 좌표: 라인 홀더는 매 프레임 월드원점·무회전·단위스케일 Anchor 후 월드좌표 LinePoint 투입(부모=player 추종 상쇄). 점은 WorldPosition 직접.
+	-- MaterialId는 절대 건드리지 않음(LineRenderer 내장 기본 셰이더 — Default 셰이더 머티리얼은 LWA-3009로 거부됨, 실측).
+
+	@HideFromInspector property any lineHolders = nil      -- slot(idx+1) -> 라인 홀더 엔티티 캐시
+	@HideFromInspector property any dotHolders = nil       -- slot(idx+1) -> 점 홀더 엔티티 캐시
+	@HideFromInspector property any boundPlayer = nil       -- 현재 바인딩된 LocalPlayer
+	@HideFromInspector property integer lineCursor = 0      -- 이번 프레임 할당된 라인 수(= 다음 인덱스)
+	@HideFromInspector property integer dotCursor = 0       -- 이번 프레임 할당된 점 수
+	@HideFromInspector property integer linePoolSize = 0
+	@HideFromInspector property integer dotPoolSize = 0
+	@HideFromInspector property number gizmoZ = 0.0         -- 프레임 시작에 캡처한 로컬플레이어 깊이(z) — 라인 앵커/점 공용
+	@HideFromInspector property boolean lineOverflowed = false
+	@HideFromInspector property boolean dotOverflowed = false
+
+	@ExecSpace("ClientOnly")
+	method void OnBeginPlay()
+		-- 클라 1회 초기화. 풀 크기 상수 캐시. 플레이어는 아직 없을 수 있어 Rebind는 OnUpdate에서 지연 수행.
+		self.lineHolders = {}
+		self.dotHolders = {}
+		self.lineCursor = 0
+		self.dotCursor = 0
+		self.linePoolSize = _GameConstants.GizmoLinePoolSize
+		self.dotPoolSize = _GameConstants.GizmoDotPoolSize
+		self.gizmoZ = 0.0
+		self.boundPlayer = nil
+		log("[GizmoManager] OnBeginPlay (linePool=" .. tostring(self.linePoolSize) .. ", dotPool=" .. tostring(self.dotPoolSize) .. ")")
+	end
+
+	@ExecSpace("ClientOnly")
+	method void Rebind(any player)
+		-- LocalPlayer 최초 획득/교체 시 홀더 캐시·커서 재설정(서버 비동기 스폰/맵전환 대비; 보통 player 유지로 미발생).
+		self.boundPlayer = player
+		self.lineHolders = {}
+		self.dotHolders = {}
+		self.lineCursor = 0
+		self.dotCursor = 0
+		self.linePoolSize = _GameConstants.GizmoLinePoolSize
+		self.dotPoolSize = _GameConstants.GizmoDotPoolSize
+		log("[GizmoManager] rebound to local player")
+	end
+
+	@ExecSpace("ClientOnly")
+	method void HideUsed()
+		-- 지난 프레임 할당분(커서 값)만 숨긴다 — 풀 전체를 매 프레임 스캔하지 않음(효율). 캐시 직접 사용.
+		-- 재사용 홀더는 같은 프레임에 그리기 호출이 다시 채우므로 화면 잔상 0, 미사용 잉여만 숨김 유지.
+		local n = self.lineCursor
+		local i = 0
+		while i < n do
+			local e = self.lineHolders[i + 1]
+			if e ~= nil and isvalid(e) then
+				local lrc = e.LineRendererComponent
+				if lrc ~= nil and isvalid(lrc) then
+					lrc.Points:Clear()
+					lrc.Enable = false
+				end
+			end
+			i = i + 1
+		end
+		local m = self.dotCursor
+		i = 0
+		while i < m do
+			local e = self.dotHolders[i + 1]
+			if e ~= nil and isvalid(e) then
+				local sr = e.SpriteRendererComponent
+				if isvalid(sr) then sr.Enable = false end
+			end
+			i = i + 1
+		end
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnUpdate(number delta)
+		-- 프레임 시작: 플레이어 재획득 → 지난 프레임 사용분만 숨김 → 커서 0. DrawGizmo off면 1회 정리 후 종료(잔상 제거).
+		local player = _UserService.LocalPlayer
+		if player == nil or isvalid(player) == false then
+			self.boundPlayer = nil
+			return
+		end
+		if self.boundPlayer ~= player then
+			self:Rebind(player)
+		end
+		if self.lineHolders == nil then self.lineHolders = {} end
+		if self.dotHolders == nil then self.dotHolders = {} end
+
+		if _GameConstants.DrawGizmo == false then
+			self:HideUsed()
+			self.lineCursor = 0
+			self.dotCursor = 0
+			return
+		end
+
+		local tf = player.TransformComponent
+		if isvalid(tf) then self.gizmoZ = tf.WorldPosition.z end
+
+		self:HideUsed()
+		self.lineCursor = 0
+		self.dotCursor = 0
+		self.lineOverflowed = false
+		self.dotOverflowed = false
+		-- 이후 같은 프레임에 소스 컴포넌트들이 그린다(@Logic-before-@Component 보장).
+	end
+
+	@ExecSpace("ClientOnly")
+	method any LineHolder(integer idx)
+		-- 인덱스 라인 홀더 조회(캐시 + isvalid 재조회; 서버 비동기 스폰 대비). 범위 밖이면 nil.
+		if idx < 0 or idx >= self.linePoolSize then return nil end
+		local slot = idx + 1
+		local e = self.lineHolders[slot]
+		if e ~= nil and isvalid(e) then return e end
+		if self.boundPlayer == nil or isvalid(self.boundPlayer) == false then return nil end
+		e = self.boundPlayer:GetChildByName(_GameConstants.GizmoLinePoolPrefix .. tostring(idx), false)
+		self.lineHolders[slot] = e
+		return e
+	end
+
+	@ExecSpace("ClientOnly")
+	method any DotHolder(integer idx)
+		-- 인덱스 점 홀더 조회(캐시 + isvalid 재조회).
+		if idx < 0 or idx >= self.dotPoolSize then return nil end
+		local slot = idx + 1
+		local e = self.dotHolders[slot]
+		if e ~= nil and isvalid(e) then return e end
+		if self.boundPlayer == nil or isvalid(self.boundPlayer) == false then return nil end
+		e = self.boundPlayer:GetChildByName(_GameConstants.GizmoDotPoolPrefix .. tostring(idx), false)
+		self.dotHolders[slot] = e
+		return e
+	end
+
+	@ExecSpace("ClientOnly")
+	method any AllocLine()
+		-- 라인 홀더 1개 할당(커서++). 풀 초과 시 1회 경고 후 nil(무시). 홀더 미준비면 nil(이번 프레임 스킵).
+		local idx = self.lineCursor
+		if idx >= self.linePoolSize then
+			if self.lineOverflowed == false then
+				self.lineOverflowed = true
+				log_warning("[GizmoManager] line pool overflow (size " .. tostring(self.linePoolSize) .. ") — 초과 기즈모 무시")
+			end
+			return nil
+		end
+		local e = self:LineHolder(idx)
+		self.lineCursor = idx + 1
+		return e
+	end
+
+	@ExecSpace("ClientOnly")
+	method any AllocDot()
+		-- 점 홀더 1개 할당(커서++). 풀 초과 시 1회 경고 후 nil.
+		local idx = self.dotCursor
+		if idx >= self.dotPoolSize then
+			if self.dotOverflowed == false then
+				self.dotOverflowed = true
+				log_warning("[GizmoManager] dot pool overflow (size " .. tostring(self.dotPoolSize) .. ") — 초과 점 무시")
+			end
+			return nil
+		end
+		local e = self:DotHolder(idx)
+		self.dotCursor = idx + 1
+		return e
+	end
+
+	@ExecSpace("ClientOnly")
+	method void ApplyLine(any e, table pts, boolean loop, Color color, number width)
+		-- 홀더를 월드원점·무회전·단위스케일로 Anchor(부모=player 추종 상쇄) 후 월드좌표 pts={{x,y},..}를 LinePoint로 투입.
+		-- MaterialId 미변경(LWA-3009 회피). nil/유효성 가드.
+		if e == nil or isvalid(e) == false then return end
+		local lrc = e.LineRendererComponent
+		if lrc == nil or isvalid(lrc) == false then return end
+		local tf = e.TransformComponent
+		if isvalid(tf) then
+			tf.WorldPosition = Vector3(0, 0, self.gizmoZ)
+			tf.WorldZRotation = 0
+			tf.Scale = Vector3(1, 1, 1)
+		end
+		lrc.Loop = loop
+		lrc.Points:Clear()
+		if pts ~= nil then
+			for i = 1, #pts do
+				local p = pts[i]
+				if p ~= nil then
+					lrc.Points:Add(LinePoint(Vector2(p.x, p.y), color, width))
+				end
+			end
+		end
+		lrc.Enable = true
+	end
+
+	@ExecSpace("ClientOnly")
+	method void Line(Vector2 a, Vector2 b, Color color, number width)
+		-- 즉시모드 선분: 2점 오픈 폴리라인.
+		local e = self:AllocLine()
+		if e == nil then return end
+		self:ApplyLine(e, { { x = a.x, y = a.y }, { x = b.x, y = b.y } }, false, color, width)
+	end
+
+	@ExecSpace("ClientOnly")
+	method void PolyBox(table corners, Color color, number width, boolean loop)
+		-- 즉시모드 폴리라인: corners={{x,y},..} 그대로(loop=true면 마지막→첫 자동 연결=닫힌 박스).
+		local e = self:AllocLine()
+		if e == nil then return end
+		self:ApplyLine(e, corners, loop, color, width)
+	end
+
+	@ExecSpace("ClientOnly")
+	method void Circle(Vector2 center, number radius, Color color, number width)
+		-- 즉시모드 원 = GizmoCircleSegments 분할 닫힌 근사 폴리라인. 풀에서 라인 홀더 1개 할당.
+		local e = self:AllocLine()
+		if e == nil then return end
+		local segs = _GameConstants.GizmoCircleSegments
+		if segs < 8 then segs = 8 end
+		local pts = {}
+		local i = 0
+		while i < segs do
+			local ang = (i / segs) * math.pi * 2.0
+			table.insert(pts, { x = center.x + math.cos(ang) * radius, y = center.y + math.sin(ang) * radius })
+			i = i + 1
+		end
+		self:ApplyLine(e, pts, true, color, width)
+	end
+
+	@ExecSpace("ClientOnly")
+	method void Dot(Vector2 pos, Color color, number scale)
+		-- 즉시모드 점: 스프라이트 홀더(dashdestmarker 재사용)를 WorldPosition 직접 배치(Anchor 불필요).
+		local e = self:AllocDot()
+		if e == nil or isvalid(e) == false then return end
+		local sr = e.SpriteRendererComponent
+		if isvalid(sr) == false then return end
+		local tf = e.TransformComponent
+		if isvalid(tf) then
+			tf.WorldPosition = Vector3(pos.x, pos.y, self.gizmoZ)
+			tf.Scale = Vector3(scale, scale, 1)
+		end
+		sr.Color = color
+		sr.Enable = true
+	end
+
+end

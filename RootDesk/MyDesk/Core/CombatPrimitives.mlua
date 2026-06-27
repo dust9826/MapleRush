@@ -16,6 +16,9 @@ script CombatPrimitives extends Logic
 
 	property any blockColliderCache = nil
 
+	-- 클라측 수신 적 근접 공격 원 목록(전투 기즈모 표시 전용). 항목 {id,center,radius,parryable,windup,life,recvAt}. CombatGizmo가 카운트다운·제거.
+	property any clientEnemyAttacks = nil
+
 	@ExecSpace("ServerOnly")
 	method void OnUpdate(number delta)
 		-- 만료된 공격 레코드 정리 (서버, 매 프레임).
@@ -29,8 +32,9 @@ script CombatPrimitives extends Logic
 	end
 
 	@ExecSpace("ServerOnly")
-	method table RegisterEnemyAttack(Vector2 center, number radius, number damage, boolean parryable, number hitDelay)
+	method table RegisterEnemyAttack(Vector2 center, number radius, number damage, boolean parryable, number hitDelay, Entity sourceEntity)
 		-- 적 근접 공격 레코드 등록(서버). hitDelay(텔레그래프) 후 명중 판정, 직후 만료. 반환: 레코드 테이블.
+		-- sourceEntity: 공격 주체 적(맵/유저 산출용 — 기즈모 브로드캐스트 대상). 판정 로직엔 미사용(무손상).
 		if self.activeAttacks == nil then self.activeAttacks = {} end
 		self.nextAttackId += 1
 		local now = _UtilLogic.ServerElapsedSeconds
@@ -47,6 +51,8 @@ script CombatPrimitives extends Logic
 			bossEntityId = nil,
 		}
 		table.insert(self.activeAttacks, rec)
+		-- 기즈모 통지: 남은 windup=hitDelay, 남은 life=hitDelay+0.25(=expireAt-now). 절대 ServerElapsedSeconds 누수 금지 — 상대초만.
+		self:BroadcastEnemyAttack(sourceEntity, rec.id, center, radius, hitDelay, hitDelay + 0.25, parryable)
 		return rec
 	end
 
@@ -86,6 +92,7 @@ script CombatPrimitives extends Logic
 				if rec.canceled == false and rec.parryable and self:CircleOverlap(attackCenter, attackRadius, rec.center, rec.radius) then
 					rec.canceled = true
 					count += 1
+					self:BroadcastCancel(mapEntity, rec.id)
 					log("[CombatPrimitives] melee attack PARRIED (id=" .. tostring(rec.id) .. ")")
 					-- 보스 근거리 패링: 그로기 게이지 즉시 (ATK×100%)×2 충전 (stage_design §1.4.2)
 					if rec.bossEntityId ~= nil and mapEntity ~= nil then
@@ -535,6 +542,71 @@ script CombatPrimitives extends Logic
 	method Vector2 GetCursorWorldDir(Vector2 fromPos)
 		-- fromPos에서 커서를 향하는 정규화 방향 벡터 (클라 전용).
 		return self:DirectionTo(fromPos, self:GetCursorWorldPos())
+	end
+
+	@ExecSpace("ServerOnly")
+	method void BroadcastEnemyAttack(Entity sourceEntity, number id, Vector2 center, number radius, number windup, number life, boolean parryable)
+		-- 소스 적이 속한 맵의 모든 유저 클라에 공격원 통지(1인 1런 전제). DrawGizmo off면 미전송(클라 목록 미증가).
+		if _GameConstants.DrawGizmo == false then return end
+		if sourceEntity == nil or isvalid(sourceEntity) == false then return end
+		local map = sourceEntity.CurrentMap
+		if map == nil or isvalid(map) == false then return end
+		local users = _UserService:GetUsersByMapComponent(map.MapComponent)
+		if users == nil then return end
+		for _, u in ipairs(users) do
+			if isvalid(u) and u.PlayerComponent ~= nil then
+				self:NotifyEnemyAttack(id, center, radius, windup, life, parryable, u.PlayerComponent.UserId)
+			end
+		end
+	end
+
+	@ExecSpace("ServerOnly")
+	method void BroadcastCancel(Entity mapEntity, number id)
+		-- 공격 취소(패링/그로기 폐기) 기즈모 제거를 맵 유저 클라로 통지.
+		if _GameConstants.DrawGizmo == false then return end
+		if mapEntity == nil or isvalid(mapEntity) == false then return end
+		local users = _UserService:GetUsersByMapComponent(mapEntity.MapComponent)
+		if users == nil then return end
+		for _, u in ipairs(users) do
+			if isvalid(u) and u.PlayerComponent ~= nil then
+				self:NotifyEnemyAttackCanceled(id, u.PlayerComponent.UserId)
+			end
+		end
+	end
+
+	@ExecSpace("Client")
+	method void NotifyEnemyAttack(number id, Vector2 center, number radius, number windup, number life, boolean parryable)
+		-- 클라 수신: 공격원 기즈모 등록(같은 id 있으면 교체). recvAt 스냅샷 후 CombatGizmo가 카운트다운.
+		-- targetUserId는 @ExecSpace("Client") 라우팅용 암묵 인자로 호출부 '마지막'에 전달 — 선언 파라미터 아님(추가 금지).
+		if self.clientEnemyAttacks == nil then self.clientEnemyAttacks = {} end
+		for i = #self.clientEnemyAttacks, 1, -1 do
+			if self.clientEnemyAttacks[i].id == id then table.remove(self.clientEnemyAttacks, i) end
+		end
+		table.insert(self.clientEnemyAttacks, {
+			id = id,
+			center = center,
+			radius = radius,
+			parryable = parryable,
+			windup = windup,
+			life = life,
+			recvAt = _WallClock:Now(),
+		})
+	end
+
+	@ExecSpace("Client")
+	method void NotifyEnemyAttackCanceled(number id)
+		-- 클라 수신: id 공격원 기즈모 제거(패링/폐기).
+		if self.clientEnemyAttacks == nil then return end
+		for i = #self.clientEnemyAttacks, 1, -1 do
+			if self.clientEnemyAttacks[i].id == id then table.remove(self.clientEnemyAttacks, i) end
+		end
+	end
+
+	@ExecSpace("ClientOnly")
+	method any GetClientEnemyAttacks()
+		-- 전투 기즈모가 폴링하는 클라 활성 공격 목록(없으면 생성).
+		if self.clientEnemyAttacks == nil then self.clientEnemyAttacks = {} end
+		return self.clientEnemyAttacks
 	end
 
 end
