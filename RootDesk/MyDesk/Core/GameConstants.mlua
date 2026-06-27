@@ -31,6 +31,25 @@ script GameConstants extends Logic
 
 	property number RadiusSmoke = 3.0
 
+	-- ========== 공격 박스 판정 (원→AABB 박스, world unit) ==========
+	-- 적 근접 평타: 적 정면으로 뻗는 전방 박스 (forward=사거리, height=세로). 높이는 점프/위-대시로 윗변 회피 가능하게.
+	property number EnemyMeleeBoxForward = 2.0
+	property number EnemyMeleeBoxHeight = 1.5
+	-- 보스 slam: 전방 박스 (적보다 큼).
+	property number BossSlamBoxForward = 2.5
+	property number BossSlamBoxHeight = 2.0
+	-- 보스 redSmash: 중앙 박스 (가로 넓고 세로 낮음 → 좌우 도주 차단, 점프/위-대시로만 회피). half = 반폭/반높이.
+	property number BossRedSmashBoxHalfW = 3.5
+	property number BossRedSmashBoxHalfH = 1.2
+	-- 플레이어 평타: 커서 좌/우 방향 전방 수평 박스.
+	property number PlayerAttackBoxForward = 2.5
+	property number PlayerAttackBoxHeight = 2.0
+	-- 보스 tripleShot 세로 스프레드(레인/발사 공용 — ResolvePattern의 i*0.6와 동일 값).
+	property number BossTripleSpread = 0.6
+	-- 원거리 예상 공격 레인 기즈모: 길이(투사체 가시 사거리 근사) + 폭(투사체 굵기×2).
+	property number GizmoRangedLaneLength = 6.0
+	property number GizmoRangedLaneWidth = 0.4
+
 	-- ========== 데미지 배율 (ATK 기준 %) ==========
 	property number DmgAttackPct = 1.0
 
