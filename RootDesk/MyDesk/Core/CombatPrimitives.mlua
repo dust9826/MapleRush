@@ -96,12 +96,12 @@ script CombatPrimitives extends Logic
 	end
 
 	@ExecSpace("ServerOnly")
-	method integer TryParry(Entity mapEntity, Vector2 attackCenter, number attackRadius, number reflectDamage)
-		-- 평타 판정 원과 겹치는 parryable 공격 처리: 근접 공격 무효화 / 투사체 반사(ATK×200%). 반환: 패링 수.
+	method integer TryParry(Entity mapEntity, Vector2 boxCenter, number hw, number hh, number reflectDamage)
+		-- 평타 판정 박스와 겹치는 parryable 공격 처리: 근접 공격 무효화 / 투사체 반사(ATK×200%). 반환: 패링 수.
 		local count = 0
 		if self.activeAttacks ~= nil then
 			for _, rec in ipairs(self.activeAttacks) do
-				if rec.canceled == false and rec.parryable and self:CircleOverlap(attackCenter, attackRadius, rec.center, rec.radius) then
+				if rec.canceled == false and rec.parryable and self:BoxBoxOverlap(boxCenter, hw, hh, rec.center, rec.hw, rec.hh) then
 					rec.canceled = true
 					count += 1
 					self:BroadcastCancel(mapEntity, rec.id)
@@ -128,7 +128,7 @@ script CombatPrimitives extends Logic
 				local e = comp.Entity
 				if isvalid(e) and comp.OwnerSide == "enemy" and comp.Parryable == true then
 					local p = e.TransformComponent.WorldPosition
-					if self:CircleOverlap(attackCenter, attackRadius, Vector2(p.x, p.y), _GameConstants.RadiusProjectile) then
+					if self:BoxCircleOverlap(boxCenter, hw, hh, Vector2(p.x, p.y), _GameConstants.RadiusProjectile) then
 						comp:Reflect(reflectDamage)
 						count += 1
 						log("[CombatPrimitives] projectile REFLECTED (dmg=" .. tostring(reflectDamage) .. ")")
@@ -218,6 +218,26 @@ script CombatPrimitives extends Logic
 			if isvalid(e) then
 				local p = e.TransformComponent.WorldPosition
 				if self:CircleOverlap(center, radius, Vector2(p.x, p.y), _GameConstants.RadiusEnemyHitbox) then
+					comp:TakeDamage(damage, source)
+					hitCount += 1
+				end
+			end
+		end
+		return hitCount
+	end
+
+	method integer DamageEnemiesInBox(Entity mapEntity, Vector2 boxCenter, number hw, number hh, number damage, string source)
+		-- 박스 범위 내 모든 적(script.EnemyHealth)에 데미지. 명중 수 반환. 서버 메서드에서 호출할 것.
+		if mapEntity == nil then return 0 end
+		local list = mapEntity:GetChildComponentsByTypeName("script.EnemyHealth", true)
+		local hitCount = 0
+		for _, compAny in ipairs(list) do
+			---@type EnemyHealth
+			local comp = compAny
+			local e = comp.Entity
+			if isvalid(e) then
+				local p = e.TransformComponent.WorldPosition
+				if self:BoxCircleOverlap(boxCenter, hw, hh, Vector2(p.x, p.y), _GameConstants.RadiusEnemyHitbox) then
 					comp:TakeDamage(damage, source)
 					hitCount += 1
 				end
