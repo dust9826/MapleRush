@@ -75,6 +75,50 @@ script CombatGizmo extends Component
 				end
 			end
 		end
+
+		-- (4) 예상 공격 레인(회전 직사각형) — 클라 계산. 원거리 단발 1갈래 + 보스 tripleShot 3갈래.
+		local laneLen = _GameConstants.GizmoRangedLaneLength
+		local laneW = _GameConstants.GizmoRangedLaneWidth
+		local pc3 = _UserService.LocalPlayer.TransformComponent.WorldPosition
+		local playerCenter = Vector2(pc3.x, pc3.y + _GameConstants.PlayerCenterYOffset)
+
+		-- 원거리 단발: 조준 중(IsAiming) 적 → 적→플레이어 1갈래
+		local rangedList = map:GetChildComponentsByTypeName("script.EnemyRanged", true)
+		if rangedList ~= nil then
+			for _, compAny in ipairs(rangedList) do
+				---@type EnemyRanged
+				local comp = compAny
+				local e = comp.Entity
+				if isvalid(e) and comp.IsAiming == true then
+					local ep = e.TransformComponent.WorldPosition
+					local ec = Vector2(ep.x, ep.y + 0.5)
+					local dir = _CombatPrimitives:DirectionTo(ec, playerCenter)
+					_GizmoManager:AttackLane(ec, dir, laneLen, laneW)
+				end
+			end
+		end
+
+		-- 보스 tripleShot: windup 중(TelegraphTriple) → ±BossTripleSpread 3갈래
+		local bossList = map:GetChildComponentsByTypeName("script.BossController", true)
+		if bossList ~= nil then
+			local spread = _GameConstants.BossTripleSpread
+			for _, compAny in ipairs(bossList) do
+				---@type BossController
+				local comp = compAny
+				local e = comp.Entity
+				if isvalid(e) and comp.TelegraphTriple == true then
+					local bp = e.TransformComponent.WorldPosition
+					local bc = Vector2(bp.x, bp.y + 0.5)
+					local i = -1
+					while i <= 1 do
+						local target = Vector2(playerCenter.x, playerCenter.y + i * spread)
+						local dir = _CombatPrimitives:DirectionTo(bc, target)
+						_GizmoManager:AttackLane(bc, dir, laneLen, laneW)
+						i = i + 1
+					end
+				end
+			end
+		end
 	end
 
 end
