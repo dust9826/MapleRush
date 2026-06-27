@@ -12,6 +12,31 @@ script BossController extends Component
 
 	property integer shotIndex = 0
 
+	-- 모션 구동: 모델 기본 SpriteRUID(stand)를 캡처해 두고 상태별로 교체 (EnemyMelee와 동일 방식).
+	property string standClip = ""
+
+	property string currentClip = ""
+
+	@ExecSpace("ServerOnly")
+	method void OnBeginPlay()
+		-- stand 클립을 모델 기본 SpriteRUID에서 캡처.
+		local sprite = self.Entity.SpriteRendererComponent
+		if isvalid(sprite) then self.standClip = sprite.SpriteRUID end
+		self.currentClip = self.standClip
+		log("[BossController] OnBeginPlay — standClip captured: " .. tostring(self.standClip))
+	end
+
+	@ExecSpace("ServerOnly")
+	method void PlayClip(string ruid)
+		-- SpriteRUID를 ruid로 교체(변경 시에만 — 매 프레임 재set 시 애니가 0프레임에서 멈추는 것 방지). @Sync라 클라 자동 반영.
+		if ruid == "" or ruid == self.currentClip then return end
+		local sprite = self.Entity.SpriteRendererComponent
+		if isvalid(sprite) then
+			sprite.SpriteRUID = ruid
+			self.currentClip = ruid
+		end
+	end
+
 	@ExecSpace("ServerOnly")
 	method void OnUpdate(number delta)
 		-- 보스 AI: 그로기 중 완전 정지 / 패턴 풀 랜덤 사이클. 연막·섬광 무시 (보스 면역).
@@ -21,6 +46,7 @@ script BossController extends Component
 		if _StageManager:IsGraceActive() then
 			self:CancelWindup()
 			self:StopMove()
+			self:PlayClip(self.standClip)
 			return
 		end
 		---@type GroggyGauge
@@ -28,6 +54,7 @@ script BossController extends Component
 		if gg ~= nil and gg.IsGroggy == true then
 			self:CancelWindup()
 			self:StopMove()
+			self:PlayClip(_GameConstants.BossGroggyClip)
 			return
 		end
 		local timeScale = _SlowMotion:Scale()
@@ -35,6 +62,7 @@ script BossController extends Component
 		local player = self:FindPlayer()
 		if player == nil then
 			self:StopMove()
+			self:PlayClip(self.standClip)
 			return
 		end
 		local myPos = self.Entity.TransformComponent.WorldPosition
@@ -44,11 +72,13 @@ script BossController extends Component
 		local dx = playerCenter.x - myCenter.x
 		local dist = math.abs(dx)
 
-		-- 추격 (패턴 윈드업 중에는 정지)
+		-- 추격 (패턴 윈드업 중에는 정지). 윈드업 중에는 StartPattern이 설정한 공격 모션 유지.
 		if self.phase ~= "windup" and dist > 1.8 then
 			self:ChaseToward(playerCenter.x, myCenter.x, timeScale)
+			self:PlayClip(_GameConstants.BossMoveClip)
 		elseif self.phase ~= "windup" then
 			self:StopMove()
+			self:PlayClip(self.standClip)
 		end
 
 		self.phaseTimer -= scaledDelta
@@ -83,12 +113,14 @@ script BossController extends Component
 			self.pendingAttack = _CombatPrimitives:RegisterEnemyAttack(myCenter, 1.5, 1, true, 0.8)
 			self.pendingAttack.bossEntityId = self.Entity.Name
 			self:StopMove()
+			self:PlayClip(_GameConstants.BossAttackClip)
 			log("[BossController] pattern SLAM (yellow, windup 0.8s)")
 		elseif roll == 2 then
 			self.currentPattern = "tripleShot"
 			self.phase = "windup"
 			self.phaseTimer = 0.6
 			self:StopMove()
+			self:PlayClip(_GameConstants.BossSkillClip)
 			log("[BossController] pattern TRIPLE SHOT (yellow, windup 0.6s)")
 		else
 			self.currentPattern = "redSmash"
@@ -96,6 +128,7 @@ script BossController extends Component
 			self.phaseTimer = 1.0
 			self.pendingAttack = _CombatPrimitives:RegisterEnemyAttack(myCenter, 2.0, 1, false, 1.0)
 			self:StopMove()
+			self:PlayClip(_GameConstants.BossSkillClip)
 			log("[BossController] pattern RED SMASH (red — unparryable, windup 1.0s)")
 		end
 	end
@@ -138,6 +171,11 @@ script BossController extends Component
 				log("[BossController] tripleShot fired (3 projectiles)")
 			end
 		end
+		-- 패턴 종료 → stand 복귀 (잔류 공격 모션 방지).
+		-- ⚠️ slam/redSmash의 RequestHit가 플레이어 사망→ResetStage를 동기 트리거하면 이 보스가 파괴됨.
+		--    파괴된 self에 메서드 호출 시 LEA-2011 ('PlayClip' is nil) → isvalid 가드 필수.
+		if isvalid(self.Entity) == false then return end
+		self:PlayClip(self.standClip)
 		self.phase = "delay"
 		self.phaseTimer = _GameConstants.BossPatternDelay
 	end

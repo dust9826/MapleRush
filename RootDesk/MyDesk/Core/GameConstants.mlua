@@ -263,6 +263,16 @@ script GameConstants extends Logic
 
 	property string RangedAttackClip = "d8d759053a5f4e338ccd47be39802179"
 
+	-- 보스: 머쉬맘 (mob/6130101) move + attack1(근접 slam) + skill1(광역 redSmash / 원거리 tripleShot 캐스팅). stand는 런타임 캡처.
+	property string BossMoveClip = "c745828d831b42739b9a58c07f334864"
+
+	property string BossAttackClip = "90c5456e2a8a45478df02500797a9afd"
+
+	property string BossSkillClip = "b9345875a8134c7c9a1b6aed8551d808"
+
+	-- 그로기(기절) 모션 — hit1(피격) 클립 재생으로 비틀거리는 무방비 상태 연출 (전용 stun 클립 부재).
+	property string BossGroggyClip = "90fee9416184420a9796a679751d1ec5"
+
 	method integer NormalStagesForFloor(integer floor)
 		-- 층별 일반 스테이지 진행 횟수: 4 + 1*(층수-1) (stage_design_doc §2.2.3)
 		return self.Floor1NormalStages + (floor - 1)
