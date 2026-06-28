@@ -1,8 +1,8 @@
 ---
 id: MR-G
 title: 적 AI 상태패턴 정비 (ad-hoc 문자열 → FSM, 공격 모션/판정 분리)
-status: todo
-owner: unassigned
+status: in-progress
+owner: dust9826
 area: script
 touches:
   - RootDesk/MyDesk/Enemy/EnemyMelee.mlua
@@ -10,9 +10,9 @@ touches:
   - RootDesk/MyDesk/Enemy/Boss/BossController.mlua
   - RootDesk/MyDesk/Models/Enemies/
 depends_on: []
-branch: ""
+branch: "feat/enemy-fsm"
 created: 2026-06-20
-updated: 2026-06-20
+updated: 2026-06-28
 ---
 
 # 적 AI 상태패턴 정비 (ad-hoc 문자열 → FSM, 공격 모션/판정 분리)
@@ -36,13 +36,27 @@ updated: 2026-06-20
 - [ ] (선택) BossController도 동일 FSM 패턴으로 정리, 페이즈/그로기 전이 명시.
 
 ## Subtasks
-<작업 시작 시 owner가 채움>
-- [ ] 현행 EnemyMelee/EnemyRanged/BossController 상태·전이·애니 구동 방식 정밀 매핑
-- [ ] FSM 방식 결정: `StateComponent`+`@State` vs `msw-behaviourtree` (트레이드오프 비교)
-- [ ] 상태/전이/인터럽트 설계 → 모션·판정 분리 지점 정의
-- [ ] 구현 + 양 맵모드 검증
+- [x] 현행 EnemyMelee/EnemyRanged/BossController 상태·전이·애니 구동 방식 정밀 매핑 (2026-06-28)
+- [x] FSM 방식 결정 → **클린 커스텀 FSM(enum 상태 + 단일 전이 메서드, Pattern A)** (아래 Notes 결정 참조)
+- [ ] **[근접 우선]** EnemyMelee: PATROL/CHASE/ATTACK/COOLDOWN enum FSM — 전이 1메서드, 모션은 상태 진입 시 PlayClip, 공격은 commit(중간취소X), 종료 후 재평가
+- [ ] PATROL 거동 추가(스폰 기준 좌우 배회 + leash) + 어그로/공격 범위 전이
+- [ ] 양 맵모드(MapleTile/SideView) 검증 + 상태 전이 로그
+- [ ] (후속) EnemyRanged 동일 패턴 + BossController(BT 후보) 정리
 
 ## Notes / decisions
+
+### 결정 (2026-06-28) — 방식 = 클린 커스텀 FSM (Pattern A), 범위 = 근접 우선
+- **방식**: enum 상태 + 단일 전이 메서드(`SetState`). MSW `StateComponent`/`@State`는 안 씀 — 적이 아바타가 아니라 **SpriteRUID 교체(Pattern A)** 라 `StateAnimationComponent` 자동전환 이점이 없고, monster.md도 sprite 적엔 StateComponent를 IDLE/DEAD로만 제한 권장. 구조는 정식 FSM이되 backing은 Pattern A. (StateComponent 전환은 로직 동일·backing만 교체라 추후 쉬움.)
+- **거동 스펙(사용자 합의)**: 기본 PATROL(스폰 기준 좌우 배회) → 어그로 범위 진입 시 CHASE(추격) → 공격범위 진입 시 ATTACK. **공격은 한번 시작하면 commit(중간 취소 없음)**, 끝나면 재평가(범위안=재공격 / 어그로안=추격 / 밖=PATROL). 어그로 범위 이탈 시 PATROL 복귀. (= 티켓 원안의 "windup 인터럽트"는 사용자 의도상 **제외** — 공격은 commit.)
+- 죽음/그레이스/기절은 상태와 무관한 오버라이드(최우선 가드)로 처리, 해제 시 재평가.
+- 범위: **EnemyMelee 먼저** 정비·검증 → 원거리/보스로 확장(보스는 BT 후보).
+
+### 매핑 (현행, 2026-06-28)
+- EnemyMelee: `aiState`("idle"/"windup"/"cooldown") 수동분기, PATROL 없음(플레이어 없으면 정지). windup 진입 후 타이머만, 범위이탈 취소 없음.
+- EnemyRanged: `cyclePhase`("aim"/"cooldown"), 감지이탈 시 aim 취소 있음.
+- BossController: `phase`("delay"/"windup") + `CancelWindup()`(그로기/그레이스), StartPattern/ResolvePattern로 모션·판정 이미 분리.
+
+## Notes / decisions (원본)
 - MSW 레퍼런스: `msw-combat-system`(FSM/AI 표), `msw-general/references/animation-state.md`(StateComponent↔StateAnimationComponent 파이프라인, `ChangeState`/`AddState`/`SetActionSheet`, `[LEA-3005]`), `msw-general/references/monster.md`(몬스터 캐논 구성), `msw-behaviourtree`(BT 대안).
 - 결정 포인트: 단순 적은 `StateComponent` FSM로 충분, 보스처럼 분기 많은 패턴은 BT가 유리할 수 있음.
 - MR-B(보스 공격 애니메이션)와 연관 — 보스 FSM 정비 시 함께 고려.
