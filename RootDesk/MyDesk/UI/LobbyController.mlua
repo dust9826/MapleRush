@@ -1,0 +1,92 @@
+@Component
+script LobbyController extends Component
+
+	-- 로비 루트 (전체 토글) + 4개 메뉴 버튼.
+	property Entity lobbyRoot = "7bbdf71d-969c-4536-b939-4bd242c7b528"
+
+	property ButtonComponent btnStart = "775dac4e-ef17-4c0e-b16f-28a680298ed0"
+
+	property ButtonComponent btnSettings = "e5f542ab-23f3-4958-9fcd-33ab9f6e74e2"
+
+	property ButtonComponent btnRest = "c2e314d1-0dad-426e-8feb-8af03dc5931a"
+
+	-- 설정 플레이스홀더 팝업.
+	property Entity settingsPopup = "7deada11-9fa1-47dc-abc6-3d0861446085"
+
+	property ButtonComponent btnSettingsClose = "03ec3131-d7f1-4b4d-ad68-5ae5089d4527"
+
+	-- "잠시 휴식하기" 팝업: MSW엔 스크립트 종료 API가 없어 ESC/시스템 메뉴 안내만 표시.
+	property Entity restConfirm = "208f2c5e-e60b-423d-b1a7-235eac9c19dd"
+
+	property ButtonComponent btnRestOk = "0caff84b-c10a-41d0-9f6d-c2a342f626d1"
+
+	property any hStart = nil
+
+	property any hSettings = nil
+
+	property any hRest = nil
+
+	property any hSettingsClose = nil
+
+	property any hRestOk = nil
+
+	@ExecSpace("ClientOnly")
+	method void OnBeginPlay()
+		-- 메인 로비: 부팅 시 기본 표시(default_show). 서브팝업 숨김 + 버튼 연결 + 입력 컨텍스트 = 비전투(Lobby).
+		if isvalid(self.settingsPopup) then self.settingsPopup.Enable = false end
+		if isvalid(self.restConfirm) then self.restConfirm.Enable = false end
+		if isvalid(self.lobbyRoot) then self.lobbyRoot.Enable = true end
+		self.hStart = self.btnStart.Entity:ConnectEvent(ButtonClickEvent, self.OnStartClick)
+		self.hSettings = self.btnSettings.Entity:ConnectEvent(ButtonClickEvent, self.OnSettingsClick)
+		self.hRest = self.btnRest.Entity:ConnectEvent(ButtonClickEvent, self.OnRestClick)
+		self.hSettingsClose = self.btnSettingsClose.Entity:ConnectEvent(ButtonClickEvent, self.OnSettingsClose)
+		self.hRestOk = self.btnRestOk.Entity:ConnectEvent(ButtonClickEvent, self.OnRestOk)
+		_InputRouter:SetContext("Lobby")
+		log("[LobbyController] lobby shown (context=Lobby)")
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnEndPlay()
+		-- 연결한 버튼 핸들러 전부 해제.
+		if self.hStart ~= nil then self.btnStart.Entity:DisconnectEvent(ButtonClickEvent, self.hStart) end
+		if self.hSettings ~= nil then self.btnSettings.Entity:DisconnectEvent(ButtonClickEvent, self.hSettings) end
+		if self.hRest ~= nil then self.btnRest.Entity:DisconnectEvent(ButtonClickEvent, self.hRest) end
+		if self.hSettingsClose ~= nil then self.btnSettingsClose.Entity:DisconnectEvent(ButtonClickEvent, self.hSettingsClose) end
+		if self.hRestOk ~= nil then self.btnRestOk.Entity:DisconnectEvent(ButtonClickEvent, self.hRestOk) end
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnStartClick(ButtonClickEvent event)
+		-- "구하러 가기": 로비 숨김 → 서버에 런 시작 요청(StartRun + 1층 테마 선택 플로우).
+		self.lobbyRoot.Enable = false
+		_StageManager:RequestStartRun()
+		log("[LobbyController] start run requested")
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnSettingsClick(ButtonClickEvent event)
+		-- "설정": 플레이스홀더 팝업 표시.
+		self.settingsPopup.Enable = true
+		log("[LobbyController] settings opened")
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnSettingsClose(ButtonClickEvent event)
+		-- 설정 팝업 닫기.
+		self.settingsPopup.Enable = false
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnRestClick(ButtonClickEvent event)
+		-- "잠시 휴식하기": MSW엔 스크립트 종료 API가 없어 ESC/시스템 메뉴 안내 팝업만 표시.
+		self.restConfirm.Enable = true
+		log("[LobbyController] exit guide opened")
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnRestOk(ButtonClickEvent event)
+		-- 안내 확인 → 팝업 닫기 (실제 종료는 ESC / 우상단 시스템 메뉴 담당).
+		self.restConfirm.Enable = false
+	end
+
+end

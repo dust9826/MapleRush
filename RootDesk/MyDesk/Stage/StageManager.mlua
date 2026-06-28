@@ -38,12 +38,23 @@ script StageManager extends Logic
 
 	@ExecSpace("ServerOnly")
 	method void OnPlayerReady(Entity player)
-		-- 첫 플레이어 입장 → 런 시작 + 거울던전식 층 진행 시작 (PlayerBootstrap이 호출).
+		-- 첫 플레이어 입장 → 추적만 등록. 런은 로비 "구하러 가기"(RequestStartRun)에서 시작 (MR-L 로비 도입).
 		self.trackedPlayer = player
+		log("[StageManager] player ready -> waiting at lobby (run not auto-started)")
+	end
+
+	@ExecSpace("Server")
+	method void RequestStartRun()
+		-- 로비 "구하러 가기" → 런 시작 + 거울던전식 층 진행 (StartRun + 상점가격 초기화 + 1층 테마 선택).
 		if _GameStateManager.RunActive then return end
+		if self:GetPlayer() == nil then
+			log_warning("[StageManager] RequestStartRun ignored — no tracked player yet")
+			return
+		end
 		_GameStateManager:StartRun()
 		_ShopManager:ResetPrices()
 		_FloorManager:StartGameFlow()
+		log("[StageManager] run started from lobby")
 	end
 
 	@ExecSpace("ServerOnly")
