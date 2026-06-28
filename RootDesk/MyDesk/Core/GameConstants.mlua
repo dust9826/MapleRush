@@ -177,6 +177,10 @@ script GameConstants extends Logic
 	-- SideView(RectTile) 맵에서 적 추격 속도(MovementComponent.InputSpeed). MapleTile은 Rigidbody.MoveVelocity 사용(별개).
 	property number EnemyChaseSpeed = 2.0
 
+	-- 적 FSM(MR-G): PATROL 배회 반경(스폰 기준 ±, world unit) + 패트롤 속도 배율(추격 대비).
+	property number EnemyPatrolRange = 2.0
+	property number EnemyPatrolSpeedMul = 0.5
+
 	property integer AbilityUsesNormal = 1
 
 	property integer AbilityUsesBoss = 2

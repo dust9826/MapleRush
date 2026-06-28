@@ -1,5 +1,12 @@
-﻿@Component
+@Component
 script EnemyMelee extends Component
+
+	-- 근거리 적 FSM (MR-G): PATROL → CHASE → ATTACK(commit) → COOLDOWN → 재평가.
+	--   PATROL  : 스폰 기준 좌우 배회. 어그로(DetectRadius) 진입 시 CHASE.
+	--   CHASE   : 플레이어 추격. 공격범위(AttackRadius) 진입 시 ATTACK / 어그로 이탈 시 PATROL.
+	--   ATTACK  : windup → 명중 판정. 한번 시작하면 commit(범위/시야로 중간 취소 안 함). 종료 시 COOLDOWN.
+	--   COOLDOWN: 잠깐 대기 후 거리 재평가(범위안=ATTACK / 어그로안=CHASE / 밖=PATROL).
+	-- 사망/그레이스/기절은 상태와 무관한 최우선 오버라이드(프레임 동안 정지·프리즈). 애니는 상태 진입 시 PlayClip(SpriteRUID 교체, Pattern A).
 
 	property number DetectRadius = 3.0
 
@@ -11,12 +18,17 @@ script EnemyMelee extends Component
 
 	property boolean AttackParryable = true
 
-	-- idle / windup / cooldown (추격은 idle 상태에서 거리 기반)
-	property string aiState = "idle"
+	-- FSM 상태: "PATROL" / "CHASE" / "ATTACK" / "COOLDOWN". 전이는 SetState/StartAttack로만.
+	property string aiState = "PATROL"
 
 	property number stateTimer = 0.0
 
 	property any pendingAttack = nil
+
+	-- 패트롤 기준점(스폰 x) + 진행 방향(+1 우 / -1 좌).
+	property number spawnX = 0.0
+
+	property integer patrolDir = 1
 
 	-- 모션 구동: 모델 기본 SpriteRUID(stand)를 캡처해 두고 상태별로 교체.
 	property string standClip = ""
@@ -25,10 +37,13 @@ script EnemyMelee extends Component
 
 	@ExecSpace("ServerOnly")
 	method void OnBeginPlay()
-		-- stand 클립을 모델 기본 SpriteRUID에서 캡처.
+		-- stand 클립 캡처 + 패트롤 기준점(스폰 위치) 저장 + 초기 상태 PATROL.
 		local sprite = self.Entity.SpriteRendererComponent
 		if isvalid(sprite) then self.standClip = sprite.SpriteRUID end
 		self.currentClip = self.standClip
+		self.spawnX = self.Entity.TransformComponent.WorldPosition.x
+		self.aiState = "PATROL"
+		self.patrolDir = 1
 	end
 
 	@ExecSpace("ServerOnly")
@@ -44,7 +59,7 @@ script EnemyMelee extends Component
 
 	@ExecSpace("ServerOnly")
 	method void OnUpdate(number delta)
-		-- 근거리 적 AI: 감지(3) → 추격 → 공격(1, 텔레그래프 0.6s) → 쿨다운. 슬로우 배율 적용, 낭떠러지 정지.
+		-- 최우선 오버라이드(사망/그레이스/기절) → 상태 디스패치.
 		---@type EnemyHealth
 		local hp = self.Entity:GetComponent("script.EnemyHealth")
 		if hp ~= nil and hp.IsDead == true then return end
@@ -53,7 +68,7 @@ script EnemyMelee extends Component
 			self:PlayClip(self.standClip)
 			return
 		end
-		-- 섬광탄 기절: 이동·공격 완전 정지 (공격 판정도 진행 안 함)
+		-- 섬광탄 기절: 이동·공격 완전 정지(진행 중 ATTACK은 타이머 미진행 → 프리즈 후 재개).
 		if _BattlefieldFx:IsStunActive() then
 			self:StopMove()
 			self:PlayClip(self.standClip)
@@ -62,72 +77,154 @@ script EnemyMelee extends Component
 		local timeScale = _SlowMotion:Scale()
 		local scaledDelta = delta * timeScale
 		local player = self:FindPlayer()
-		-- 연막탄 은신: 일반 적은 플레이어 감지 불가 (추격·조준 즉시 해제)
-		if _BattlefieldFx:IsSmokeActive() then
-			player = nil
-		end
-		if player == nil then
-			self:StopMove()
-			self:PlayClip(self.standClip)
+		-- 연막탄 은신: 플레이어 감지 불가(어그로 상실)
+		if _BattlefieldFx:IsSmokeActive() then player = nil end
+
+		-- 진행 중 상태(플레이어 유무와 무관하게 자체 진행)
+		if self.aiState == "ATTACK" then self:UpdateAttack(scaledDelta, player) return end
+		if self.aiState == "COOLDOWN" then self:UpdateCooldown(scaledDelta, player) return end
+
+		-- 타깃 없음 → 패트롤
+		if player == nil or isvalid(player) == false then
+			if self.aiState ~= "PATROL" then self:SetState("PATROL") end
+			self:UpdatePatrol(timeScale, delta)
 			return
 		end
-		local myPos = self.Entity.TransformComponent.WorldPosition
+
 		local pp = player.TransformComponent.WorldPosition
+		local mp = self.Entity.TransformComponent.WorldPosition
 		local playerCenter = Vector2(pp.x, pp.y + 0.5)
-		local myCenter = Vector2(myPos.x, myPos.y + 0.5)
+		local myCenter = Vector2(mp.x, mp.y + 0.5)
 		local dx = playerCenter.x - myCenter.x
 		local dy = playerCenter.y - myCenter.y
 		local dist = math.sqrt(dx * dx + dy * dy)
 
-		if self.aiState == "windup" then
-			self.stateTimer -= scaledDelta
-			if self.stateTimer <= 0 then
-				local rec = self.pendingAttack
-				if rec ~= nil and rec.canceled == false then
-					if _CombatPrimitives:RecordOverlapsCircle(rec, playerCenter, 0.5) then
-						---@type PlayerHit
-						local hitComp = player:GetComponent("script.PlayerHit")
-						if hitComp ~= nil then
-							hitComp:RequestHit("melee:" .. self.Entity.Name)
-						end
-					else
-						log("[EnemyMelee] attack missed (player evaded)")
-					end
-				elseif rec ~= nil and rec.canceled == true then
-					log("[EnemyMelee] attack was parried — negated")
-				end
-				self.pendingAttack = nil
-				self.aiState = "cooldown"
-				self.stateTimer = self.AttackCooldown
-				-- ⚠️ RequestHit가 플레이어 사망→ResetStage를 동기 트리거하면 이 적이 파괴됨.
-				--    파괴된 self에 메서드 호출 시 LEA-2011 ('PlayClip' is nil) → isvalid 가드.
-				if isvalid(self.Entity) then self:PlayClip(self.standClip) end
-			end
-		elseif self.aiState == "cooldown" then
-			self.stateTimer -= scaledDelta
-			if self.stateTimer <= 0 then
-				self.aiState = "idle"
+		if self.aiState == "CHASE" then
+			if dist <= self.AttackRadius then
+				self:StartAttack(player, myCenter, playerCenter)
+			elseif dist > self.DetectRadius then
+				self:SetState("PATROL")
+				self:UpdatePatrol(timeScale, delta)
+			else
+				self:MoveTowardX(playerCenter.x, 1.0, timeScale, delta)
 			end
 		else
-			if dist <= self.AttackRadius then
-				-- 공격 개시: 텔레그래프 등록 (슬로우 트리거/패링 대상)
-				self.aiState = "windup"
-				self.stateTimer = self.WindupTime
-				local facingX = 1
-				if dx < 0 then facingX = -1 end
-				local f = _GameConstants.EnemyMeleeBoxForward
-				local boxCenter = Vector2(myCenter.x + facingX * f * 0.5, myCenter.y)
-				self.pendingAttack = _CombatPrimitives:RegisterEnemyAttackBox(boxCenter, f * 0.5, _GameConstants.EnemyMeleeBoxHeight * 0.5, 1, self.AttackParryable, self.WindupTime, self.Entity)
-				self:StopMove()
-				self:PlayClip(_GameConstants.MeleeAttackClip)
-				log("[EnemyMelee] " .. self.Entity.Name .. " windup start (parryable=" .. tostring(self.AttackParryable) .. ")")
-			elseif dist <= self.DetectRadius then
-				self:ChaseToward(playerCenter.x, myCenter.x, timeScale, delta)
-				self:PlayClip(_GameConstants.MeleeMoveClip)
+			-- PATROL (기본)
+			if dist <= self.DetectRadius then
+				self:SetState("CHASE")
+				self:MoveTowardX(playerCenter.x, 1.0, timeScale, delta)
 			else
-				self:StopMove()
-				self:PlayClip(self.standClip)
+				self:UpdatePatrol(timeScale, delta)
 			end
+		end
+	end
+
+	@ExecSpace("ServerOnly")
+	method void SetState(string s)
+		-- FSM 공통 전이(진입 효과). ATTACK은 파라미터가 필요해 StartAttack에서 별도 처리.
+		if self.aiState == s then return end
+		log("[EnemyMelee] " .. self.Entity.Name .. " " .. self.aiState .. " -> " .. s)
+		self.aiState = s
+		if s == "COOLDOWN" then
+			self:StopMove()
+			self:PlayClip(self.standClip)
+			self.stateTimer = self.AttackCooldown
+		elseif s == "CHASE" then
+			self:PlayClip(_GameConstants.MeleeMoveClip)
+		end
+		-- PATROL: 이동/클립은 UpdatePatrol에서 처리
+	end
+
+	@ExecSpace("ServerOnly")
+	method void StartAttack(Entity player, Vector2 myCenter, Vector2 playerCenter)
+		-- ATTACK 진입: 공격 박스 등록(텔레그래프/패링 대상) + 공격 모션. 시작하면 commit.
+		log("[EnemyMelee] " .. self.Entity.Name .. " " .. self.aiState .. " -> ATTACK")
+		self.aiState = "ATTACK"
+		local facingX = 1
+		if playerCenter.x < myCenter.x then facingX = -1 end
+		local f = _GameConstants.EnemyMeleeBoxForward
+		local boxCenter = Vector2(myCenter.x + facingX * f * 0.5, myCenter.y)
+		self.pendingAttack = _CombatPrimitives:RegisterEnemyAttackBox(boxCenter, f * 0.5, _GameConstants.EnemyMeleeBoxHeight * 0.5, 1, self.AttackParryable, self.WindupTime, self.Entity)
+		self.stateTimer = self.WindupTime
+		self:StopMove()
+		self:PlayClip(_GameConstants.MeleeAttackClip)
+	end
+
+	@ExecSpace("ServerOnly")
+	method void UpdateAttack(number scaledDelta, Entity player)
+		-- windup commit: 타이머만 진행(범위/시야로 취소 안 함). 종료 시 현재 플레이어 위치로 명중 판정.
+		self.stateTimer -= scaledDelta
+		if self.stateTimer > 0 then return end
+		local rec = self.pendingAttack
+		if rec ~= nil and rec.canceled == false then
+			local hit = false
+			if player ~= nil and isvalid(player) then
+				local pp = player.TransformComponent.WorldPosition
+				hit = _CombatPrimitives:RecordOverlapsCircle(rec, Vector2(pp.x, pp.y + 0.5), 0.5)
+			end
+			if hit then
+				---@type PlayerHit
+				local hitComp = player:GetComponent("script.PlayerHit")
+				if hitComp ~= nil then hitComp:RequestHit("melee:" .. self.Entity.Name) end
+			else
+				log("[EnemyMelee] attack missed (player evaded)")
+			end
+		elseif rec ~= nil and rec.canceled == true then
+			log("[EnemyMelee] attack was parried — negated")
+		end
+		self.pendingAttack = nil
+		-- ⚠️ RequestHit가 플레이어 사망→ResetStage를 동기 트리거하면 이 적이 파괴됨. 파괴된 self 호출 시 LEA-2011 → isvalid 가드.
+		if isvalid(self.Entity) then self:SetState("COOLDOWN") end
+	end
+
+	@ExecSpace("ServerOnly")
+	method void UpdateCooldown(number scaledDelta, Entity player)
+		-- 쿨다운 경과 후 거리 재평가.
+		self:StopMove()
+		self.stateTimer -= scaledDelta
+		if self.stateTimer <= 0 then self:ReEvaluate(player) end
+	end
+
+	@ExecSpace("ServerOnly")
+	method void ReEvaluate(Entity player)
+		-- 공격 종료 후 다음 상태 결정(범위안=재공격 / 어그로안=추격 / 밖=패트롤).
+		if player == nil or isvalid(player) == false then self:SetState("PATROL") return end
+		local pp = player.TransformComponent.WorldPosition
+		local mp = self.Entity.TransformComponent.WorldPosition
+		local playerCenter = Vector2(pp.x, pp.y + 0.5)
+		local myCenter = Vector2(mp.x, mp.y + 0.5)
+		local dx = playerCenter.x - myCenter.x
+		local dy = playerCenter.y - myCenter.y
+		local dist = math.sqrt(dx * dx + dy * dy)
+		if dist <= self.AttackRadius then
+			self:StartAttack(player, myCenter, playerCenter)
+		elseif dist <= self.DetectRadius then
+			self:SetState("CHASE")
+		else
+			self:SetState("PATROL")
+		end
+	end
+
+	@ExecSpace("ServerOnly")
+	method void UpdatePatrol(number timeScale, number delta)
+		-- 스폰 기준 ±EnemyPatrolRange 좌우 배회. 경계 도달/낭떠러지에서 방향 반전.
+		local myX = self.Entity.TransformComponent.WorldPosition.x
+		local left = self.spawnX - _GameConstants.EnemyPatrolRange
+		local right = self.spawnX + _GameConstants.EnemyPatrolRange
+		local target = right
+		if self.patrolDir < 0 then target = left end
+		if math.abs(myX - target) < 0.3 then
+			self.patrolDir = -self.patrolDir
+			target = right
+			if self.patrolDir < 0 then target = left end
+		end
+		local moved = self:MoveTowardX(target, _GameConstants.EnemyPatrolSpeedMul, timeScale, delta)
+		if moved == false then
+			-- 낭떠러지/막힘 → 방향 반전 + 정지 모션
+			self.patrolDir = -self.patrolDir
+			self:PlayClip(self.standClip)
+		else
+			self:PlayClip(_GameConstants.MeleeMoveClip)
 		end
 	end
 
@@ -164,40 +261,40 @@ script EnemyMelee extends Component
 	end
 
 	@ExecSpace("ServerOnly")
-	method void ChaseToward(number targetX, number myX, number timeScale, number delta)
-		-- 추격 이동. SideView=MovementComponent:MoveToDirection(직접 MoveVelocity는 비-플레이어에 무효),
-		-- MapleTile=Rigidbody.MoveVelocity + 풋홀드 낭떠러지 정지. 맵 타입으로 분기 → MapleTile 회귀 없음.
+	method boolean MoveTowardX(number targetX, number speedMul, number timeScale, number delta)
+		-- targetX 방향 수평 이동(추격/패트롤 공용). SideView=MovementComponent / MapleTile=Rigidbody+풋홀드 낭떠러지 정지.
+		-- 반환: 실제 이동했으면 true, 접지X/낭떠러지로 못 움직이면 false(패트롤이 방향 반전에 사용).
+		local myX = self.Entity.TransformComponent.WorldPosition.x
 		local dir = 1
 		if targetX < myX then dir = -1 end
 		local map = self.Entity.CurrentMap
 		if self:IsSideViewMap() then
-			-- SideView/RectTile
 			local svb = self.Entity.SideviewbodyComponent
-			if isvalid(svb) == false or svb:IsOnGround() == false then return end
+			if isvalid(svb) == false or svb:IsOnGround() == false then return false end
 			local mc = self.Entity.MovementComponent
-			if isvalid(mc) == false then return end
-			mc.InputSpeed = _GameConstants.EnemyChaseSpeed * timeScale
+			if isvalid(mc) == false then return false end
+			mc.InputSpeed = _GameConstants.EnemyChaseSpeed * speedMul * timeScale
 			mc:MoveToDirection(Vector2(dir, 0), delta)
 		else
-			-- MapleTile (기존 로직 유지)
 			local rb = self.Entity.RigidbodyComponent
-			if isvalid(rb) == false or rb:IsOnGround() == false then return end
+			if isvalid(rb) == false or rb:IsOnGround() == false then return false end
 			if isvalid(map) and isvalid(map.FootholdComponent) then
 				local pos = self.Entity.TransformComponent.WorldPosition
 				local probe = Vector2(pos.x + dir * 0.5, pos.y + 0.3)
 				local ground = map.FootholdComponent:Raycast(probe, Vector2(0, -1), 1.0)
 				if ground == nil then
 					self:StopMove()
-					return
+					return false
 				end
 			end
-			rb.MoveVelocity = Vector2(dir * timeScale, 0)
+			rb.MoveVelocity = Vector2(dir * speedMul * timeScale, 0)
 		end
 		-- 스프라이트는 좌향 기본 → 우측 이동 시 FlipX
 		local sprite = self.Entity.SpriteRendererComponent
 		if isvalid(sprite) then
 			sprite.FlipX = dir > 0
 		end
+		return true
 	end
 
 	@ExecSpace("ServerOnly")
