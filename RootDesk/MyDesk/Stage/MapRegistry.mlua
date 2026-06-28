@@ -1,0 +1,37 @@
+@Logic
+script MapRegistry extends Logic
+
+	-- 맵 레지스트리(MR-R): UserDataSet "MapRegistry"(컬럼 theme/type/index/mapId)에서
+	-- (선택된 테마 × 스테이지 종류) 매칭 행 중 랜덤 1개의 mapId를 반환. 데이터는 기획자가 데이터셋 에디터로 편집.
+	-- 셀렉터는 서버 권위(StageManager가 StartStage에서 호출). 매칭 0행이면 레거시 GameConstants.MapIdForStage로 폴백.
+
+	@ExecSpace("ServerOnly")
+	method string PickMapId(string theme, string stageType)
+		-- (theme, stageType) 매칭 행들의 mapId 수집 → 균등 랜덤 1개. 데이터셋/행 없으면 폴백.
+		local ds = _DataService:GetTable("MapRegistry")
+		if ds == nil then
+			log_warning("[MapRegistry] dataset 'MapRegistry' 없음 — 폴백(MapIdForStage)")
+			return _GameConstants:MapIdForStage(stageType)
+		end
+		local matches = {}
+		local n = ds:GetRowCount()
+		local i = 1
+		while i <= n do
+			if ds:GetCell(i, "theme") == theme and ds:GetCell(i, "type") == stageType then
+				local mid = ds:GetCell(i, "mapId")
+				if mid ~= nil and mid ~= "" then
+					table.insert(matches, mid)
+				end
+			end
+			i = i + 1
+		end
+		if #matches == 0 then
+			log_warning("[MapRegistry] (theme=" .. tostring(theme) .. ", type=" .. tostring(stageType) .. ") 매칭 행 없음 — 폴백(MapIdForStage)")
+			return _GameConstants:MapIdForStage(stageType)
+		end
+		local pick = matches[_UtilLogic:RandomIntegerRange(1, #matches)]
+		log("[MapRegistry] (" .. tostring(theme) .. "," .. tostring(stageType) .. ") → " .. pick .. " (후보 " .. tostring(#matches) .. ")")
+		return pick
+	end
+
+end

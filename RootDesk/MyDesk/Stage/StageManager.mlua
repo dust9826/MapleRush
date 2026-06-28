@@ -36,6 +36,9 @@ script StageManager extends Logic
 
 	property string pendingMapId = ""
 
+	-- 이번 스테이지에 실제로 선택된 맵 id (MapRegistry 랜덤 결과). GetMap이 재해석 대신 이 값을 쓴다(랜덤 일관성).
+	property string CurrentMapId = ""
+
 	@ExecSpace("ServerOnly")
 	method void OnPlayerReady(Entity player)
 		-- 첫 플레이어 입장 → 런 시작 + 거울던전식 층 진행 시작 (PlayerBootstrap이 호출).
@@ -70,7 +73,9 @@ script StageManager extends Logic
 		self.StageType = stageType
 		self.StageActive = false
 		_GameStateManager:RefillLives()
-		local mapId = _GameConstants:MapIdForStage(stageType)
+		-- 맵 선택: (현재 테마 × 종류) 레지스트리에서 랜덤. 이번 스테이지 동안 GetMap이 쓰도록 저장.
+		local mapId = _MapRegistry:PickMapId(_FloorManager.CurrentTheme, stageType)
+		self.CurrentMapId = mapId
 		-- 상점: 적 스폰 없이 맵 이동만 (상점 UI는 FloorManager가 표시).
 		if stageType == "shop" then
 			self.awaitingMap = false
@@ -209,8 +214,9 @@ script StageManager extends Logic
 
 	@ExecSpace("ServerOnly")
 	method Entity GetMap()
-		-- 현재 스테이지 타입에 해당하는 맵 (일반=map02 / 보스=map03 / 상점=map04).
-		local mapId = _GameConstants:MapIdForStage(self.StageType)
+		-- 이번 스테이지에 선택된 맵(MapRegistry 결과). 미설정 시 레거시 타입맵으로 폴백.
+		local mapId = self.CurrentMapId
+		if mapId == nil or mapId == "" then mapId = _GameConstants:MapIdForStage(self.StageType) end
 		return _EntityService:GetEntityByPath("/maps/" .. mapId)
 	end
 
