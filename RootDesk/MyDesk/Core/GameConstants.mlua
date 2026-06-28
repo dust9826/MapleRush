@@ -110,6 +110,14 @@ script GameConstants extends Logic
 
 	property number FlashBossGroggyPause = 5.0
 
+	-- 섬광탄 풀스크린 백색 플래시 (FlashOverlay 페이드).
+	property number FlashFadeTime = 0.35
+	property number FlashPeakAlpha = 0.9
+	-- 연막탄 이펙트 (시작 1회 버스트 + 기간 지속 루프). EffectService RUID + world unit scale.
+	property string SmokeEffectBurstClip = "2c39569f2c3b406bbe237f44320c02dd"
+	property string SmokeEffectLoopClip = "8e5ca7e1fdae4e059db8aaf65fa14df1"
+	property number SmokeEffectScale = 3.0
+
 	property number GroggyDuration = 3.0
 
 	property number RangedAimTime = 1.0

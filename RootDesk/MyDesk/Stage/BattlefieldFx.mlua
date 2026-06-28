@@ -12,12 +12,29 @@ script BattlefieldFx extends Logic
 	-- ===== 섬광탄 보스 그로기 감소 정지 (5초, 충전은 가능) =====
 	property number groggyDecayPauseUntil = -999.0
 
+	-- 클라 레지스트리: 풀스크린 백색 플래시 컨트롤러(FlashOverlay가 OnBeginPlay에서 등록). 클라 전용.
+	@HideFromInspector property any flashOverlay = nil
+
 	@ExecSpace("ServerOnly")
 	method void ActivateSmoke(Vector2 center, number duration)
 		-- 연막탄: 생성 위치 고정 은신 영역. 일반 적 감지/조준 해제 (보스 무시 — Phase 6).
 		self.smokeCenter = center
 		self.smokeUntil = _UtilLogic.ServerElapsedSeconds + duration
+		self:ClientSmokeFx(center.x, center.y, duration)
 		log("[BattlefieldFx] SMOKE active for " .. tostring(duration) .. "s at (" .. string.format("%.1f", center.x) .. "," .. string.format("%.1f", center.y) .. ")")
+	end
+
+	@ExecSpace("Client")
+	method void ClientSmokeFx(number cx, number cy, number duration)
+		-- 연막 시각: 시작 버스트 1회 + 기간 지속 루프(기간 후 RemoveEffect). EffectService=클라.
+		local pos = Vector3(cx, cy, 0)
+		local s = _GameConstants.SmokeEffectScale
+		local scale = Vector3(s, s, 1)
+		local player = _UserService.LocalPlayer
+		_EffectService:PlayEffect(_GameConstants.SmokeEffectBurstClip, player, pos, 0, scale, false, {})
+		local serial = _EffectService:PlayEffect(_GameConstants.SmokeEffectLoopClip, player, pos, 0, scale, true, {})
+		_TimerService:SetTimerOnce(function() _EffectService:RemoveEffect(serial) end, duration)
+		log("[BattlefieldFx] ClientSmokeFx played (serial=" .. tostring(serial) .. ")")
 	end
 
 	@ExecSpace("ServerOnly")
@@ -31,7 +48,18 @@ script BattlefieldFx extends Logic
 		-- 섬광탄: 일반 적 전체 기절 (이동·공격 정지). 보스는 기절 면역 — 대신 그로기 감소만 5초 정지 (충전 가능).
 		self.stunUntil = _UtilLogic.ServerElapsedSeconds + duration
 		self.groggyDecayPauseUntil = _UtilLogic.ServerElapsedSeconds + _GameConstants.FlashBossGroggyPause
+		self:ClientFlashFx()
 		log("[BattlefieldFx] STUN active for " .. tostring(duration) .. "s (normal enemies) + boss groggy decay paused " .. tostring(_GameConstants.FlashBossGroggyPause) .. "s")
+	end
+
+	@ExecSpace("Client")
+	method void ClientFlashFx()
+		-- 섬광 풀스크린 백색 플래시 발동(레지스트리에 등록된 FlashOverlay).
+		if self.flashOverlay ~= nil and isvalid(self.flashOverlay) then
+			self.flashOverlay:Play()
+		else
+			log("[BattlefieldFx] ClientFlashFx: flashOverlay not registered")
+		end
 	end
 
 	@ExecSpace("ServerOnly")
