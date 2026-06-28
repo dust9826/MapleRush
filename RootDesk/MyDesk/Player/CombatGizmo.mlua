@@ -23,6 +23,10 @@ script CombatGizmo extends Component
 		local player = _UserService.LocalPlayer
 		if player == nil or isvalid(player) == false or self.Entity ~= player then return end
 
+		-- (0) 플레이어 피격원 (green, r=0.5) — 매 프레임 상시. 실제 판정과 동일 중심(pos.y + PlayerCenterYOffset).
+		local php = player.TransformComponent.WorldPosition
+		_GizmoManager:PlayerHurtbox(Vector2(php.x, php.y + _GameConstants.PlayerCenterYOffset))
+
 		-- (1) 플레이어 공격 플래시 박스 (커서 좌/우 전방 박스, 짧은 시간)
 		if self.combat == nil then self.combat = self.Entity:GetComponent("script.PlayerCombat") end
 		if self.combat ~= nil then
@@ -41,6 +45,20 @@ script CombatGizmo extends Component
 
 		local map = player.CurrentMap
 		if isvalid(map) == false then return end
+
+		-- (1b) 적 피격원 (마젠타, r=RadiusEnemyHitbox) — 살아있는 적 전부, raw transform 좌표(=CombatPrimitives 판정 중심). 사망 적 제외.
+		local enemies = map:GetChildComponentsByTypeName("script.EnemyHealth", true)
+		if enemies ~= nil then
+			for _, compAny in ipairs(enemies) do
+				---@type EnemyHealth
+				local hpComp = compAny
+				local e = hpComp.Entity
+				if isvalid(e) and hpComp.IsDead == false then
+					local ep = e.TransformComponent.WorldPosition
+					_GizmoManager:EnemyHurtbox(Vector2(ep.x, ep.y))
+				end
+			end
+		end
 
 		-- (2) 적 투사체 원 (주황)
 		local list = map:GetChildComponentsByTypeName("script.Projectile", true)

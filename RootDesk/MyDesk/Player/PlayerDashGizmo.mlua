@@ -2,7 +2,7 @@
 script PlayerDashGizmo extends Component
 
 	-- 대시 디버그 기즈모 '소스'(MR-I; MR-D 정리 대상). 홀더 관리/렌더는 중앙 _GizmoManager(retained-mode)에 위임 — 여기서는 기하 계산 + 의미 메서드 호출만.
-	-- (1) DashBlock 박스(:DashBlock). (2) 최대 사거리 원(:DashRange) + 중심 마커 원(:DashMarker). (3) 대시 레이(:DashRay) + 원점/도착 점(:Dot).
+	-- (1) DashBlock 박스(:DashBlock). (2) 최대 사거리 원(:DashRange). (3) 대시 레이(:DashRay) + 원점/도착 점(:Dot).
 	-- ClientOnly·LocalPlayer 전용. 게이트 = _GameConstants.DrawGizmo. 미사용 분기에서 명시적 숨김 불필요(매니저가 프레임 시작에 전체 숨김).
 
 	@HideFromInspector property any dash = nil
@@ -90,9 +90,8 @@ script PlayerDashGizmo extends Component
 		-- (1) DashBlock 박스 외곽선
 		self:DrawBlocks()
 
-		-- (2) 최대 사거리 원 + (2b) 플레이어 중심 마커 원(반지름1) — 둘 다 플레이어 중앙 추종(매니저가 Transform으로 배치).
+		-- (2) 최대 사거리 원(플레이어 중앙 추종, 매니저가 Transform으로 배치). 중심 마커 원(노랑 r=1)은 제거됨.
 		_GizmoManager:DashRange(center)
-		_GizmoManager:DashMarker(center)
 
 		-- (3) 레이 + 원점/도착 점
 		local oColor = Color(0.2, 0.8, 1.0, 1.0)

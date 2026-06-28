@@ -10,11 +10,12 @@ script GizmoManager extends Logic
 	--   → 따라서: 각 홀더의 Points를 **1회만 정적 bake**(단위/실반지름 원·단위선분·단위정사각, 색·폭 baked)하고,
 	--     매 프레임은 **Transform만** 바꿔 배치한다. Points는 bake 후 절대 재변경하지 않는다.
 	--
-	-- 고정 슬롯 레이아웃(인덱스→역할; 총 GizmoLinePoolSize=27):
-	--   0 사거리원(cyan, r=DashDistance)         1 마커원(yellow, r=1)          2 대시레이(green, 단위선분)
-	--   3~5 블록박스(red, 단위정사각)            6 공격플래시원(cyan, r=RadiusAttack)
+	-- 고정 슬롯 레이아웃(인덱스→역할; 총 GizmoLinePoolSize=47):
+	--   0 사거리원(cyan, r=DashDistance)         1 플레이어피격원(green, r=0.5)  2 대시레이(green, 단위선분)
+	--   3~5 블록박스(red, 단위정사각)            6 평타플래시박스(cyan, 단위정사각)
 	--   7~14 투사체원(orange, r=RadiusProjectile, ×8)
-	--   15~20 적공격원 노랑(unit, ×6)            21~26 적공격원 빨강(unit, ×6)
+	--   15~20 적공격박스 노랑(unit, ×6)          21~26 적공격박스 빨강(unit, ×6)
+	--   27~34 원거리레인박스 노랑(unit, ×8)      35~46 적피격원 마젠타(r=RadiusEnemyHitbox, ×12)
 	-- 단위 원/정사각은 매 프레임 Scale로 반지름/크기 적용(폭이 Scale 따라 변할 수 있음 — transient라 허용). 실반지름 bake 원은 Scale=1.
 	--
 	-- LineRenderer 렌더 규칙(실측): 맵 자식이라야 렌더(플레이어 자식이면 안 보임) / MaterialId는 모델 주입(빈값이면 안 그려짐;
@@ -40,7 +41,7 @@ script GizmoManager extends Logic
 
 	-- 슬롯 레이아웃 상수(인덱스).
 	@HideFromInspector property integer IdxRange = 0
-	@HideFromInspector property integer IdxMarker = 1
+	@HideFromInspector property integer IdxPlayerHbox = 1   -- 슬롯1 재용도: 플레이어 피격원(r=0.5)
 	@HideFromInspector property integer IdxRay = 2
 	@HideFromInspector property integer BlockStart = 3
 	@HideFromInspector property integer BlockCount = 3
@@ -54,6 +55,9 @@ script GizmoManager extends Logic
 	@HideFromInspector property integer LaneCount = 8
 	@HideFromInspector property integer laneCursor = 0
 	@HideFromInspector property boolean laneOverflowed = false
+	@HideFromInspector property integer EHboxStart = 35
+	@HideFromInspector property integer EHboxCount = 12
+	@HideFromInspector property integer ehboxCursor = 0
 
 	@ExecSpace("ClientOnly")
 	method void OnBeginPlay()
@@ -93,10 +97,11 @@ script GizmoManager extends Logic
 			return
 		end
 
-		-- 풀 보장: 현재 맵에 라인 홀더0이 없으면 서버에 1회 스폰 요청(맵별 중복 방지).
+		-- 풀 보장: 현재 맵에 '마지막 슬롯' 홀더가 없으면 서버에 1회 스폰 요청(맵별 중복 방지).
+		-- 마지막 슬롯 기준 → 풀 크기 증가(35→47) 시 기존 맵에도 새 꼬리가 채워짐(holder0만 보면 누락).
 		if self.requestedMapName ~= map.Name then
-			local first = map:GetChildByName(_GameConstants.GizmoLinePoolPrefix .. "0", false)
-			if first == nil or isvalid(first) == false then
+			local last = map:GetChildByName(_GameConstants.GizmoLinePoolPrefix .. tostring(_GameConstants.GizmoLinePoolSize - 1), false)
+			if last == nil or isvalid(last) == false then
 				self:RequestEnsurePool(map)
 			end
 			self.requestedMapName = map.Name
@@ -121,6 +126,7 @@ script GizmoManager extends Logic
 				self.atkRCursor = 0
 				self.dotCursor = 0
 				self.laneCursor = 0
+				self.ehboxCursor = 0
 				self.overflowed = false
 				self.laneOverflowed = false
 				return
@@ -135,6 +141,7 @@ script GizmoManager extends Logic
 		self.atkRCursor = 0
 		self.dotCursor = 0
 		self.laneCursor = 0
+		self.ehboxCursor = 0
 		self.overflowed = false
 		self.laneOverflowed = false
 	end
@@ -147,17 +154,27 @@ script GizmoManager extends Logic
 
 	@ExecSpace("ServerOnly")
 	method void EnsurePoolOnMap(Entity map)
-		-- 맵 자식으로 라인 풀 + 점 풀 스폰(이름=prefix+index, 0-base). 이미 있으면 스킵.
+		-- 맵 자식으로 라인 풀 + 점 풀 스폰(이름=prefix+index, 0-base).
+		-- 견고화: '마지막 슬롯' 존재 여부로 완비 판단(holder0만 보면 풀 크기 증가 시 새 꼬리를 못 채움). 없는 인덱스만 스폰.
 		if map == nil or isvalid(map) == false then return end
 		if _GameConstants.DrawGizmo == false then return end
-		if map:GetChildByName(_GameConstants.GizmoLinePoolPrefix .. "0", false) ~= nil then return end
 		local lineModel = _GameConstants.DashGizmoLineModelId
-		for i = 0, _GameConstants.GizmoLinePoolSize - 1 do
-			_SpawnService:SpawnByModelId(lineModel, _GameConstants.GizmoLinePoolPrefix .. tostring(i), Vector3(0, 0, 0), map)
+		local linePrefix = _GameConstants.GizmoLinePoolPrefix
+		if map:GetChildByName(linePrefix .. tostring(_GameConstants.GizmoLinePoolSize - 1), false) == nil then
+			for i = 0, _GameConstants.GizmoLinePoolSize - 1 do
+				if map:GetChildByName(linePrefix .. tostring(i), false) == nil then
+					_SpawnService:SpawnByModelId(lineModel, linePrefix .. tostring(i), Vector3(0, 0, 0), map)
+				end
+			end
 		end
 		local dotModel = _GameConstants.DashDestMarkerModelId
-		for i = 0, _GameConstants.GizmoDotPoolSize - 1 do
-			_SpawnService:SpawnByModelId(dotModel, _GameConstants.GizmoDotPoolPrefix .. tostring(i), Vector3(0, 0, 0), map)
+		local dotPrefix = _GameConstants.GizmoDotPoolPrefix
+		if map:GetChildByName(dotPrefix .. tostring(_GameConstants.GizmoDotPoolSize - 1), false) == nil then
+			for i = 0, _GameConstants.GizmoDotPoolSize - 1 do
+				if map:GetChildByName(dotPrefix .. tostring(i), false) == nil then
+					_SpawnService:SpawnByModelId(dotModel, dotPrefix .. tostring(i), Vector3(0, 0, 0), map)
+				end
+			end
 		end
 		log("[GizmoManager] gizmo pool spawned under map '" .. tostring(map.Name) .. "' (" .. tostring(_GameConstants.GizmoLinePoolSize) .. " line + " .. tostring(_GameConstants.GizmoDotPoolSize) .. " dot)")
 	end
@@ -198,7 +215,8 @@ script GizmoManager extends Logic
 		local cw = _GameConstants.GizmoCombatWidth
 		-- 대시
 		self:BakeCircle(self.IdxRange, _GameConstants.DashDistance, Color(0.3, 0.8, 1.0, 0.95), lw)
-		self:BakeCircle(self.IdxMarker, 1.0, Color(1.0, 0.9, 0.2, 1.0), rw)
+		-- slot 1: 플레이어 피격원(실제 판정 r=0.5, green). 매 프레임 플레이어 중심 추종.
+		self:BakeCircle(self.IdxPlayerHbox, 0.5, Color(0.4, 1.0, 0.4, 0.75), cw)
 		self:BakeSegment(self.IdxRay, Color(0.2, 1.0, 0.3, 0.9), rw)
 		local bi = 0
 		while bi < self.BlockCount do
@@ -222,6 +240,12 @@ script GizmoManager extends Logic
 		while li < self.LaneCount do
 			self:BakeSquare(self.LaneStart + li, Color(1.0, 0.9, 0.2, 0.85), cw)
 			li = li + 1
+		end
+		-- 적 피격원(실반지름 RadiusEnemyHitbox, magenta). 가변 풀.
+		local ei = 0
+		while ei < self.EHboxCount do
+			self:BakeCircle(self.EHboxStart + ei, _GameConstants.RadiusEnemyHitbox, Color(1.0, 0.25, 0.8, 0.75), cw)
+			ei = ei + 1
 		end
 		log("[GizmoManager] baked " .. tostring(self.poolSize) .. " line holders (retained static Points)")
 	end
@@ -351,9 +375,9 @@ script GizmoManager extends Logic
 	end
 
 	@ExecSpace("ClientOnly")
-	method void DashMarker(Vector2 center)
-		-- 플레이어 중심 마커 원(반지름1).
-		self:PlaceFixed(self.IdxMarker, center.x, center.y)
+	method void PlayerHurtbox(Vector2 center)
+		-- 플레이어 피격원(r=0.5 고정 슬롯). 매 프레임 플레이어 중심 추종 — 적 공격 박스/투사체와 겹치면 피격.
+		self:PlaceFixed(self.IdxPlayerHbox, center.x, center.y)
 	end
 
 	@ExecSpace("ClientOnly")
@@ -413,6 +437,18 @@ script GizmoManager extends Logic
 		end
 		local idx = self.ProjStart + self.projCursor
 		self.projCursor = self.projCursor + 1
+		self:PlaceFixed(idx, center.x, center.y)
+	end
+
+	@ExecSpace("ClientOnly")
+	method void EnemyHurtbox(Vector2 center)
+		-- 적 피격원(magenta, r=RadiusEnemyHitbox). 적 transform raw 좌표(=실제 판정 중심) 추종, 피격원 풀 커서.
+		if self.ehboxCursor >= self.EHboxCount then
+			self:WarnOverflow("ehbox")
+			return
+		end
+		local idx = self.EHboxStart + self.ehboxCursor
+		self.ehboxCursor = self.ehboxCursor + 1
 		self:PlaceFixed(idx, center.x, center.y)
 	end
 
