@@ -1,0 +1,48 @@
+@Component
+script FlashOverlay extends Component
+
+	-- 섬광탄 풀스크린 백색 플래시. FlashGroup의 풀스크린 흰 스프라이트 엔티티에 부착 →
+	--   self.Entity.SpriteGUIRendererComponent 가 그 흰 패널. BattlefieldFx(Logic, 클라)가 :Play() 호출.
+	-- 트리거 경로: 서버 ActivateStun → @ExecSpace(Client) ClientFlashFx → _BattlefieldFx.flashOverlay:Play().
+
+	-- >=0 이면 페이드 진행 중(남은 시간). -1 = 비활성.
+	@HideFromInspector property number fadeT = -1.0
+
+	@ExecSpace("ClientOnly")
+	method void OnBeginPlay()
+		-- 레지스트리 등록 + 초기 완전 투명.
+		_BattlefieldFx.flashOverlay = self
+		self:SetAlpha(0)
+		log("[FlashOverlay] registered (alpha=0)")
+	end
+
+	@ExecSpace("ClientOnly")
+	method void SetAlpha(number a)
+		-- 흰색 고정, 알파만 변경.
+		local sr = self.Entity.SpriteGUIRendererComponent
+		if isvalid(sr) then sr.Color = Color(1, 1, 1, a) end
+	end
+
+	@ExecSpace("ClientOnly")
+	method void Play()
+		-- 백색 플래시 발동: 알파 피크로 올리고 페이드 시작.
+		self.fadeT = _GameConstants.FlashFadeTime
+		self:SetAlpha(_GameConstants.FlashPeakAlpha)
+		log("[FlashOverlay] flash!")
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnUpdate(number delta)
+		-- 페이드 진행: fadeT 감소 → 알파 선형 감쇠 → 0에서 정지.
+		if self.fadeT < 0 then return end
+		self.fadeT -= delta
+		if self.fadeT <= 0 then
+			self.fadeT = -1
+			self:SetAlpha(0)
+			return
+		end
+		local a = (self.fadeT / _GameConstants.FlashFadeTime) * _GameConstants.FlashPeakAlpha
+		self:SetAlpha(a)
+	end
+
+end

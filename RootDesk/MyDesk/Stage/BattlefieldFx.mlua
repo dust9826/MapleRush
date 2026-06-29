@@ -12,18 +12,59 @@ script BattlefieldFx extends Logic
 	-- ===== 섬광탄 보스 그로기 감소 정지 (5초, 충전은 가능) =====
 	property number groggyDecayPauseUntil = -999.0
 
+	-- 클라 레지스트리: 풀스크린 백색 플래시 컨트롤러(FlashOverlay가 OnBeginPlay에서 등록). 클라 전용.
+	@HideFromInspector property any flashOverlay = nil
+
+	-- ===== 클라 기즈모 사용-상태 (디버그 범위 잔상용; 클라 전용, WallClock 기준) =====
+	-- 연막 사용 시 ClientSmokeFx에서 설정 → PlayerItemGizmo가 폴링해 초록 원(반경3) 잔상 표시.
+	@HideFromInspector property number clientSmokeGizmoUntil = -999.0
+	@HideFromInspector property Vector2 clientSmokeGizmoCenter = Vector2(0, 0)
+	-- 섬광 사용 시 ClientFlashFx에서 설정 → PlayerItemGizmo가 폴링해 빨강 원(대상 적) 잔상 표시.
+	@HideFromInspector property number clientFlashGizmoUntil = -999.0
+
 	@ExecSpace("ServerOnly")
 	method void ActivateSmoke(Vector2 center, number duration)
 		-- 연막탄: 생성 위치 고정 은신 영역. 일반 적 감지/조준 해제 (보스 무시 — Phase 6).
 		self.smokeCenter = center
 		self.smokeUntil = _UtilLogic.ServerElapsedSeconds + duration
+		self:ClientSmokeFx(center.x, center.y, duration)
 		log("[BattlefieldFx] SMOKE active for " .. tostring(duration) .. "s at (" .. string.format("%.1f", center.x) .. "," .. string.format("%.1f", center.y) .. ")")
+	end
+
+	@ExecSpace("Client")
+	method void ClientSmokeFx(number cx, number cy, number duration)
+		-- 연막 시각: 기간 지속 루프만(버스트 제거 — 사용자). 기간 후 RemoveEffect. EffectService=클라.
+		local pos = Vector3(cx, cy, 0)
+		local s = _GameConstants.SmokeEffectScale
+		local scale = Vector3(s, s, 1)
+		local player = _UserService.LocalPlayer
+		local serial = _EffectService:PlayEffect(_GameConstants.SmokeEffectLoopClip, player, pos, 0, scale, true, {})
+		_TimerService:SetTimerOnce(function() _EffectService:RemoveEffect(serial) end, duration)
+		-- 기즈모 사용-잔상: 초록 원(반경3)을 지속시간만큼 표시 (PlayerItemGizmo 폴링). WallClock 기준.
+		self.clientSmokeGizmoCenter = Vector2(cx, cy)
+		self.clientSmokeGizmoUntil = _WallClock:Now() + duration
+		log("[BattlefieldFx] ClientSmokeFx played (serial=" .. tostring(serial) .. ")")
 	end
 
 	@ExecSpace("ServerOnly")
 	method boolean IsSmokeActive()
-		-- 연막 은신 활성 여부 (일반 적 AI가 폴링).
+		-- 연막 은신 활성 여부 (시간만; 전역). 위치 기반 판정은 IsSmokeHiding 사용.
 		return _UtilLogic.ServerElapsedSeconds < self.smokeUntil
+	end
+
+	@ExecSpace("ServerOnly")
+	method boolean IsSmokeHiding(Vector2 pos)
+		-- 공간 은신 판정: 연막 활성 + pos가 연막 중심 기준 사각형(±SmokeBoxHalfW/H) 안이면 은신.
+		-- 플레이어가 연막 구역 안에 있을 때만 일반 적이 감지/조준 해제 — 구역 밖으로 나가면 다시 들킴.
+		if _UtilLogic.ServerElapsedSeconds >= self.smokeUntil then return false end
+		local dx = pos.x - self.smokeCenter.x
+		if dx < 0 then dx = -dx end
+		if dx > _GameConstants.SmokeBoxHalfW then return false end
+		local dy = pos.y - self.smokeCenter.y
+		if dy >= 0 then
+			return dy <= _GameConstants.SmokeBoxHalfUp
+		end
+		return (-dy) <= _GameConstants.SmokeBoxHalfDown
 	end
 
 	@ExecSpace("ServerOnly")
@@ -31,7 +72,20 @@ script BattlefieldFx extends Logic
 		-- 섬광탄: 일반 적 전체 기절 (이동·공격 정지). 보스는 기절 면역 — 대신 그로기 감소만 5초 정지 (충전 가능).
 		self.stunUntil = _UtilLogic.ServerElapsedSeconds + duration
 		self.groggyDecayPauseUntil = _UtilLogic.ServerElapsedSeconds + _GameConstants.FlashBossGroggyPause
+		self:ClientFlashFx()
 		log("[BattlefieldFx] STUN active for " .. tostring(duration) .. "s (normal enemies) + boss groggy decay paused " .. tostring(_GameConstants.FlashBossGroggyPause) .. "s")
+	end
+
+	@ExecSpace("Client")
+	method void ClientFlashFx()
+		-- 섬광 풀스크린 백색 플래시 발동(레지스트리에 등록된 FlashOverlay).
+		if self.flashOverlay ~= nil and isvalid(self.flashOverlay) then
+			self.flashOverlay:Play()
+		else
+			log("[BattlefieldFx] ClientFlashFx: flashOverlay not registered")
+		end
+		-- 기즈모 사용-잔상: 빨강 원(대상 적)을 기절 지속시간만큼 표시 (PlayerItemGizmo 폴링).
+		self.clientFlashGizmoUntil = _WallClock:Now() + _GameConstants.FlashStunDuration
 	end
 
 	@ExecSpace("ServerOnly")

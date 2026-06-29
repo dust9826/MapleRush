@@ -31,6 +31,12 @@ script GameConstants extends Logic
 
 	property number RadiusSmoke = 3.0
 
+	-- 연막 은신 범위 = 사각형(중심=생성위치). 위/아래 비대칭(아래쪽 짧게). 판정(IsSmokeHiding)·기즈모 공용.
+	-- ★확정 비율 W:Up:Down = 3:3:1 (사용자 컨펌). 크기 조절 시 세 값을 같은 배율로 곱해 이 비율을 유지할 것.
+	property number SmokeBoxHalfW = 3.0
+	property number SmokeBoxHalfUp = 3.0
+	property number SmokeBoxHalfDown = 1.0
+
 	-- ========== 공격 박스 판정 (원→AABB 박스, world unit) ==========
 	-- 적 근접 평타: 적 정면으로 뻗는 전방 박스 (forward=사거리, height=세로). 높이는 점프/위-대시로 윗변 회피 가능하게.
 	property number EnemyMeleeBoxForward = 2.0
@@ -109,6 +115,16 @@ script GameConstants extends Logic
 	property number FlashStunDuration = 3.0
 
 	property number FlashBossGroggyPause = 5.0
+
+	-- 섬광탄 풀스크린 백색 플래시 (FlashOverlay 페이드).
+	property number FlashFadeTime = 0.35
+	property number FlashPeakAlpha = 0.9
+	-- 연막탄 이펙트 (기간 지속 루프만 — 버스트 제거). EffectService RUID + world unit scale.
+	property string SmokeEffectLoopClip = "8e5ca7e1fdae4e059db8aaf65fa14df1"
+	-- 연막 루프 이펙트 시각 크기(world unit 배율). ★이펙트 크기 조절 knob — 이 숫자만 바꾸면 됨(크게=연막 큼). 범위(SmokeBoxHalf*)와 별개.
+	property number SmokeEffectScale = 1.05
+	-- (구) 버스트 클립 — 미사용(제거). 복원 시 ClientSmokeFx에 PlayEffect 라인 재추가.
+	property string SmokeEffectBurstClip = "e1fa6fbb8ba646169ca1e06efb389100"
 
 	property number GroggyDuration = 3.0
 
@@ -241,8 +257,9 @@ script GameConstants extends Logic
 
 	-- 중앙 매니저 홀더 풀: 라인(LineRenderer) N + 점(Sprite) K. 맵 자식으로 인덱스 네이밍 스폰(prefix+i, 0-base). 매니저가 맵 자식에서 이름으로 조회.
 	-- retained-mode 고정 슬롯 레이아웃(GizmoManager가 인덱스→역할 매핑 + 1회 bake): 0=사거리원 1=플레이어피격원(green,r=0.5) 2=레이선 3~5=블록박스
-	-- 6=플레이어평타박스(하늘) 7~14=투사체원(×8) 15~20=적공격박스 노랑(×6) 21~26=적공격박스 빨강(×6) 27~34=원거리레인박스 노랑(×8) 35~46=적피격원 마젠타(r=RadiusEnemyHitbox,×12) = 총 47.
-	property integer GizmoLinePoolSize = 47
+	-- 6=플레이어평타박스(하늘) 7~14=투사체원(×8) 15~20=적공격박스 노랑(×6) 21~26=적공격박스 빨강(×6) 27~34=원거리레인박스 노랑(×8) 35~46=적피격원 마젠타(r=RadiusEnemyHitbox,×12)
+	-- [아이템 범위] 47=연막조준(노랑 사각) 48=연막사용(초록 사각) 49=짱돌조준(노랑 레인) 50~55=섬광조준(노랑 적원×6) 56~61=섬광사용(빨강 적원×6) = 총 62.
+	property integer GizmoLinePoolSize = 62
 	property integer GizmoDotPoolSize = 4
 	property string GizmoLinePoolPrefix = "GizmoLine"
 	property string GizmoDotPoolPrefix = "GizmoDot"

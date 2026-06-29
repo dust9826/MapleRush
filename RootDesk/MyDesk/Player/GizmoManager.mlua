@@ -10,12 +10,14 @@ script GizmoManager extends Logic
 	--   → 따라서: 각 홀더의 Points를 **1회만 정적 bake**(단위/실반지름 원·단위선분·단위정사각, 색·폭 baked)하고,
 	--     매 프레임은 **Transform만** 바꿔 배치한다. Points는 bake 후 절대 재변경하지 않는다.
 	--
-	-- 고정 슬롯 레이아웃(인덱스→역할; 총 GizmoLinePoolSize=47):
+	-- 고정 슬롯 레이아웃(인덱스→역할; 총 GizmoLinePoolSize=62):
 	--   0 사거리원(cyan, r=DashDistance)         1 플레이어피격원(green, r=0.5)  2 대시레이(green, 단위선분)
 	--   3~5 블록박스(red, 단위정사각)            6 평타플래시박스(cyan, 단위정사각)
 	--   7~14 투사체원(orange, r=RadiusProjectile, ×8)
 	--   15~20 적공격박스 노랑(unit, ×6)          21~26 적공격박스 빨강(unit, ×6)
 	--   27~34 원거리레인박스 노랑(unit, ×8)      35~46 적피격원 마젠타(r=RadiusEnemyHitbox, ×12)
+	--   [아이템 범위] 47 연막조준(노랑 사각 ±SmokeBoxHalf)  48 연막사용(초록 사각 ±SmokeBoxHalf)
+	--   49 짱돌조준(노랑 단위정사각 OBB 레인)      50~55 섬광조준(노랑 원 r=RadiusEnemyHitbox ×6)  56~61 섬광사용(빨강 원 ×6)
 	-- 단위 원/정사각은 매 프레임 Scale로 반지름/크기 적용(폭이 Scale 따라 변할 수 있음 — transient라 허용). 실반지름 bake 원은 Scale=1.
 	--
 	-- LineRenderer 렌더 규칙(실측): 맵 자식이라야 렌더(플레이어 자식이면 안 보임) / MaterialId는 모델 주입(빈값이면 안 그려짐;
@@ -58,6 +60,16 @@ script GizmoManager extends Logic
 	@HideFromInspector property integer EHboxStart = 35
 	@HideFromInspector property integer EHboxCount = 12
 	@HideFromInspector property integer ehboxCursor = 0
+
+	-- 아이템 범위 기즈모(47~61): 색별 슬롯(조준=노랑 / 사용=초록·빨강). bake 색 고정이라 색마다 슬롯 분리.
+	@HideFromInspector property integer IdxItemSmokeAim = 47     -- 연막 조준: 노랑 원 r=RadiusSmoke
+	@HideFromInspector property integer IdxItemSmokeActive = 48  -- 연막 사용(5s): 초록 원 r=RadiusSmoke
+	@HideFromInspector property integer IdxItemRockAim = 49      -- 짱돌 조준: 노랑 레인(단위정사각 OBB)
+	@HideFromInspector property integer ItemFlashAimStart = 50   -- 섬광 조준: 노랑 원(대상 적) ×6
+	@HideFromInspector property integer ItemFlashActiveStart = 56 -- 섬광 사용(3s): 빨강 원(기절 적) ×6
+	@HideFromInspector property integer ItemFlashCount = 6
+	@HideFromInspector property integer itemFlashAimCursor = 0
+	@HideFromInspector property integer itemFlashActiveCursor = 0
 
 	@ExecSpace("ClientOnly")
 	method void OnBeginPlay()
@@ -127,6 +139,8 @@ script GizmoManager extends Logic
 				self.dotCursor = 0
 				self.laneCursor = 0
 				self.ehboxCursor = 0
+				self.itemFlashAimCursor = 0
+				self.itemFlashActiveCursor = 0
 				self.overflowed = false
 				self.laneOverflowed = false
 				return
@@ -142,6 +156,8 @@ script GizmoManager extends Logic
 		self.dotCursor = 0
 		self.laneCursor = 0
 		self.ehboxCursor = 0
+		self.itemFlashAimCursor = 0
+		self.itemFlashActiveCursor = 0
 		self.overflowed = false
 		self.laneOverflowed = false
 	end
@@ -246,6 +262,19 @@ script GizmoManager extends Logic
 		while ei < self.EHboxCount do
 			self:BakeCircle(self.EHboxStart + ei, _GameConstants.RadiusEnemyHitbox, Color(1.0, 0.25, 0.8, 0.75), cw)
 			ei = ei + 1
+		end
+		-- 아이템 범위: 연막 조준(노랑)/사용(초록) 원 r=RadiusSmoke, 짱돌 조준 레인(노랑 단위정사각), 섬광 조준(노랑)/사용(빨강) 적 원.
+		local yellow = Color(1.0, 0.9, 0.2, 0.85)
+		local green = Color(0.3, 1.0, 0.4, 0.85)
+		local red = Color(1.0, 0.2, 0.2, 0.9)
+		self:BakeSquare(self.IdxItemSmokeAim, yellow, cw)
+		self:BakeSquare(self.IdxItemSmokeActive, green, cw)
+		self:BakeSquare(self.IdxItemRockAim, yellow, cw)
+		local fi = 0
+		while fi < self.ItemFlashCount do
+			self:BakeCircle(self.ItemFlashAimStart + fi, _GameConstants.RadiusEnemyHitbox, yellow, cw)
+			self:BakeCircle(self.ItemFlashActiveStart + fi, _GameConstants.RadiusEnemyHitbox, red, cw)
+			fi = fi + 1
 		end
 		log("[GizmoManager] baked " .. tostring(self.poolSize) .. " line holders (retained static Points)")
 	end
@@ -523,6 +552,70 @@ script GizmoManager extends Logic
 			self.overflowed = true
 			log_warning("[GizmoManager] gizmo pool overflow (" .. tostring(pool) .. ") — 초과 기즈모 무시")
 		end
+	end
+
+	-- ========== 아이템 범위 기즈모 (소스=PlayerItemGizmo) ==========
+
+	@ExecSpace("ClientOnly")
+	method void PlaceSmokeBox(integer idx, Vector2 center)
+		-- 위/아래 비대칭 연막 사각형: 중심 위로 HalfUp, 아래로 HalfDown. 박스 기하중심 = center.y + (up-down)/2, 반높이 = (up+down)/2.
+		local up = _GameConstants.SmokeBoxHalfUp
+		local down = _GameConstants.SmokeBoxHalfDown
+		self:PlaceBoxAABB(idx, center.x, center.y + (up - down) * 0.5, _GameConstants.SmokeBoxHalfW, (up + down) * 0.5)
+	end
+
+	@ExecSpace("ClientOnly")
+	method void ItemSmokeAim(Vector2 center)
+		-- 연막 조준 미리보기: 노랑 비대칭 사각형 고정 슬롯.
+		self:PlaceSmokeBox(self.IdxItemSmokeAim, center)
+	end
+
+	@ExecSpace("ClientOnly")
+	method void ItemSmokeActive(Vector2 center)
+		-- 연막 사용 잔상: 초록 비대칭 사각형 고정 슬롯 (지속시간 동안).
+		self:PlaceSmokeBox(self.IdxItemSmokeActive, center)
+	end
+
+	@ExecSpace("ClientOnly")
+	method void ItemRockAim(Vector2 origin, Vector2 dir, number length, number width)
+		-- 짱돌 조준 미리보기: 원점에서 dir로 length만큼 뻗는 노랑 OBB 레인(단위정사각 고정 슬롯).
+		local e = self:Holder(self.IdxItemRockAim)
+		if e == nil or isvalid(e) == false then return end
+		local lrc = e.LineRendererComponent
+		if lrc == nil or isvalid(lrc) == false then return end
+		local len = length
+		if len < 0.0001 then len = 0.0001 end
+		local tf = e.TransformComponent
+		if isvalid(tf) then
+			tf.WorldPosition = Vector3(origin.x + dir.x * len * 0.5, origin.y + dir.y * len * 0.5, self.gizmoZ)
+			tf.WorldZRotation = math.deg(math.atan(dir.y, dir.x))
+			tf.Scale = Vector3(len, width, 1)
+		end
+		lrc.Enable = true
+	end
+
+	@ExecSpace("ClientOnly")
+	method void ItemFlashAim(Vector2 center)
+		-- 섬광 조준 미리보기: 대상 적에 노랑 원(r=RadiusEnemyHitbox). 가변 풀 커서.
+		if self.itemFlashAimCursor >= self.ItemFlashCount then
+			self:WarnOverflow("flashAim")
+			return
+		end
+		local idx = self.ItemFlashAimStart + self.itemFlashAimCursor
+		self.itemFlashAimCursor = self.itemFlashAimCursor + 1
+		self:PlaceFixed(idx, center.x, center.y)
+	end
+
+	@ExecSpace("ClientOnly")
+	method void ItemFlashActive(Vector2 center)
+		-- 섬광 사용 잔상: 기절 적에 빨강 원(r=RadiusEnemyHitbox). 가변 풀 커서.
+		if self.itemFlashActiveCursor >= self.ItemFlashCount then
+			self:WarnOverflow("flashActive")
+			return
+		end
+		local idx = self.ItemFlashActiveStart + self.itemFlashActiveCursor
+		self.itemFlashActiveCursor = self.itemFlashActiveCursor + 1
+		self:PlaceFixed(idx, center.x, center.y)
 	end
 
 end

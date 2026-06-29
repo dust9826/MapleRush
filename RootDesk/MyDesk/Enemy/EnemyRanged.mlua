@@ -67,14 +67,17 @@ script EnemyRanged extends Component
 		local timeScale = _SlowMotion:Scale()
 		local scaledDelta = delta * timeScale
 		local player = self:FindPlayer()
-		-- 연막탄 은신: 감지/조준 해제 → 조준 사이클 리셋
-		if _BattlefieldFx:IsSmokeActive() then
-			self.IsAiming = false
-			self.cyclePhase = "aim"
-			self.cycleTimer = self.AimTime
-			self:StopMove()
-			self:PlayClip(self.standClip)
-			return
+		-- 연막탄 은신: 플레이어가 연막 구름(반경3) 안에 있으면 감지/조준 해제 → 조준 사이클 리셋. 구름 밖이면 다시 들킴.
+		if player ~= nil then
+			local spp = player.TransformComponent.WorldPosition
+			if _BattlefieldFx:IsSmokeHiding(Vector2(spp.x, spp.y + _GameConstants.PlayerCenterYOffset)) then
+				self.IsAiming = false
+				self.cyclePhase = "aim"
+				self.cycleTimer = self.AimTime
+				self:StopMove()
+				self:PlayClip(self.standClip)
+				return
+			end
 		end
 		if player == nil then
 			self.IsAiming = false

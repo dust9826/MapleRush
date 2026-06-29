@@ -1,0 +1,92 @@
+@Component
+script PlayerItemGizmo extends Component
+
+	-- 아이템 범위 디버그 기즈모 '소스'(@Component ClientOnly LocalPlayer). 매니저(retained-mode) 의미 메서드로 그림. 게이트 = _GameConstants.DrawGizmo. (MR-D 정리 대상)
+	-- (A) 조준 미리보기(노랑): PlayerItems.ActiveSlot 활성 시 — 연막=반경3 원(플레이어), 짱돌=커서 방향 레인, 섬광=대상 적 원.
+	-- (B) 사용 잔상(초록/빨강): BattlefieldFx 클라 사용-상태 폴링 — 연막=초록 원(지속 5s), 섬광=기절 적 빨강 원(지속 3s).
+
+	@HideFromInspector property any items = nil
+
+	@ExecSpace("ClientOnly")
+	method void OnBeginPlay()
+		-- 로컬 플레이어 전용. PlayerItems 형제 참조 캐시.
+		if self.Entity ~= _UserService.LocalPlayer then return end
+		self.items = self.Entity:GetComponent("script.PlayerItems")
+		log("[PlayerItemGizmo] OnBeginPlay (items=" .. tostring(self.items ~= nil) .. ", draw=" .. tostring(_GameConstants.DrawGizmo) .. ")")
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnUpdate(number delta)
+		-- 매 프레임 갱신. 매니저가 프레임 시작에 전체 숨김 → 여기선 그릴 것만 호출.
+		if _GameConstants.DrawGizmo == false then return end
+		local player = _UserService.LocalPlayer
+		if player == nil or isvalid(player) == false or self.Entity ~= player then return end
+		local tf = player.TransformComponent
+		if isvalid(tf) == false then return end
+		local pos = tf.WorldPosition
+		local center = Vector2(pos.x, pos.y + _GameConstants.PlayerCenterYOffset)
+		local map = player.CurrentMap
+
+		-- (A) 조준 미리보기(노랑) — 활성 슬롯 아이템 종류별.
+		if self.items == nil then self.items = self.Entity:GetComponent("script.PlayerItems") end
+		if self.items ~= nil then
+			---@type PlayerItems
+			local it = self.items
+			if it.ActiveSlot > 0 then
+				local id = it:GetSlot(it.ActiveSlot)
+				if id == "smoke" then
+					-- 연막은 플레이어 위치에 드롭(RequestUseItem) → 미리보기 원도 플레이어 중심.
+					_GizmoManager:ItemSmokeAim(center)
+				elseif id == "rock" then
+					local cursor = _InputRouter:CursorWorld()
+					local dir = _CombatPrimitives:DirectionTo(center, cursor)
+					_GizmoManager:ItemRockAim(center, dir, _GameConstants.GizmoRangedLaneLength, _GameConstants.GizmoRangedLaneWidth)
+				elseif id == "flash" then
+					self:ForEachNormalEnemy(map, "aim")
+				end
+			end
+		end
+
+		-- (B) 사용 잔상(초록/빨강) — BattlefieldFx 클라 사용-상태 폴링.
+		local now = _WallClock:Now()
+		if now < _BattlefieldFx.clientSmokeGizmoUntil then
+			_GizmoManager:ItemSmokeActive(_BattlefieldFx.clientSmokeGizmoCenter)
+		end
+		if now < _BattlefieldFx.clientFlashGizmoUntil then
+			self:ForEachNormalEnemy(map, "active")
+		end
+	end
+
+	@ExecSpace("ClientOnly")
+	method void ForEachNormalEnemy(any map, string mode)
+		-- 일반 적(EnemyMelee/EnemyRanged — 보스 제외)에 섬광 원 표시. mode="aim"=노랑(조준)/"active"=빨강(기절). 적원 raw transform 좌표(매니저 magenta 피격원과 정렬).
+		if map == nil or isvalid(map) == false then return end
+		self:DrawEnemyType(map, "script.EnemyMelee", mode)
+		self:DrawEnemyType(map, "script.EnemyRanged", mode)
+	end
+
+	@ExecSpace("ClientOnly")
+	method void DrawEnemyType(any map, string typeName, string mode)
+		-- 지정 타입 적 열거 → 살아있는 적에 섬광 원. EnemyHealth로 사망 필터.
+		local list = map:GetChildComponentsByTypeName(typeName, true)
+		if list == nil then return end
+		for _, compAny in ipairs(list) do
+			---@type Component
+			local comp = compAny
+			local e = comp.Entity
+			if isvalid(e) then
+				---@type EnemyHealth
+				local hp = e:GetComponent("script.EnemyHealth")
+				if hp == nil or hp.IsDead == false then
+					local ep = e.TransformComponent.WorldPosition
+					if mode == "aim" then
+						_GizmoManager:ItemFlashAim(Vector2(ep.x, ep.y))
+					else
+						_GizmoManager:ItemFlashActive(Vector2(ep.x, ep.y))
+					end
+				end
+			end
+		end
+	end
+
+end

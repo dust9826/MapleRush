@@ -62,9 +62,12 @@ script EnemyMelee extends Component
 		local timeScale = _SlowMotion:Scale()
 		local scaledDelta = delta * timeScale
 		local player = self:FindPlayer()
-		-- 연막탄 은신: 일반 적은 플레이어 감지 불가 (추격·조준 즉시 해제)
-		if _BattlefieldFx:IsSmokeActive() then
-			player = nil
+		-- 연막탄 은신: 플레이어가 연막 구름(반경3) 안에 있으면 일반 적은 감지 불가 (추격·조준 즉시 해제). 구름 밖이면 다시 들킴.
+		if player ~= nil then
+			local spp = player.TransformComponent.WorldPosition
+			if _BattlefieldFx:IsSmokeHiding(Vector2(spp.x, spp.y + _GameConstants.PlayerCenterYOffset)) then
+				player = nil
+			end
 		end
 		if player == nil then
 			self:StopMove()

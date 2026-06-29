@@ -42,10 +42,27 @@ script PlayerBootstrap extends Logic
 			if player:GetComponent("script.CombatGizmo") == nil then
 				player:AddComponent("CombatGizmo")
 			end
+			if player:GetComponent("script.PlayerItemGizmo") == nil then
+				player:AddComponent("PlayerItemGizmo")
+			end
 		end
 		log("[PlayerBootstrap] combat components attached to " .. player.Name)
 		self:EnsureDashPreview(player)
 		_StageManager:OnPlayerReady(player)
+		self:GrantDebugItems(player)
+	end
+
+	@ExecSpace("ServerOnly")
+	method void GrantDebugItems(Entity player)
+		-- 디버그(CheatMode)일 때 시작 시 아이템 3종(rock/smoke/flash) 1개씩 지급 — 이펙트/범위 테스트용. 빈 슬롯부터 채움.
+		if _GameConstants.CheatMode == false then return end
+		---@type PlayerItems
+		local items = player:GetComponent("script.PlayerItems")
+		if items == nil then return end
+		items:GrantItem("rock")
+		items:GrantItem("smoke")
+		items:GrantItem("flash")
+		log("[PlayerBootstrap] DEBUG granted rock/smoke/flash (CheatMode)")
 	end
 
 	@ExecSpace("ServerOnly")
