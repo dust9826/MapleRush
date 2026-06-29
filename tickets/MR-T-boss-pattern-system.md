@@ -14,7 +14,7 @@ touches:
 depends_on: []
 branch: ""
 created: 2026-06-29
-updated: 2026-06-29
+updated: 2026-06-30
 ---
 
 # 보스 패턴 시스템 (3보스 9패턴 + 예고 게이지 + 패링 윈도우 + 거리밴드 선택)
@@ -42,8 +42,8 @@ updated: 2026-06-29
 
 ## Subtasks (세션별로 쪼갬 — 큰 티켓이라 단계 진행)
 - [x] 1) 판정 사각화 + 예고 게이지(공통 인프라) — ✅ 2026-06-29. Telegraph 모듈(Service/Renderer/TelegraphGauge.model, **PixelRenderer 솔리드색**, 월드 Scale.y 성장). 판정은 RegisterEnemyAttackBox 박스 사용. 풀@map03 검증.
-- [ ] 2) 근접 패링 윈도우(hitAt±ε) — `TryParry` 근접 분기 ← **미착수**
-- [~] 3) 패턴 선택 거리밴드+개별쿨 엔진 — **개별쿨 ✅**(패턴별 curCd). **거리밴드 선택 미착수**(현재 랜덤).
+- [x] 2) 근접 패링 윈도우(hitAt±ε) — ✅ 2026-06-30. `TryParry` 근접 분기에 `hitAt − ParryWindowLead(0.15) ≤ now ≤ hitAt + ParryWindowTrail(0.05)` 시간 게이트. 밖이면 MISTIMED 로그+패링 미성립. 투사체 반사 분기 불변. ε는 GameConstants 외부화. (빌드OK, 라이브 타이밍 검증=MR-E)
+- [x] 3) 패턴 선택 거리밴드+개별쿨 엔진 — ✅ 2026-06-30. `SelectPattern(d)`: CLOSE(d≤4=광역>근접>원거리)/MID(d≤7.5=광역>원거리)/FAR(원거리). 패턴별 가용 쿨다운 `patReadyAt`(resolve 시 now+cd 등록)로 우선순위 시스템이 광역 무한반복 안 하게. 밴드 전부 쿨 중이면 최단 readyAt 폴백. curCd 제거, 패턴간 공통간격=BossPatternDelay. 밴드경계 GameConstants 외부화.
 - [x] 4) 보스별 패턴 파라미터 외부화 + 슬롯 리스킨(엘리쟈/스노우맨/자쿰) — ✅ 2026-06-29. BossController 재작성(BossKind별 3패턴, box forward/self/player/sides/multi + ranged fan/single/horizontal, 다중박스). 수치 전부 GameConstants "보스 패턴 수치" 섹션. 런타임 3보스 검증.
 - [~] 5) 자쿰 박수 레이저 비주얼 + 보스 RUID 선정/적용 — **보스 RUID ✅**(엘리쟈=Eliza팩 / 스노우맨=Snow Yeti / 자쿰=mob9303089, 보스별 클립 BossController 주입). **자쿰 P-Z2 빔 비주얼 미구현**(현재 수평 일반 투사체).
 - [~] 6) 사망/그로기/그레이스 정리 경로 보강 + 실측 — 예고게이지 정리(HideTelegraph 리스트)·다중박스 cancel ✅. 투사체 정리는 ResetStage 의존. 전체 실측은 MR-E.
@@ -55,9 +55,9 @@ updated: 2026-06-29
 
 ## ▶ 다음 세션 시작점 (이어서 진행)
 1. **눈 확인 튜닝**(빠름): 6번 워프로 테마별 보스 보면서 — 예고게이지 크기 `GameConstants.TelegraphPxBaseWorld`(=0.16) / 보스 `Scale`(각 모델 2.2). 안 맞으면 한 값씩 조정.
-2. **subtask 2 근접 패링 윈도우**: `CombatPrimitives.TryParry` 근접 분기에 `hitAt − 0.15s ≤ now ≤ hitAt + 0.05s` 시간 게이트(§1.4). 투사체 반사 분기는 불변.
-3. **subtask 3 거리밴드 선택**: CLOSE/MID/FAR 밴드 + 우선순위(광역>원거리>근접, CLOSE만 근접>원거리). 현재 랜덤 → 밴드.
-4. **subtask 5 자쿰 박수 레이저 빔 비주얼**.
+2. ~~subtask 2 근접 패링 윈도우~~ — ✅ 2026-06-30 완료 (위 Subtasks 참조). 라이브 타이밍감(±ε) 튜닝은 6번 워프 보스전에서 확인.
+3. ~~subtask 3 거리밴드 선택~~ — ✅ 2026-06-30 완료. 밴드경계(BossBandClose=4 / BossBandMid=7.5) 라이브 튜닝은 보스전에서.
+4. **subtask 5 자쿰 박수 레이저 빔 비주얼** ← 다음 코드 작업. P-Z2(현재 수평 일반 투사체)에 빔 비주얼 추가.
 5. (보류) **DebugSettings 인스펙터 편집**: 디버그 토글(CheatMode/DrawGizmo/TelegraphPxBaseWorld)을 @Component로 노출해 Maker 인스펙터에서 편집(@Logic은 인스펙터 미노출). 범위·배치 위치 사용자 확정 필요.
 6. **(선택) 보스 HP 단일화**: EnemyHealth 보스일 때 `GameConstants.BossHP` 읽도록(현재 모델 MaxHP=500 하드코딩).
 

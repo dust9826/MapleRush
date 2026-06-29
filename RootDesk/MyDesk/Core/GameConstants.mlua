@@ -69,6 +69,11 @@ script GameConstants extends Logic
 
 	property number GroggyParryMult = 2.0
 
+	-- 근접 패링 윈도우(boss_design §1.4): 명중시점(hitAt) 기준 선행 Lead·후행 Trail 안에서만 근접 패링 성립. 투사체 반사는 윈도우 무관.
+	property number ParryWindowLead = 0.15
+
+	property number ParryWindowTrail = 0.05
+
 	property number AttackCooldown = 0.5
 
 	property number DashDuration = 0.1
@@ -327,6 +332,9 @@ script GameConstants extends Logic
 	-- 좌우 쐐기(O3) 보스 발밑 안전지대 반폭(박스 중심 오프셋 = 이 값 + BoxHW). 자쿰 용암 랜덤 가로 분포 반경(보스중심 ±).
 	property number BossSidesSafeHalf = 1.0
 	property number BossMultiSpreadX = 6.0
+	-- 거리밴드 경계(가로거리 d, §1.6): d≤Close=CLOSE(광역>근접>원거리) / d≤Mid=MID(광역>원거리) / 그외=FAR(원거리만).
+	property number BossBandClose = 4.0
+	property number BossBandMid = 7.5
 
 	method integer NormalStagesForFloor(integer floor)
 		-- 층별 일반 스테이지 진행 횟수: 4 + 1*(층수-1) (stage_design_doc §2.2.3)

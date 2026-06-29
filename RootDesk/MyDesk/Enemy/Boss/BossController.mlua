@@ -12,10 +12,11 @@ script BossController extends Component
 	-- 현재 보스의 패턴 세트(서버, OnBeginPlay에서 BuildPatterns). 항목 = 패턴 config 테이블.
 	property any patterns = nil
 
-	-- 현재 발동 중 패턴 config + 쿨다운(resolve 후 phaseTimer).
+	-- 현재 발동 중 패턴 config.
 	property any curPat = nil
 
-	property number curCd = 1.5
+	-- 패턴별 개별 쿨다운: patId → 다음 사용 가능 ServerElapsedSeconds. 거리밴드 선택과 함께 패턴 다양성 보장 (§1.6).
+	property any patReadyAt = nil
 
 	-- 현재 패턴의 활성 공격 박스 레코드 목록(다중 박스: 좌우 쐐기/다지점 용암). 단일 박스도 리스트로.
 	property any pendingAttacks = nil
@@ -52,6 +53,7 @@ script BossController extends Component
 		self.patterns = self:BuildPatterns(self.BossKind)
 		self.pendingAttacks = {}
 		self.telegraphIds = {}
+		self.patReadyAt = {}
 		log("[BossController] OnBeginPlay kind='" .. tostring(self.BossKind) .. "' patterns=" .. tostring(#self.patterns) .. " stand=" .. tostring(self.standClip))
 	end
 
@@ -180,16 +182,59 @@ script BossController extends Component
 		table.insert(self.telegraphIds, id)
 	end
 
+	method string PatCat(table pat)
+		-- 패턴 카테고리: ranged=원거리 / aoe=광역(빨강 box, parryable=false) / melee=근접(노랑 box). 거리밴드 우선순위용.
+		if pat.cls == "ranged" then return "ranged" end
+		if pat.parryable == false then return "aoe" end
+		return "melee"
+	end
+
+	method any SelectPattern(number d)
+		-- 거리밴드(CLOSE/MID/FAR) × 카테고리 우선순위 × 패턴별 개별 쿨다운으로 다음 패턴 선택 (§1.6).
+		-- CLOSE(d≤Close)=광역>근접>원거리 / MID(d≤Mid)=광역>원거리(근접 제외) / FAR=원거리만.
+		-- 우선순위 카테고리 중 '쿨 끝난' 패턴이 있으면 그 카테고리에서 랜덤. 밴드 내 전부 쿨 중이면 가장 빨리 풀리는 것(아이들 최소화).
+		local pats = self.patterns
+		if pats == nil or #pats == 0 then return nil end
+		local order = { "ranged" }
+		if d <= _GameConstants.BossBandClose then
+			order = { "aoe", "melee", "ranged" }
+		elseif d <= _GameConstants.BossBandMid then
+			order = { "aoe", "ranged" }
+		end
+		local now = _UtilLogic.ServerElapsedSeconds
+		local fallback = nil
+		local fallbackReady = math.huge
+		for _, cat in ipairs(order) do
+			local readyOnes = {}
+			for _, pat in ipairs(pats) do
+				if self:PatCat(pat) == cat then
+					local rdy = self.patReadyAt[pat.id] or 0
+					if now >= rdy then
+						table.insert(readyOnes, pat)
+					elseif rdy < fallbackReady then
+						fallback = pat
+						fallbackReady = rdy
+					end
+				end
+			end
+			if #readyOnes > 0 then
+				return readyOnes[_UtilLogic:RandomIntegerRange(1, #readyOnes)]
+			end
+		end
+		return fallback
+	end
+
 	@ExecSpace("ServerOnly")
 	method void StartPattern(Vector2 playerCenter, Vector2 myCenter)
-		-- 보스 패턴 세트에서 랜덤 1개 선택 → windup 진입(박스 등록/예고 표시). 거리밴드 선택은 추후(§1.6).
+		-- 거리밴드+우선순위+개별쿨로 패턴 선택 → windup 진입(박스 등록/예고 표시) (§1.6).
 		local pats = self.patterns
 		if pats == nil or #pats == 0 then return end
-		local pat = pats[_UtilLogic:RandomIntegerRange(1, #pats)]
+		local bandDist = math.abs(playerCenter.x - myCenter.x)
+		local pat = self:SelectPattern(bandDist)
+		if pat == nil then pat = pats[_UtilLogic:RandomIntegerRange(1, #pats)] end
 		self.curPat = pat
 		self.phase = "windup"
 		self.phaseTimer = pat.windup
-		self.curCd = pat.cd
 		self.pendingAttacks = {}
 		self.telegraphIds = {}
 		self.TelegraphTriple = false
@@ -293,10 +338,13 @@ script BossController extends Component
 			end
 		end
 		if isvalid(self.Entity) == false then return end
+		-- 방금 쓴 패턴을 개별 쿨다운에 등록(다음 SelectPattern에서 cd 동안 제외) — 광역은 cd가 길어 반복 억제.
+		if self.patReadyAt ~= nil then self.patReadyAt[pat.id] = _UtilLogic.ServerElapsedSeconds + pat.cd end
 		self.TelegraphTriple = false
 		self:PlayClip(self.standClip)
 		self.phase = "delay"
-		self.phaseTimer = self.curCd
+		-- 패턴 간 짧은 공통 간격. 같은(특히 광역) 패턴 재선택은 위 개별 쿨다운이 막는다.
+		self.phaseTimer = _GameConstants.BossPatternDelay
 	end
 
 	@ExecSpace("ServerOnly")

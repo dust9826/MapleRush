@@ -99,23 +99,32 @@ script CombatPrimitives extends Logic
 	method integer TryParry(Entity mapEntity, Vector2 boxCenter, number hw, number hh, number reflectDamage)
 		-- 평타 판정 박스와 겹치는 parryable 공격 처리: 근접 공격 무효화 / 투사체 반사(ATK×200%). 반환: 패링 수.
 		local count = 0
+		-- 근접 패링 윈도우(§1.4): 명중시점 hitAt 기준 선행 Lead·후행 Trail 안에서만 성립. now/hitAt 모두 ServerElapsedSeconds.
+		local now = _UtilLogic.ServerElapsedSeconds
+		local parryLead = _GameConstants.ParryWindowLead
+		local parryTrail = _GameConstants.ParryWindowTrail
 		if self.activeAttacks ~= nil then
 			for _, rec in ipairs(self.activeAttacks) do
 				if rec.canceled == false and rec.parryable and self:BoxBoxOverlap(boxCenter, hw, hh, rec.center, rec.hw, rec.hh) then
-					rec.canceled = true
-					count += 1
-					self:BroadcastCancel(mapEntity, rec.id)
-					log("[CombatPrimitives] melee attack PARRIED (id=" .. tostring(rec.id) .. ")")
-					-- 보스 근거리 패링: 그로기 게이지 즉시 (ATK×100%)×2 충전 (stage_design §1.4.2)
-					if rec.bossEntityId ~= nil and mapEntity ~= nil then
-						local bossEntity = mapEntity:GetChildByName(rec.bossEntityId, true)
-						if isvalid(bossEntity) then
-							---@type GroggyGauge
-							local gg = bossEntity:GetComponent("script.GroggyGauge")
-							if gg ~= nil then
-								gg:Charge(_GameStateManager.AttackStat * _GameConstants.GroggyParryMult, "parry")
+					if now >= rec.hitAt - parryLead and now <= rec.hitAt + parryTrail then
+						rec.canceled = true
+						count += 1
+						self:BroadcastCancel(mapEntity, rec.id)
+						log("[CombatPrimitives] melee attack PARRIED (id=" .. tostring(rec.id) .. ", dt=" .. tostring(now - rec.hitAt) .. ")")
+						-- 보스 근거리 패링: 그로기 게이지 즉시 (ATK×100%)×2 충전 (stage_design §1.4.2)
+						if rec.bossEntityId ~= nil and mapEntity ~= nil then
+							local bossEntity = mapEntity:GetChildByName(rec.bossEntityId, true)
+							if isvalid(bossEntity) then
+								---@type GroggyGauge
+								local gg = bossEntity:GetComponent("script.GroggyGauge")
+								if gg ~= nil then
+									gg:Charge(_GameStateManager.AttackStat * _GameConstants.GroggyParryMult, "parry")
+								end
 							end
 						end
+					else
+						-- 윈도우 밖(너무 이르거나 늦음) → 패링 미성립. 공격은 그대로 진행(회피 필요).
+						log("[CombatPrimitives] melee parry MISTIMED (id=" .. tostring(rec.id) .. ", dt=" .. tostring(now - rec.hitAt) .. ")")
 					end
 				end
 			end
