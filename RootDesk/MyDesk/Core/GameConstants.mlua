@@ -126,6 +126,13 @@ script GameConstants extends Logic
 
 	property number RadiusEnemyHitbox = 0.5
 
+	-- 엔티티 피격(hurtbox) 박스 반폭/반높이 (원→박스 통일). 캐릭터형(세로로 김). 기즈모도 동일 치수 사용.
+	-- 플레이어 박스 중심 = pos.y + 0.5(PlayerCenterYOffset과 동일). 적 박스 중심 = transform raw 좌표.
+	property number PlayerHboxHW = 0.35
+	property number PlayerHboxHH = 0.6
+	property number EnemyHboxHW = 0.45
+	property number EnemyHboxHH = 0.55
+
 	property number MeleeEnemyHP = 30.0
 
 	property number RangedEnemyHP = 20.0

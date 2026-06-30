@@ -300,9 +300,10 @@ script BossController extends Component
 		end
 		if pat.cls == "box" then
 			local hit = false
+			local phb = _CombatPrimitives:HurtboxOf(player, _GameConstants.PlayerHboxHW, _GameConstants.PlayerHboxHH, _GameConstants.PlayerCenterYOffset)
 			if self.pendingAttacks ~= nil then
 				for _, rec in ipairs(self.pendingAttacks) do
-					if rec.canceled == false and _CombatPrimitives:RecordOverlapsCircle(rec, playerCenter, 0.5) then
+					if rec.canceled == false and _CombatPrimitives:RecordOverlapsBox(rec, Vector2(phb.cx, phb.cy), phb.hw, phb.hh) then
 						hit = true
 					end
 				end

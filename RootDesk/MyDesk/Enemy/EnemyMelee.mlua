@@ -87,7 +87,8 @@ script EnemyMelee extends Component
 			if self.stateTimer <= 0 then
 				local rec = self.pendingAttack
 				if rec ~= nil and rec.canceled == false then
-					if _CombatPrimitives:RecordOverlapsCircle(rec, playerCenter, 0.5) then
+					local phb = _CombatPrimitives:HurtboxOf(player, _GameConstants.PlayerHboxHW, _GameConstants.PlayerHboxHH, _GameConstants.PlayerCenterYOffset)
+					if _CombatPrimitives:RecordOverlapsBox(rec, Vector2(phb.cx, phb.cy), phb.hw, phb.hh) then
 						---@type PlayerHit
 						local hitComp = player:GetComponent("script.PlayerHit")
 						if hitComp ~= nil then

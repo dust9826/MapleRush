@@ -23,9 +23,9 @@ script CombatGizmo extends Component
 		local player = _UserService.LocalPlayer
 		if player == nil or isvalid(player) == false or self.Entity ~= player then return end
 
-		-- (0) 플레이어 피격원 (green, r=0.5) — 매 프레임 상시. 실제 판정과 동일 중심(pos.y + PlayerCenterYOffset).
-		local php = player.TransformComponent.WorldPosition
-		_GizmoManager:PlayerHurtbox(Vector2(php.x, php.y + _GameConstants.PlayerCenterYOffset))
+		-- (0) 플레이어 피격박스 (green) — 매 프레임 상시. 판정과 동일 소스(HurtboxOf): HitComponent 있으면 인스펙터값, 없으면 상수.
+		local phb = _CombatPrimitives:HurtboxOf(player, _GameConstants.PlayerHboxHW, _GameConstants.PlayerHboxHH, _GameConstants.PlayerCenterYOffset)
+		_GizmoManager:PlayerHurtbox(Vector2(phb.cx, phb.cy), phb.hw, phb.hh)
 
 		-- (1) 플레이어 공격 플래시 박스 (커서 좌/우 전방 박스, 짧은 시간)
 		if self.combat == nil then self.combat = self.Entity:GetComponent("script.PlayerCombat") end
@@ -54,8 +54,8 @@ script CombatGizmo extends Component
 				local hpComp = compAny
 				local e = hpComp.Entity
 				if isvalid(e) and hpComp.IsDead == false then
-					local ep = e.TransformComponent.WorldPosition
-					_GizmoManager:EnemyHurtbox(Vector2(ep.x, ep.y))
+					local hb = _CombatPrimitives:HurtboxOf(e, _GameConstants.EnemyHboxHW, _GameConstants.EnemyHboxHH, 0)
+					_GizmoManager:EnemyHurtbox(Vector2(hb.cx, hb.cy), hb.hw, hb.hh)
 				end
 			end
 		end
