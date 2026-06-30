@@ -329,6 +329,8 @@ script BossController extends Component
 					local sgn = 1.0
 					if self.AimTargetX < myCenter.x then sgn = -1.0 end
 					self:SpawnProj(map, myCenter, Vector2(sgn, 0))
+					-- 박수 레이저 빔 플래시(연출 전용). 발사 행을 따라 수평 빔, 판정은 위 투사체가 담당.
+					self:ShowZakumBeam(myCenter.x, myCenter.y, sgn)
 				else
 					self.shotIndex += 1
 					local dir = _CombatPrimitives:DirectionTo(myCenter, Vector2(self.AimTargetX, self.AimTargetY))
@@ -359,6 +361,20 @@ script BossController extends Component
 				comp:Launch(dir.x, dir.y, _GameConstants.ProjectileSpeed, 1, true)
 			end
 		end
+	end
+
+	@ExecSpace("Client")
+	method void ShowZakumBeam(number cx, number cy, number sgn)
+		-- 자쿰 P-Z2 박수 레이저: 발사 순간 보스 발사 행을 따라 수평 레이저 빔 플래시(비주얼 전용; 판정은 투사체).
+		local clip = _GameConstants.BossZakumBeamClip
+		if clip == "" then return end
+		local map = self.Entity.CurrentMap
+		if isvalid(map) == false then return end
+		local sx = _GameConstants.BossZakumBeamScaleX
+		local sy = _GameConstants.BossZakumBeamScaleY
+		local pos = Vector3(cx + sgn * _GameConstants.BossZakumBeamOffsetX, cy, 0)
+		_EffectService:PlayEffect(clip, map, pos, 0, Vector3(sx, sy, 1), false, { FlipX = sgn < 0 })
+		log("[BossController] zakum beam fx (sgn=" .. tostring(sgn) .. ")")
 	end
 
 	@ExecSpace("ServerOnly")

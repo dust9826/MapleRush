@@ -324,6 +324,12 @@ script GameConstants extends Logic
 	property number BossZ1BoxHH = 1.0
 	property number BossZ2Windup = 0.8
 	property number BossZ2Cd = 1.0
+	-- P-Z2 박수 레이저 빔 비주얼(연출 전용 — 실제 판정은 발사되는 투사체). Clip=fieldskill 가로 레이저.
+	-- ScaleX=빔 길이 / ScaleY=빔 두께 / OffsetX=보스 발사방향 중심 이동(월드유닛). 전부 눈 튜닝용.
+	property string BossZakumBeamClip = "3a2ea8cf59ad4372b6982266be675704"
+	property number BossZakumBeamScaleX = 0.7
+	property number BossZakumBeamScaleY = 0.7
+	property number BossZakumBeamOffsetX = 4.0
 	property number BossZ3Windup = 1.0
 	property number BossZ3Cd = 2.5
 	property number BossZ3BoxHW = 1.5
