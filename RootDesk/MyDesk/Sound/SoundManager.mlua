@@ -1,0 +1,67 @@
+@Logic
+script SoundManager extends Logic
+
+	-- 사운드 볼륨(0.0~1.0). 클라이언트 전용 환경설정 값.
+	-- 배경음은 _SoundService:SetBGMVolume 전역 API로 즉시 반영한다.
+	-- 효과음은 전역 볼륨 API가 없어, 모든 효과음을 PlaySFX 단일 진입점으로 보내
+	-- 저장된 sfxVolume을 곱해 적용한다. (직접 _SoundService:PlaySound를 부르면 볼륨 설정이 무시됨)
+	property number bgmVolume = 1.0
+
+	property number sfxVolume = 1.0
+
+	@ExecSpace("ClientOnly")
+	method void OnBeginPlay()
+		-- 기본 볼륨을 엔진 BGM 볼륨에 즉시 반영.
+		_SoundService:SetBGMVolume(self.bgmVolume)
+		log("[SoundManager] init bgm=" .. tostring(self.bgmVolume) .. " sfx=" .. tostring(self.sfxVolume))
+	end
+
+	@ExecSpace("ClientOnly")
+	method number GetBgmVolume()
+		-- 현재 배경음 볼륨 반환.
+		return self.bgmVolume
+	end
+
+	@ExecSpace("ClientOnly")
+	method number GetSfxVolume()
+		-- 현재 효과음 볼륨 반환.
+		return self.sfxVolume
+	end
+
+	@ExecSpace("ClientOnly")
+	method void SetBgmVolume(number v)
+		-- 배경음 볼륨 설정 + 엔진에 즉시 반영.
+		self.bgmVolume = self:Clamp01(v)
+		_SoundService:SetBGMVolume(self.bgmVolume)
+		log("[SoundManager] SetBgmVolume -> " .. tostring(self.bgmVolume))
+	end
+
+	@ExecSpace("ClientOnly")
+	method void SetSfxVolume(number v)
+		-- 효과음 볼륨 설정. 이후 PlaySFX 호출부터 반영된다.
+		self.sfxVolume = self:Clamp01(v)
+		log("[SoundManager] SetSfxVolume -> " .. tostring(self.sfxVolume))
+	end
+
+	@ExecSpace("ClientOnly")
+	method void PlaySFX(string ruid)
+		-- 효과음 재생 단일 진입점. 저장된 sfxVolume을 적용한다.
+		if ruid == nil or ruid == "" then return end
+		_SoundService:PlaySound(ruid, self.sfxVolume)
+	end
+
+	@ExecSpace("ClientOnly")
+	method void PlayBGM(string ruid)
+		-- 배경음 재생 단일 진입점. 저장된 bgmVolume을 적용한다.
+		if ruid == nil or ruid == "" then return end
+		_SoundService:PlayBGM(ruid, self.bgmVolume)
+	end
+
+	method number Clamp01(number v)
+		-- 0.0~1.0 범위로 클램프.
+		if v < 0 then return 0 end
+		if v > 1 then return 1 end
+		return v
+	end
+
+end
