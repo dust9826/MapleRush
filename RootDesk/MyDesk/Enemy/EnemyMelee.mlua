@@ -88,10 +88,9 @@ script EnemyMelee extends Component
 			self:PlayClip(self:AnimClip("hit", self.standClip))
 			return
 		end
-		-- HIT 종료 → 쿨다운으로(피격 직후 즉시 재공격 방지).
+		-- HIT 종료 → idle로 즉시 복귀(스턴은 HitStunDuration만). 아래 idle 로직이 run/stand 클립 재생해 hit 클립을 즉시 해제.
 		if self.aiState == "hit" then
-			self.aiState = "cooldown"
-			self.stateTimer = self.AttackCooldown
+			self.aiState = "idle"
 		end
 		local timeScale = _SlowMotion:Scale()
 		local scaledDelta = delta * timeScale
