@@ -32,7 +32,7 @@ script EnemyMelee extends Component
 		self.animSet = self.Entity:GetComponent("script.EnemyAnimSet")
 		local sprite = self.Entity.SpriteRendererComponent
 		if isvalid(sprite) then self.standClip = sprite.SpriteRUID end
-		self.standClip = self:AnimClip("stand", self.standClip)
+		self.standClip = self:AnimClip("idle", self.standClip)
 		self.currentClip = self.standClip
 	end
 
@@ -63,7 +63,7 @@ script EnemyMelee extends Component
 		-- 근거리 적 AI: 감지(3) → 추격 → 공격(1, 텔레그래프 0.6s) → 쿨다운. 슬로우 배율 적용, 낭떠러지 정지.
 		---@type EnemyHealth
 		local hp = self.Entity:GetComponent("script.EnemyHealth")
-		if hp ~= nil and hp.IsDead == true then return end
+		if hp ~= nil and hp.IsDead == true then self:PlayClip(self:AnimClip("die", self.standClip)) return end
 		if _StageManager:IsGraceActive() then
 			self:StopMove()
 			self:PlayClip(self.standClip)
@@ -74,6 +74,24 @@ script EnemyMelee extends Component
 			self:StopMove()
 			self:PlayClip(self.standClip)
 			return
+		end
+		-- 피격(HIT) 상태: 진행 중이던 공격(windup) 취소 → 공격이 멈춘다. hit 모션 재생(없으면 stand). 윈도우 동안 이동·공격 정지.
+		if hp ~= nil and _UtilLogic.ServerElapsedSeconds < hp.hitClipUntil then
+			if self.aiState == "windup" and self.pendingAttack ~= nil then
+				if self.pendingAttack.id ~= nil then _CombatPrimitives:BroadcastCancel(self.Entity.CurrentMap, self.pendingAttack.id) end
+				self.pendingAttack.canceled = true
+				self.pendingAttack = nil
+				log("[EnemyMelee] " .. self.Entity.Name .. " hit → windup canceled")
+			end
+			self.aiState = "hit"
+			self:StopMove()
+			self:PlayClip(self:AnimClip("hit", self.standClip))
+			return
+		end
+		-- HIT 종료 → 쿨다운으로(피격 직후 즉시 재공격 방지).
+		if self.aiState == "hit" then
+			self.aiState = "cooldown"
+			self.stateTimer = self.AttackCooldown
 		end
 		local timeScale = _SlowMotion:Scale()
 		local scaledDelta = delta * timeScale
@@ -143,7 +161,7 @@ script EnemyMelee extends Component
 				log("[EnemyMelee] " .. self.Entity.Name .. " windup start (parryable=" .. tostring(self.AttackParryable) .. ")")
 			elseif dist <= self.DetectRadius then
 				self:ChaseToward(playerCenter.x, myCenter.x, timeScale, delta)
-				self:PlayClip(self:AnimClip("move", _GameConstants.MeleeMoveClip))
+				self:PlayClip(self:AnimClip("run", _GameConstants.MeleeMoveClip))
 			else
 				self:StopMove()
 				self:PlayClip(self.standClip)

@@ -40,7 +40,7 @@ script EnemyRanged extends Component
 		self.animSet = self.Entity:GetComponent("script.EnemyAnimSet")
 		local sprite = self.Entity.SpriteRendererComponent
 		if isvalid(sprite) then self.standClip = sprite.SpriteRUID end
-		self.standClip = self:AnimClip("stand", self.standClip)
+		self.standClip = self:AnimClip("idle", self.standClip)
 		self.currentClip = self.standClip
 	end
 
@@ -71,7 +71,7 @@ script EnemyRanged extends Component
 		-- 원거리 적 AI: 감지(5) 내 플레이어를 향해 이동하며 조준 1s → 발사 1발 → 쿨 1s 반복. 감지 이탈 시 조준 취소.
 		---@type EnemyHealth
 		local hp = self.Entity:GetComponent("script.EnemyHealth")
-		if hp ~= nil and hp.IsDead == true then self.IsAiming = false self.aimLocked = false return end
+		if hp ~= nil and hp.IsDead == true then self.IsAiming = false self.aimLocked = false self:PlayClip(self:AnimClip("die", self.standClip)) return end
 		if _StageManager:IsGraceActive() then
 			self.IsAiming = false
 			self.aimLocked = false
@@ -85,6 +85,16 @@ script EnemyRanged extends Component
 			self.aimLocked = false
 			self:StopMove()
 			self:PlayClip(self.standClip)
+			return
+		end
+		-- 피격(HIT): 조준 취소(발사 안 함) → 공격이 멈춘다. hit 모션(없으면 idle). 윈도우 후 조준 새로 시작.
+		if hp ~= nil and _UtilLogic.ServerElapsedSeconds < hp.hitClipUntil then
+			self.IsAiming = false
+			self.aimLocked = false
+			self.cyclePhase = "aim"
+			self.cycleTimer = self.AimTime
+			self:StopMove()
+			self:PlayClip(self:AnimClip("hit", self.standClip))
 			return
 		end
 		local timeScale = _SlowMotion:Scale()
@@ -171,7 +181,7 @@ script EnemyRanged extends Component
 		if self.cyclePhase == "aim" then
 			self:PlayClip(self:AnimClip("attack", _GameConstants.RangedAttackClip))
 		else
-			self:PlayClip(self:AnimClip("move", _GameConstants.RangedMoveClip))
+			self:PlayClip(self:AnimClip("run", _GameConstants.RangedMoveClip))
 		end
 	end
 

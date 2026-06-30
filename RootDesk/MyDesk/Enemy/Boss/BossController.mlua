@@ -47,7 +47,7 @@ script BossController extends Component
 		self.animSet = self.Entity:GetComponent("script.EnemyAnimSet")
 		local sprite = self.Entity.SpriteRendererComponent
 		if isvalid(sprite) then self.standClip = sprite.SpriteRUID end
-		self.standClip = self:AnimClip("stand", self.standClip)
+		self.standClip = self:AnimClip("idle", self.standClip)
 		self.currentClip = self.standClip
 		self.patterns = self:BuildPatterns(self.BossKind)
 		self.pendingAttacks = {}
@@ -151,7 +151,7 @@ script BossController extends Component
 		-- 추격 (패턴 윈드업 중에는 정지). 윈드업 중에는 StartPattern이 설정한 공격 모션 유지.
 		if self.phase ~= "windup" and dist > 1.8 then
 			self:ChaseToward(playerCenter.x, myCenter.x, timeScale)
-			self:PlayClip(self:AnimClip("move", _GameConstants.BossMoveClip))
+			self:PlayClip(self:AnimClip("run", _GameConstants.BossMoveClip))
 		elseif self.phase ~= "windup" then
 			self:StopMove()
 			self:PlayClip(self.standClip)

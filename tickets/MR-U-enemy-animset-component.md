@@ -50,7 +50,15 @@ updated: 2026-06-30
 - [x] 4) BossController per-model 클립 속성(MoveClip/AttackClip/SkillClip/GroggyClip) + ClipOr 제거 → AnimClip 통합. 보스모델 고아 값 제거.
 - [x] 5) play 실측: 빌드 0에러. 멜리=폴백 경로 / 보스(zakum)=이관값(move=429420f7…) AnimClip 정확 반환 확인. 런타임 에러 0.
 
-> ✅ 구현 완료 (review). 잔여=리뷰/머지. 잡몹 per-monster 클립은 인스펙터에서 채워 다양화(현재 빈셋=GameConstants 폴백).
+> ✅ 구현 완료 (review). 잔여=리뷰/머지.
+
+### 추가 산출물 (2026-07-01, 티켓 확장)
+- **풀 애니 상태**: idle/run/attack/skill/groggy/hit/die 클립 전부 EnemyAnimSet 필드로. 잡몹(Lioner=Melee, Pixie=Ranged) stand/move/attack/hit/die 값 채움 → GameConstants 폴백 탈피(컴포넌트 구동).
+- **필드 네이밍**: StandClip→**IdleClip** / MoveClip→**RunClip** / DeadClip→**DieClip** (Attack/Skill/Groggy/Hit 유지). Clip(key) 키도 idle/run/die로. AI AnimClip 호출 + 모델 Value 이름 일괄 갱신.
+- **hit/die 재생 로직 신설**: EnemyHealth에 피격 타이머(hitClipUntil=EnemyHitClipDuration 0.25s) + **사망 지연 파괴**(DeadAnimDelay 0.8s, 죽는 모션 표시). EnemyMelee/Ranged가 사망 시 die, 피격 윈도우 중 hit 재생.
+- **HIT 상태(공격 중단)**: 피격 시 진행 중 공격 취소 → 멈춤. Melee=windup 예약공격 BroadcastCancel+canceled, aiState="hit"→cooldown. Ranged=조준 취소(cyclePhase 리셋, 발사 안 함).
+- 검증(play): AnimClip idle/run/attack/hit/die 정확 / 피격 시 aiState=hit·sprite=HIT-CLIP / 사망 시 sprite=DIE-CLIP. 빌드 0에러.
+- ⚠ 지연파괴(0.8s)는 보스 포함 전 적 적용(보스는 die 미설정→idle로 잠깐 머물다 소멸, 처치 카운트는 즉시).
 
 ## Notes / decisions
 - 🔗 MR-T(보스): BossController 클립 주입을 본 티켓이 EnemyAnimSet으로 대체. 두 티켓 touches 겹침(BossController) — MR-T PR(#22) 머지 후 진행 권장.

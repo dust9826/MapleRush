@@ -12,6 +12,12 @@ script EnemyHealth extends Component
 	@Sync
 	property boolean IsDead = false
 
+	-- 피격 모션 윈도우 끝 시각(ServerElapsedSeconds). AI가 이 시각 전까지 hit 클립 재생. @Sync 불필요(AI=서버).
+	property number hitClipUntil = -999.0
+
+	-- 사망 클립이 보이도록 파괴를 이 시간만큼 지연.
+	property number DeadAnimDelay = 0.8
+
 	@ExecSpace("ServerOnly")
 	method void OnBeginPlay()
 		-- HP를 최대치로 초기화.
@@ -23,6 +29,8 @@ script EnemyHealth extends Component
 	method void TakeDamage(number amount, string source)
 		-- 서버 권위 데미지 적용. 보스는 그로기 게이지 충전 (일반공격=데미지량 / 반사 명중=(ATK×100%)×2). HP 0 이하 시 사망.
 		if self.IsDead then return end
+		-- 피격 모션 윈도우 개시(AI가 hit 클립 재생). 사망 시엔 dead 클립이 우선.
+		self.hitClipUntil = _UtilLogic.ServerElapsedSeconds + _GameConstants.EnemyHitClipDuration
 		self.HP = self.HP - amount
 		log("[EnemyHealth] " .. self.Entity.Name .. " took " .. tostring(amount) .. " dmg from " .. source .. " -> HP=" .. tostring(self.HP))
 		self:PlayHitEffect()
@@ -49,7 +57,8 @@ script EnemyHealth extends Component
 		self.IsDead = true
 		log("[EnemyHealth] " .. self.Entity.Name .. " died (killed by " .. source .. ")")
 		_StageManager:OnEnemyKilled(self.EnemyKind)
-		self.Entity:Destroy()
+		-- 즉시 파괴하지 않고 지연 → AI가 IsDead 감지해 dead 클립 재생(사망 모션). DeadAnimDelay 후 소멸.
+		self.Entity:Destroy(self.DeadAnimDelay)
 	end
 
 	@ExecSpace("Multicast")

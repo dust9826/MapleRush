@@ -267,15 +267,6 @@
         },
         {
           "TargetType": "script.EnemyAnimSet",
-          "Name": "MoveClip",
-          "ValueType": {
-            "$type": "MODNativeType",
-            "type": "System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
-          },
-          "Value": "c745828d831b42739b9a58c07f334864"
-        },
-        {
-          "TargetType": "script.EnemyAnimSet",
           "Name": "AttackClip",
           "ValueType": {
             "$type": "MODNativeType",
@@ -300,6 +291,15 @@
             "type": "System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
           },
           "Value": "90fee9416184420a9796a679751d1ec5"
+        },
+        {
+          "TargetType": "script.EnemyAnimSet",
+          "Name": "RunClip",
+          "ValueType": {
+            "$type": "MODNativeType",
+            "type": "System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
+          },
+          "Value": "c745828d831b42739b9a58c07f334864"
         }
       ],
       "EventLinks": [],
