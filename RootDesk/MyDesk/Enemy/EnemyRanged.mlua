@@ -17,6 +17,11 @@ script EnemyRanged extends Component
 	-- 클라 기즈모용: aim(조준 캐스팅) 단계 동안 true. 원거리 예상 레인 표시 트리거.
 	@Sync property boolean IsAiming = false
 
+	-- 조준 시작(결정 시점) 1회 고정되는 발사 방향. 플레이어가 움직여도 추적하지 않음(회피 가능). 발사·기즈모 공용(@Sync).
+	@Sync property number AimDirX = 0
+	@Sync property number AimDirY = 0
+	property boolean aimLocked = false
+
 	property integer shotIndex = 0
 
 	-- 모션 구동: 모델 기본 SpriteRUID(stand) 캡처 후 상태별 교체.
@@ -50,9 +55,10 @@ script EnemyRanged extends Component
 		-- 원거리 적 AI: 감지(5) 내 플레이어를 향해 이동하며 조준 1s → 발사 1발 → 쿨 1s 반복. 감지 이탈 시 조준 취소.
 		---@type EnemyHealth
 		local hp = self.Entity:GetComponent("script.EnemyHealth")
-		if hp ~= nil and hp.IsDead == true then self.IsAiming = false return end
+		if hp ~= nil and hp.IsDead == true then self.IsAiming = false self.aimLocked = false return end
 		if _StageManager:IsGraceActive() then
 			self.IsAiming = false
+			self.aimLocked = false
 			self:StopMove()
 			self:PlayClip(self.standClip)
 			return
@@ -60,6 +66,7 @@ script EnemyRanged extends Component
 		-- 섬광탄 기절: 이동·조준·발사 정지
 		if _BattlefieldFx:IsStunActive() then
 			self.IsAiming = false
+			self.aimLocked = false
 			self:StopMove()
 			self:PlayClip(self.standClip)
 			return
@@ -72,6 +79,7 @@ script EnemyRanged extends Component
 			local spp = player.TransformComponent.WorldPosition
 			if _BattlefieldFx:IsSmokeHiding(Vector2(spp.x, spp.y + _GameConstants.PlayerCenterYOffset)) then
 				self.IsAiming = false
+				self.aimLocked = false
 				self.cyclePhase = "aim"
 				self.cycleTimer = self.AimTime
 				self:StopMove()
@@ -81,6 +89,7 @@ script EnemyRanged extends Component
 		end
 		if player == nil then
 			self.IsAiming = false
+			self.aimLocked = false
 			self:StopMove()
 			self:PlayClip(self.standClip)
 			return
@@ -99,6 +108,7 @@ script EnemyRanged extends Component
 				log("[EnemyRanged] aim canceled (player out of range)")
 			end
 			self.IsAiming = false
+			self.aimLocked = false
 			self.cyclePhase = "aim"
 			self.cycleTimer = self.AimTime
 			self:StopMove()
@@ -126,11 +136,19 @@ script EnemyRanged extends Component
 			end
 		end
 
-		-- 조준 단계 동기화(클라 레인 기즈모 트리거).
+		-- 조준 단계 동기화 + 발사 방향 고정. 조준 첫 프레임에 방향을 잠가(플레이어 추적 금지) 발사·기즈모 공용.
 		if self.cyclePhase == "aim" then
 			self.IsAiming = true
+			if self.aimLocked == false then
+				local d = _CombatPrimitives:DirectionTo(myCenter, playerCenter)
+				self.AimDirX = d.x
+				self.AimDirY = d.y
+				self.aimLocked = true
+				log("[EnemyRanged] aim LOCKED dir=(" .. string.format("%.2f", d.x) .. "," .. string.format("%.2f", d.y) .. ")")
+			end
 		else
 			self.IsAiming = false
+			self.aimLocked = false
 		end
 
 		-- 모션: 조준(aim, 1s 캐스팅) 단계에 공격 클립 → 발사 직전까지 잘 보임. 쿨다운(발사 후)엔 move로 복귀.
@@ -143,11 +161,14 @@ script EnemyRanged extends Component
 
 	@ExecSpace("ServerOnly")
 	method void Fire(Vector2 targetCenter, Vector2 fromCenter)
-		-- 발사 시점 플레이어 위치를 향해 직선 투사체 1발 (유도 없음).
+		-- 조준 시작 시 고정된 방향으로 직선 투사체 1발(유도·추적 없음). 미고정 시에만 현재 타깃으로 폴백.
 		local map = self.Entity.CurrentMap
 		if isvalid(map) == false then return end
 		self.shotIndex += 1
-		local dir = _CombatPrimitives:DirectionTo(fromCenter, targetCenter)
+		local dir = Vector2(self.AimDirX, self.AimDirY)
+		if self.aimLocked == false then
+			dir = _CombatPrimitives:DirectionTo(fromCenter, targetCenter)
+		end
 		local spawnPos = Vector3(fromCenter.x + dir.x * 0.4, fromCenter.y + dir.y * 0.4, 0)
 		local name = self.Entity.Name .. "_proj_" .. tostring(self.shotIndex)
 		local proj = _SpawnService:SpawnByModelId("enemyprojectile", name, spawnPos, map)

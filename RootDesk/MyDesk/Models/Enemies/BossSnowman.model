@@ -1,7 +1,7 @@
 {
   "Id": "",
   "GameId": "",
-  "EntryKey": "model://bossenemy",
+  "EntryKey": "model://bosssnowman",
   "ContentType": "x-mod/model",
   "Content": "",
   "Usage": 0,
@@ -14,9 +14,9 @@
     "Use": "Json",
     "Json": {
       "Version": 1,
-      "Name": "BossEnemy",
+      "Name": "BossSnowman",
       "BaseModelId": null,
-      "Id": "bossenemy",
+      "Id": "bosssnowman",
       "Components": [
         "MOD.Core.TransformComponent",
         "MOD.Core.SpriteRendererComponent",
@@ -35,7 +35,7 @@
             "$type": "MODNativeType",
             "type": "System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
           },
-          "Value": "86015373d23b4b05bb8fcc6086354652"
+          "Value": "bf93196a2da842eaaf93c944453416d8"
         },
         {
           "TargetType": "MOD.Core.SpriteRendererComponent",
@@ -95,6 +95,77 @@
             "type": "System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
           },
           "Value": "boss"
+        },
+        {
+          "TargetType": "script.BossController",
+          "Name": "MoveClip",
+          "ValueType": {
+            "$type": "MODNativeType",
+            "type": "System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
+          },
+          "Value": "881ed191bfad4861b63aa94d2a9a2bb8"
+        },
+        {
+          "TargetType": "script.BossController",
+          "Name": "AttackClip",
+          "ValueType": {
+            "$type": "MODNativeType",
+            "type": "System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
+          },
+          "Value": "022330aea10449ac970a86ee17db8709"
+        },
+        {
+          "TargetType": "script.BossController",
+          "Name": "SkillClip",
+          "ValueType": {
+            "$type": "MODNativeType",
+            "type": "System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
+          },
+          "Value": "bc47715d8e634067af5bf97b923a1c6f"
+        },
+        {
+          "TargetType": "script.BossController",
+          "Name": "GroggyClip",
+          "ValueType": {
+            "$type": "MODNativeType",
+            "type": "System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
+          },
+          "Value": "4ace032a3dcf4e6a9ee28925c92a93c6"
+        },
+        {
+          "TargetType": "script.BossController",
+          "Name": "BossKind",
+          "ValueType": {
+            "$type": "MODNativeType",
+            "type": "System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
+          },
+          "Value": "snowman"
+        },
+        {
+          "TargetType": "MOD.Core.HitComponent",
+          "Name": "BoxSize",
+          "ValueType": {
+            "$type": "MODNativeType",
+            "type": "MOD.Core.MODVector2, MOD.Core, Version=26.5.0.0, Culture=neutral, PublicKeyToken=null"
+          },
+          "Value": {
+            "$type": "MOD.Core.MODVector2, MOD.Core",
+            "x": 2.09,
+            "y": 1.76
+          }
+        },
+        {
+          "TargetType": "MOD.Core.HitComponent",
+          "Name": "ColliderOffset",
+          "ValueType": {
+            "$type": "MODNativeType",
+            "type": "MOD.Core.MODVector2, MOD.Core, Version=26.5.0.0, Culture=neutral, PublicKeyToken=null"
+          },
+          "Value": {
+            "$type": "MOD.Core.MODVector2, MOD.Core",
+            "x": 0.06499994,
+            "y": 0.88
+          }
         },
         {
           "TargetType": "MOD.Core.TransformComponent",
@@ -201,32 +272,6 @@
             "type": "System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
           },
           "Value": true
-        },
-        {
-          "TargetType": "MOD.Core.HitComponent",
-          "Name": "BoxSize",
-          "ValueType": {
-            "$type": "MODNativeType",
-            "type": "MOD.Core.MODVector2, MOD.Core, Version=26.5.0.0, Culture=neutral, PublicKeyToken=null"
-          },
-          "Value": {
-            "$type": "MOD.Core.MODVector2, MOD.Core",
-            "x": 1.19,
-            "y": 1.1
-          }
-        },
-        {
-          "TargetType": "MOD.Core.HitComponent",
-          "Name": "ColliderOffset",
-          "ValueType": {
-            "$type": "MODNativeType",
-            "type": "MOD.Core.MODVector2, MOD.Core, Version=26.5.0.0, Culture=neutral, PublicKeyToken=null"
-          },
-          "Value": {
-            "$type": "MOD.Core.MODVector2, MOD.Core",
-            "x": 0.005000055,
-            "y": 0.55
-          }
         },
         {
           "TargetType": "MOD.Core.HitComponent",

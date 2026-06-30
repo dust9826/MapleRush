@@ -1,14 +1,14 @@
 {
   "Id": "",
   "GameId": "",
-  "EntryKey": "codeblock://5dbbd92b-4ffa-4e17-9520-d59134855f3a",
+  "EntryKey": "codeblock://1ece4b4b-6573-49af-a31e-444278c1b43e",
   "ContentType": "x-mod/codeblock",
   "Content": "",
   "Usage": 0,
   "UsePublish": 1,
   "UseService": 0,
   "CoreVersion": "26.5.0.0",
-  "StudioVersion": "0.1.0.0",
+  "StudioVersion": "",
   "DynamicLoading": 0,
   "ContentProto": {
     "Use": "Json",
@@ -22,9 +22,9 @@
         "Minor": 1
       },
       "Description": "",
-      "Id": "5dbbd92b-4ffa-4e17-9520-d59134855f3a",
+      "Id": "1ece4b4b-6573-49af-a31e-444278c1b43e",
       "Language": 1,
-      "Name": "GameConstants",
+      "Name": "TelegraphService",
       "Type": 5,
       "Source": 0,
       "Target": null

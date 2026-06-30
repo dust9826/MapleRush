@@ -81,9 +81,8 @@ script Projectile extends Component
 				if users ~= nil then
 					for _, u in ipairs(users) do
 						if isvalid(u) then
-							local pp = u.TransformComponent.WorldPosition
-							local playerCenter = Vector2(pp.x, pp.y + 0.5)
-							if _CombatPrimitives:CircleOverlap(myPos, _GameConstants.RadiusProjectile, playerCenter, 0.5) then
+							local phb = _CombatPrimitives:HurtboxOf(u, _GameConstants.PlayerHboxHW, _GameConstants.PlayerHboxHH, _GameConstants.PlayerCenterYOffset)
+							if _CombatPrimitives:BoxCircleOverlap(Vector2(phb.cx, phb.cy), phb.hw, phb.hh, myPos, _GameConstants.RadiusProjectile) then
 								---@type PlayerHit
 								local hitComp = u:GetComponent("script.PlayerHit")
 								if hitComp ~= nil then

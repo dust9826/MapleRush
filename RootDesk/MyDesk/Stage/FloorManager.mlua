@@ -142,6 +142,20 @@ script FloorManager extends Logic
 		self:NextNode()
 	end
 
+	@ExecSpace("Server")
+	method void DebugWarpBoss()
+		-- [치트] 숫자키 6 → 현재 층 보스 스테이지로 즉시 점프 (테스트용; NextNode의 보스 분기와 동일). CheatMode 가드.
+		if _GameConstants.CheatMode == false then return end
+		if _GameStateManager.RunActive == false then
+			log_warning("[FloorManager] DebugWarpBoss ignored — run not active")
+			return
+		end
+		self.ShopDoneThisFloor = true
+		self.PhaseName = "boss"
+		log("[FloorManager] CHEAT warp -> BOSS (floor " .. tostring(_GameStateManager.CurrentFloor) .. ")")
+		_StageManager:StartStage("boss")
+	end
+
 	@ExecSpace("ServerOnly")
 	method void OnStageRewardDone(string stageType)
 		-- 보상 수령 완료 후 진행 (StageManager.RequestProceedNext가 호출).

@@ -91,8 +91,18 @@ script StageManager extends Logic
 		end
 		-- 전투(일반/보스): 구성 롤.
 		if stageType == "boss" then
-			-- 보스 스테이지: 전용 보스 1기 (HP 500, 그로기/패턴 풀)
-			self.composition = { { model = "bossenemy", x = 6.0, y = 0.4 } }
+			-- 보스 스테이지: 테마별 전용 보스 1기 (오르비스=엘리쟈 / 엘나스=스노우맨 / 폐광=자쿰). 미지정 시 기본 더미.
+			local theme = _FloorManager.CurrentTheme
+			local bossModel = "bossenemy"
+			if theme == "orbis" then
+				bossModel = "bosselija"
+			elseif theme == "elnath" then
+				bossModel = "bosssnowman"
+			elseif theme == "deepmine" then
+				bossModel = "bosszakum"
+			end
+			log("[StageManager] boss model for theme '" .. tostring(theme) .. "' = " .. bossModel)
+			self.composition = { { model = bossModel, x = 6.0, y = 0.4 } }
 		else
 			self.composition = self:RollComposition()
 		end
