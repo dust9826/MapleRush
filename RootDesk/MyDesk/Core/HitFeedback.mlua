@@ -22,10 +22,6 @@ script HitFeedback extends Logic
 	@Description("맞은 적이 그 자리에서 멈추는 시간(넉백 없음). 일반 적에만 적용(보스 제외).")
 	property number EnemyStunDuration = 0.10
 
-	@DisplayName("타격음 RUID")
-	@Description("적 피격 시 재생할 효과음(sound.csv #11 적 피격음). 비우면 재생 안 함. SoundManager.PlaySFX 경유로 SFX 볼륨 적용.")
-	property string HitSfxId = "4ab89d1c74b9420683465cc7566b62ef"
-
 	@DisplayName("연출 최소 간격(초)")
 	@Description("다중 타격(광역/연타) 시 셰이크·히트스톱이 누적돼 화면이 멀미나는 것 방지. 이 간격 내 추가 타격은 연출 1회로 합침.")
 	property number MinInterval = 0.04
@@ -48,7 +44,8 @@ script HitFeedback extends Logic
 
 	@ExecSpace("Multicast")
 	method void PlayFeel()
-		-- 전 클라 타격감: 카메라 셰이크 + 히트스톱 + 타격음. 다중 타격 누적 방지(MinInterval 내 1회로 합침).
+		-- 전 클라 화면 연출: 카메라 셰이크 + 히트스톱. 다중 타격 누적 방지(MinInterval 내 1회로 합침).
+		-- (타격음은 적별 반응으로 EnemyHealth.PlayHitEffect가 담당 — 이중 재생 방지)
 		local now = _WallClock:Now()
 		if now - self.lastFeelAt < self.MinInterval then return end
 		self.lastFeelAt = now
@@ -56,10 +53,6 @@ script HitFeedback extends Logic
 		local cam = _CameraService:GetCurrentCameraComponent()
 		if isvalid(cam) then
 			cam:ShakeCamera(self.ShakeIntensity, self.ShakeDuration)
-		end
-		-- 타격음: SoundManager 단일 진입점 경유(SFX 볼륨 적용). 에셋 미지정 시 생략.
-		if self.HitSfxId ~= "" then
-			_SoundManager:PlaySFX(self.HitSfxId)
 		end
 		-- 히트스톱: 슬로우모션 중엔 생략 (전역 타임스케일 소유권 충돌 방지 — SlowMotion이 0.25x 유지 중)
 		if _SlowMotion.clientSlowActive == false then

@@ -66,7 +66,7 @@ script LobbyController extends Component
 		self.hSettingsClose = self.btnSettingsClose.Entity:ConnectEvent(ButtonClickEvent, self.OnSettingsClose)
 		self.hRestOk = self.btnRestOk.Entity:ConnectEvent(ButtonClickEvent, self.OnRestOk)
 		self:InitSoundSliders()
-		_SoundManager:PlayBGM("063f1dddbf8b4a1bb9067b0c7a196922")
+		_SoundManager:PlayBGMKey("bgm_title")
 		_InputRouter:SetContext("Lobby")
 		log("[LobbyController] lobby shown (context=Lobby)")
 	end
@@ -117,7 +117,7 @@ script LobbyController extends Component
 		local now = _UtilLogic.ElapsedSeconds
 		if now - self.lastSfxTestTime > 0.15 then
 			self.lastSfxTestTime = now
-			_SoundManager:PlaySFX("972843e759204d3e9ad84e7d3fa94f83")
+			_SoundManager:PlaySFXKey("sfx_ui_click")
 		end
 	end
 

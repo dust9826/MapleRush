@@ -89,7 +89,7 @@ script ShopController extends Component
 		end
 		-- 구매 확정(OK) 시 구매 효과음 후 실제 구매 실행 (sound.csv #45).
 		local confirmed = function()
-			_SoundManager:PlaySFX("87e5cd16a3ba43ab994d1ee2fcbc139a")
+			_SoundManager:PlaySFXKey("sfx_shop_buy")
 			buyFn()
 		end
 		_UIPopup:Open(label .. "\n가격: " .. tostring(price) .. " 메소\n구입하시겠습니까?", confirmed, nil)

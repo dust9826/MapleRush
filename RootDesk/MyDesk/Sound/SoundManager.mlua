@@ -9,42 +9,65 @@ script SoundManager extends Logic
 
 	property number sfxVolume = 1.0
 
-	-- 상시 UI 클릭음(좌클릭이 UI 위일 때마다). sound.csv #39.
-	property string clickSfx = "972843e759204d3e9ad84e7d3fa94f83"
+	-- 사운드 키→RUID 맵. SoundTable.userdataset(=docs/sound.csv 이관)에서 시작 시 로드.
+	-- 사운드를 추가/교체하려면 CSV만 편집하면 됨(코드 수정 0). enabled=TRUE + RUID 있는 행만 등록.
+	@HideFromInspector
+	property any sfxMap = nil
 
 	property any clickHandler = nil
 
 	@ExecSpace("ClientOnly")
 	method void OnBeginPlay()
-		-- 기본 볼륨을 엔진 BGM 볼륨에 즉시 반영.
+		-- 사운드 테이블 로드 → 볼륨 반영 → 전역 클릭 후킹 → 프리로드.
+		self:LoadTable()
 		_SoundService:SetBGMVolume(self.bgmVolume)
-		-- 전역 좌클릭 후킹: UI 위를 클릭할 때마다 공통 클릭음. (버튼별 개별 연결 대신 단일 지점)
 		self.clickHandler = _InputService:ConnectEvent(KeyDownEvent, self.OnGlobalKeyDown)
-		-- 사용 효과음/배경음 프리로드: 첫 재생 시 클립 로딩 지연(특히 섬광 등)을 없앤다.
 		self:PreloadSounds()
 		log("[SoundManager] init bgm=" .. tostring(self.bgmVolume) .. " sfx=" .. tostring(self.sfxVolume))
 	end
 
 	@ExecSpace("ClientOnly")
-	method void PreloadSounds()
-		-- 현재 적용된 모든 효과음/배경음 RUID를 미리 로드해 첫 재생 지연을 제거.
-		local ruids = {
-			"5055db77e98c4f118f81f59390a78371",  -- 기본 공격
-			"7130b2db996b4112af59e188b609c10c",  -- 대시
-			"ee328663c4f843d4a229cf4e96cd7a11",  -- 강화 대시
-			"01f13b1930cf461ab4a327af971eccaf",  -- 슬로우 모션
-			"4ab89d1c74b9420683465cc7566b62ef",  -- 적 피격
-			"a95d1bf786f14216abae27c52bafe749",  -- 짱돌
-			"ad63f4c64f304b6c876fb68511addb87",  -- 연막
-			"04b36dbd96c94d8996f0ab3c97f718aa",  -- 섬광
-			"87e5cd16a3ba43ab994d1ee2fcbc139a",  -- 상점 구매
-			"972843e759204d3e9ad84e7d3fa94f83",  -- UI 클릭
-			"063f1dddbf8b4a1bb9067b0c7a196922",  -- 로비 BGM
-		}
-		for _, id in ipairs(ruids) do
-			_SoundService:LoadSound(id)
+	method void LoadTable()
+		-- SoundTable(UserDataSet)을 키→RUID 맵으로 구축. enabled=TRUE이고 RUID가 있는 행만.
+		self.sfxMap = {}
+		local ds = _DataService:GetTable("SoundTable")
+		if ds == nil then
+			log("[SoundManager] SoundTable NOT FOUND — 사운드 재생 불가")
+			return
 		end
-		log("[SoundManager] preloaded " .. tostring(#ruids) .. " sounds")
+		local n = ds:GetRowCount()
+		local loaded = 0
+		for i = 1, n do
+			local key = ds:GetCell(i, "key")
+			local ruid = ds:GetCell(i, "ruid")
+			local enabled = ds:GetCell(i, "enabled")
+			if key ~= nil and key ~= "" and ruid ~= nil and ruid ~= "" and enabled == "TRUE" then
+				self.sfxMap[key] = ruid
+				loaded += 1
+			end
+		end
+		log("[SoundManager] SoundTable loaded: " .. tostring(loaded) .. "/" .. tostring(n) .. " keys")
+	end
+
+	@ExecSpace("ClientOnly")
+	method string Ruid(string key)
+		-- 키에 매핑된 RUID 반환. 없거나 비활성/미지정이면 "".
+		if self.sfxMap == nil then return "" end
+		local r = self.sfxMap[key]
+		if r == nil then return "" end
+		return r
+	end
+
+	@ExecSpace("ClientOnly")
+	method void PreloadSounds()
+		-- 등록된 모든 사운드 RUID를 미리 로드해 첫 재생 지연 제거.
+		if self.sfxMap == nil then return end
+		local cnt = 0
+		for _, ruid in pairs(self.sfxMap) do
+			_SoundService:LoadSound(ruid)
+			cnt += 1
+		end
+		log("[SoundManager] preloaded " .. tostring(cnt) .. " sounds")
 	end
 
 	@ExecSpace("ClientOnly")
@@ -59,7 +82,7 @@ script SoundManager extends Logic
 	method void OnGlobalKeyDown(KeyDownEvent event)
 		-- 좌클릭이면서 포인터가 UI 위일 때만 클릭음(월드 클릭은 무음).
 		if event.key == KeyboardKey.Mouse0 and _InputService:IsPointerOverUI() then
-			self:PlaySFX(self.clickSfx)
+			self:PlaySFXKey("sfx_ui_click")
 		end
 	end
 
@@ -91,15 +114,27 @@ script SoundManager extends Logic
 	end
 
 	@ExecSpace("ClientOnly")
+	method void PlaySFXKey(string key)
+		-- 효과음 키 재생(권장 진입점). SoundTable에서 RUID 조회 후 재생.
+		self:PlaySFX(self:Ruid(key))
+	end
+
+	@ExecSpace("ClientOnly")
+	method void PlayBGMKey(string key)
+		-- 배경음 키 재생(권장 진입점).
+		self:PlayBGM(self:Ruid(key))
+	end
+
+	@ExecSpace("ClientOnly")
 	method void PlaySFX(string ruid)
-		-- 효과음 재생 단일 진입점. 저장된 sfxVolume을 적용한다.
+		-- 효과음 RUID 직접 재생. 저장된 sfxVolume 적용. (가능하면 PlaySFXKey 사용)
 		if ruid == nil or ruid == "" then return end
 		_SoundService:PlaySound(ruid, self.sfxVolume)
 	end
 
 	@ExecSpace("ClientOnly")
 	method void PlayBGM(string ruid)
-		-- 배경음 재생 단일 진입점. 저장된 bgmVolume을 적용한다.
+		-- 배경음 RUID 직접 재생. 저장된 bgmVolume 적용.
 		if ruid == nil or ruid == "" then return end
 		_SoundService:PlayBGM(ruid, self.bgmVolume)
 	end
