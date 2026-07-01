@@ -139,6 +139,11 @@ script GameConstants extends Logic
 
 	property number EnemyMoveSpeed = 1.5
 
+	-- 스폰 시 몬스터 Y를 이만큼 살짝 들어올려 스폰(방어적 보정). MapleTile foothold는 위에서만 잡으므로,
+	-- authoring 마커가 의도한 발판보다 미세하게(관측상 ~0.08) 아래로 박혀 있으면 통과→낙하한다.
+	-- 이 리프트로 항상 발판 위에서 스폰→중력이 올바른 발판에 안착. 모든 테마맵/미래 authoring 공통 적용.
+	property number SpawnYLift = 0.15
+
 	property number BossHP = 500.0
 
 	property number GroggyGaugeRatio = 0.2
@@ -366,6 +371,21 @@ script GameConstants extends Logic
 		if stageType == "boss" then return self.MapBoss end
 		if stageType == "shop" then return self.MapShop end
 		return self.MapNormal
+	end
+
+	method string MapForTheme(string theme)
+		-- 일반 스테이지 맵 = 선택된 테마가 결정 (접두사). Hierarchy name 그대로 반환
+		-- (MoveToMapPosition / cm.Name / /maps/ 경로 전부 name 사용 — 소문자 entry-id 쓰면 MR-R식 키 불일치).
+		if theme == "orbis" then return "OrbisLevel" end
+		if theme == "elnath" then return "ElnathLevel" end
+		if theme == "deepmine" then return "DeepMineLevel" end
+		return "ElnathLevel"
+	end
+
+	method string BossMapForTheme(string theme)
+		-- 보스 스테이지 맵 = 테마 레벨맵 이름 + "_Boss" 규약 (예: DeepMineLevel_Boss).
+		-- 파일명==루트 Hierarchy name 검증됨(세 테마 전부 TileMapMode=0). name 그대로 반환.
+		return self:MapForTheme(theme) .. "_Boss"
 	end
 
 end

@@ -25,7 +25,8 @@
         "script.EnemyRanged",
         "MOD.Core.SideviewbodyComponent",
         "MOD.Core.MovementComponent",
-        "MOD.Core.HitComponent"
+        "MOD.Core.HitComponent",
+        "script.EnemyAnimSet"
       ],
       "Properties": [],
       "Values": [
@@ -72,7 +73,7 @@
             "$type": "MODNativeType",
             "type": "System.Double, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
           },
-          "Value": 20.0
+          "Value": 20
         },
         {
           "TargetType": "script.EnemyHealth",
@@ -118,10 +119,10 @@
           },
           "Value": {
             "$type": "MOD.Core.MODQuaternion, MOD.Core",
-            "x": 0.0,
-            "y": 0.0,
-            "z": 0.0,
-            "w": 1.0
+            "x": 0,
+            "y": 0,
+            "z": 0,
+            "w": 1
           }
         },
         {
@@ -162,8 +163,8 @@
           },
           "Value": {
             "$type": "MOD.Core.MODVector2, MOD.Core",
-            "x": 0.0,
-            "y": 0.0
+            "x": 0,
+            "y": 0
           }
         },
         {
@@ -175,8 +176,8 @@
           },
           "Value": {
             "$type": "MOD.Core.MODVector2, MOD.Core",
-            "x": 0.0,
-            "y": 0.0
+            "x": 0,
+            "y": 0
           }
         },
         {
@@ -224,8 +225,8 @@
           },
           "Value": {
             "$type": "MOD.Core.MODVector2, MOD.Core",
-            "x": 0.0,
-            "y": 0.0
+            "x": 0,
+            "y": 0
           }
         },
         {
@@ -281,6 +282,51 @@
             "type": "System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
           },
           "Value": true
+        },
+        {
+          "TargetType": "script.EnemyAnimSet",
+          "Name": "AttackClip",
+          "ValueType": {
+            "$type": "MODNativeType",
+            "type": "System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
+          },
+          "Value": "d8d759053a5f4e338ccd47be39802179"
+        },
+        {
+          "TargetType": "script.EnemyAnimSet",
+          "Name": "HitClip",
+          "ValueType": {
+            "$type": "MODNativeType",
+            "type": "System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
+          },
+          "Value": "dc25c90c27904ce8b20ae1ada438bf9a"
+        },
+        {
+          "TargetType": "script.EnemyAnimSet",
+          "Name": "IdleClip",
+          "ValueType": {
+            "$type": "MODNativeType",
+            "type": "System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
+          },
+          "Value": "35f555b27d3a4d438224a29e73fac305"
+        },
+        {
+          "TargetType": "script.EnemyAnimSet",
+          "Name": "RunClip",
+          "ValueType": {
+            "$type": "MODNativeType",
+            "type": "System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
+          },
+          "Value": "7230c88964604573b9b687a919855b00"
+        },
+        {
+          "TargetType": "script.EnemyAnimSet",
+          "Name": "DieClip",
+          "ValueType": {
+            "$type": "MODNativeType",
+            "type": "System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
+          },
+          "Value": "1b0641033e0b4d90bdadd2cdf1fb70e3"
         }
       ],
       "EventLinks": [],
