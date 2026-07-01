@@ -368,4 +368,13 @@ script GameConstants extends Logic
 		return self.MapNormal
 	end
 
+	method string MapForTheme(string theme)
+		-- 일반 스테이지 맵 = 선택된 테마가 결정 (접두사). Hierarchy name 그대로 반환
+		-- (MoveToMapPosition / cm.Name / /maps/ 경로 전부 name 사용 — 소문자 entry-id 쓰면 MR-R식 키 불일치).
+		if theme == "orbis" then return "OrbisLevel" end
+		if theme == "elnath" then return "ElnathLevel" end
+		if theme == "deepmine" then return "DeepMineLevel" end
+		return "ElnathLevel"
+	end
+
 end

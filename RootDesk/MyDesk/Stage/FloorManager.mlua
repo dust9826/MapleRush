@@ -14,6 +14,9 @@ script FloorManager extends Logic
 	-- 서버: 사용된 테마 (게임 판 단위)
 	property any usedThemes = nil
 
+	-- 서버: 이번 노드 선택의 분기별 스폰포인트 이름 [branch1, branch2, branch3] (테마맵에서 3개 추출)
+	property any nodeSpawnChoices = nil
+
 	@Sync
 	property string CurrentTheme = ""
 
@@ -86,21 +89,39 @@ script FloorManager extends Logic
 		local pc = self:FirstPlayerComponent()
 		if self.NormalsClearedThisFloor < required then
 			self.PhaseName = "normal"
+			-- 노드 3분기 = 테마맵의 스폰포인트 3개 추출 (branchIdx → 스폰포인트).
+			self:PrepareNodeSpawns()
 			if pc ~= nil then
 				-- 분자=현재 스테이지 번호, 분모=보스전까지 전체(일반 required + 상점 1 + 보스 1).
 				self:ClientShowNodeSelect(self.NormalsClearedThisFloor + 1, required + 2, pc.UserId)
 			end
 		elseif self.ShopDoneThisFloor == false then
 			self.PhaseName = "shop"
-			_StageManager:StartStage("shop")
+			_StageManager:StartStage("shop", "")
 			if pc ~= nil then
 				self:ClientShowShop(pc.UserId)
 			end
 		else
 			self.PhaseName = "boss"
 			log("[FloorManager] BOSS node (floor " .. tostring(_GameStateManager.CurrentFloor) .. ")")
-			_StageManager:StartStage("boss")
+			_StageManager:StartStage("boss", "")
 		end
+	end
+
+	@ExecSpace("ServerOnly")
+	method void PrepareNodeSpawns()
+		-- 노드 3분기 = 스폰포인트 3개. ★비활성(미진입) 맵을 GetEntityByPath/children로 조회하면
+		-- 엔진이 LEA-3004(PhysicsSimulator 누락) 경고를 띄우므로, 맵을 건드리지 않고 표준 스폰포인트
+		-- 이름 풀에서 3개를 무작위 선택한다. 실제 좌표는 스폰 시 ResolveSpawnPos가 활성 맵에서 해소.
+		local pool = { "SpawnPointPosition", "SpawnPointPosition_1", "SpawnPointPosition_2", "SpawnPointPosition_3", "SpawnPointPosition_4", "SpawnPointPosition_5", "SpawnPointPosition_6" }
+		local chosen = {}
+		for i = 1, 3 do
+			local idx = _UtilLogic:RandomIntegerRange(1, #pool)
+			table.insert(chosen, pool[idx])
+			table.remove(pool, idx)
+		end
+		self.nodeSpawnChoices = chosen
+		log("[FloorManager] node spawns: " .. chosen[1] .. " / " .. chosen[2] .. " / " .. chosen[3])
 	end
 
 	@ExecSpace("Client")
@@ -117,9 +138,15 @@ script FloorManager extends Logic
 
 	@ExecSpace("Server")
 	method void RequestSelectNode(integer branchIdx)
-		-- 분기 선택 → 일반 스테이지 시작. (현재 3분기 전부 일반 스테이지 — 임시 구현)
-		log("[FloorManager] node branch " .. tostring(branchIdx) .. " -> normal stage")
-		_StageManager:StartStage("normal")
+		-- 분기 선택 → 해당 스폰포인트에서 일반 스테이지 시작 (branchIdx → nodeSpawnChoices).
+		local sp = ""
+		if self.nodeSpawnChoices ~= nil then
+			local idx = branchIdx
+			if idx < 1 or idx > #self.nodeSpawnChoices then idx = 1 end
+			sp = self.nodeSpawnChoices[idx]
+		end
+		log("[FloorManager] node branch " .. tostring(branchIdx) .. " -> normal stage sp=" .. tostring(sp))
+		_StageManager:StartStage("normal", sp)
 	end
 
 	@ExecSpace("Client")
@@ -153,7 +180,7 @@ script FloorManager extends Logic
 		self.ShopDoneThisFloor = true
 		self.PhaseName = "boss"
 		log("[FloorManager] CHEAT warp -> BOSS (floor " .. tostring(_GameStateManager.CurrentFloor) .. ")")
-		_StageManager:StartStage("boss")
+		_StageManager:StartStage("boss", "")
 	end
 
 	@ExecSpace("ServerOnly")

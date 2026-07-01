@@ -36,6 +36,13 @@ script StageManager extends Logic
 
 	property string pendingMapId = ""
 
+	-- 이번 스테이지의 실제 맵 이름 (일반=테마맵 / 보스=map03 / 상점=map04). StartStage에서 1회 확정, GetMap까지 유지.
+	@Sync
+	property string CurrentMapId = ""
+
+	-- 서버: 이번 스테이지 플레이어 스폰포인트 엔티티 이름 (빈값=기본 SpawnPointPosition/폴백).
+	property string pendingSpawnPoint = ""
+
 	@ExecSpace("ServerOnly")
 	method void OnPlayerReady(Entity player)
 		-- 첫 플레이어 입장 → 추적만 등록. 런은 로비 "구하러 가기"(RequestStartRun)에서 시작 (MR-L 로비 도입).
@@ -66,22 +73,53 @@ script StageManager extends Logic
 
 	@ExecSpace("ServerOnly")
 	method void MovePlayerToMap(string mapId)
-		-- 플레이어를 대상 맵 시작 지점으로 이동 (이미 그 맵이면 생략).
+		-- 플레이어를 대상 맵으로 이동 (이미 그 맵이면 생략). ★대상 맵은 아직 비활성이라 여기서
+		-- GetEntityByPath로 조회하면 LEA-3004(PhysicsSimulator)가 뜬다 → 임시 좌표로만 진입하고,
+		-- 정확한 스폰포인트 좌표는 도착 후 ResetStage→ClientStageReset가 활성 맵에서 해소한다.
 		local player = self:GetPlayer()
 		if player == nil then return end
 		local cm = player.CurrentMap
 		if cm ~= nil and isvalid(cm) and cm.Name == mapId then return end
 		player.PlayerComponent:MoveToMapPosition(mapId, Vector2(0, 0.3))
-		log("[StageManager] moving player -> " .. mapId)
+		log("[StageManager] moving player -> " .. mapId .. " sp=" .. self.pendingSpawnPoint)
+	end
+
+	method Vector2 ResolveSpawnPos(Entity map, string spName)
+		-- 맵에서 지정 스폰포인트(없으면 base SpawnPointPosition) 월드좌표. 둘 다 없으면 (0,0.3) 폴백.
+		-- @ExecSpace 없음 → 서버/클라 각자 로컬에서 호출 (엔티티 Transform 읽기뿐).
+		if map ~= nil and isvalid(map) then
+			local name = spName
+			if name == nil or name == "" then name = "SpawnPointPosition" end
+			local sp = map:GetChildByName(name, true)
+			if sp == nil or isvalid(sp) == false then
+				sp = map:GetChildByName("SpawnPointPosition", true)
+			end
+			if sp ~= nil and isvalid(sp) then
+				local p = sp.TransformComponent.WorldPosition
+				return Vector2(p.x, p.y)
+			end
+		end
+		return Vector2(0, 0.3)
 	end
 
 	@ExecSpace("ServerOnly")
-	method void StartStage(string stageType)
+	method void StartStage(string stageType, string spawnPointName)
 		-- 새 스테이지 진입: 타입별 맵으로 플레이어 이동 → 도착 후 적 스폰 (멀티맵).
+		-- spawnPointName: 일반 스테이지는 노드에서 고른 스폰포인트, 보스/상점은 "" (기본).
 		self.StageType = stageType
 		self.StageActive = false
+		self.pendingSpawnPoint = spawnPointName
 		_GameStateManager:RefillLives()
-		local mapId = _GameConstants:MapIdForStage(stageType)
+		-- 맵 결정: 일반=현재 테마 맵 / 보스=map03 / 상점=map04. 1회 확정해 GetMap까지 동일 맵 보장.
+		local mapId = ""
+		if stageType == "boss" then
+			mapId = _GameConstants.MapBoss
+		elseif stageType == "shop" then
+			mapId = _GameConstants.MapShop
+		else
+			mapId = _GameConstants:MapForTheme(_FloorManager.CurrentTheme)
+		end
+		self.CurrentMapId = mapId
 		-- 상점: 적 스폰 없이 맵 이동만 (상점 UI는 FloorManager가 표시).
 		if stageType == "shop" then
 			self.awaitingMap = false
@@ -208,7 +246,7 @@ script StageManager extends Logic
 			for _, u in ipairs(users) do
 				local pc = u.PlayerComponent
 				if pc ~= nil then
-					self:ClientStageReset(pc.UserId)
+					self:ClientStageReset(self.pendingSpawnPoint, pc.UserId)
 				end
 				---@type PlayerAbility
 				local ability = u:GetComponent("script.PlayerAbility")
@@ -230,17 +268,18 @@ script StageManager extends Logic
 
 	@ExecSpace("ServerOnly")
 	method Entity GetMap()
-		-- 현재 스테이지 타입에 해당하는 맵 (일반=map02 / 보스=map03 / 상점=map04).
-		local mapId = _GameConstants:MapIdForStage(self.StageType)
-		return _EntityService:GetEntityByPath("/maps/" .. mapId)
+		-- 이번 스테이지에서 확정된 맵 (StartStage가 CurrentMapId에 저장: 일반=테마맵 / 보스=map03 / 상점=map04).
+		if self.CurrentMapId == "" then return nil end
+		return _EntityService:GetEntityByPath("/maps/" .. self.CurrentMapId)
 	end
 
 	@ExecSpace("Client")
-	method void ClientStageReset()
-		-- 클라: 시작 지점 텔레포트 + 전투 컨텍스트 복귀 + 타임스케일 보정.
+	method void ClientStageReset(string spName)
+		-- 클라: 선택된 스폰포인트로 텔레포트 + 전투 컨텍스트 복귀 + 타임스케일 보정.
 		local player = _UserService.LocalPlayer
 		if player ~= nil then
-			player.MovementComponent:SetWorldPosition(Vector2(0, 0.3))
+			local pos = self:ResolveSpawnPos(player.CurrentMap, spName)
+			player.MovementComponent:SetWorldPosition(pos)
 		end
 		_UtilLogic:SetClientTimeScale(1.0)
 		_InputRouter:SetContext("Combat")
