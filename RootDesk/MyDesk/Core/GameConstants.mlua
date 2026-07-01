@@ -382,4 +382,10 @@ script GameConstants extends Logic
 		return "ElnathLevel"
 	end
 
+	method string BossMapForTheme(string theme)
+		-- 보스 스테이지 맵 = 테마 레벨맵 이름 + "_Boss" 규약 (예: DeepMineLevel_Boss).
+		-- 파일명==루트 Hierarchy name 검증됨(세 테마 전부 TileMapMode=0). name 그대로 반환.
+		return self:MapForTheme(theme) .. "_Boss"
+	end
+
 end

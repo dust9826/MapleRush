@@ -201,7 +201,8 @@ script StageManager extends Logic
 		-- 맵 결정: 일반=현재 테마 맵 / 보스=map03 / 상점=map04. 1회 확정해 GetMap까지 동일 맵 보장.
 		local mapId = ""
 		if stageType == "boss" then
-			mapId = _GameConstants.MapBoss
+			-- 보스맵 = 현재 테마 레벨맵 + "_Boss" (예: DeepMineLevel_Boss). 테마별 전용 보스맵.
+			mapId = _GameConstants:BossMapForTheme(_FloorManager.CurrentTheme)
 		elseif stageType == "shop" then
 			mapId = _GameConstants.MapShop
 		else
