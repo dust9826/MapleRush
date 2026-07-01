@@ -71,6 +71,13 @@ script EnemyRanged extends Component
 			self:PlayClip(self.standClip)
 			return
 		end
+		-- 피격 경직(타격감): 맞은 직후 짧게 그 자리에서 정지 (넉백 없음). 조준/사이클 타이머 자연 일시정지.
+		if hp ~= nil and hp:IsStunned() then
+			self.IsAiming = false
+			self.aimLocked = false
+			self:StopMove()
+			return
+		end
 		local timeScale = _SlowMotion:Scale()
 		local scaledDelta = delta * timeScale
 		local player = self:FindPlayer()

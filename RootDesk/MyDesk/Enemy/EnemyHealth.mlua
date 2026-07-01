@@ -12,6 +12,10 @@ script EnemyHealth extends Component
 	@Sync
 	property boolean IsDead = false
 
+	-- 피격 경직 만료 시각(서버 시간). TakeDamage가 세팅, AI(EnemyMelee/Ranged)가 IsStunned로 조회.
+	@HideFromInspector
+	property number stunUntil = -999.0
+
 	@ExecSpace("ServerOnly")
 	method void OnBeginPlay()
 		-- HP를 최대치로 초기화.
@@ -26,6 +30,9 @@ script EnemyHealth extends Component
 		self.HP = self.HP - amount
 		log("[EnemyHealth] " .. self.Entity.Name .. " took " .. tostring(amount) .. " dmg from " .. source .. " -> HP=" .. tostring(self.HP))
 		self:PlayHitEffect()
+		-- 타격감: 피격 경직(넉백 없음, 보스는 AI가 미조회 → 미적용) + 클라 카메라 셰이크/히트스톱/타격음.
+		self.stunUntil = _WallClock:ServerNow() + _HitFeedback.EnemyStunDuration
+		_HitFeedback:OnEnemyHit(self.Entity)
 		if self.EnemyKind == "boss" then
 			---@type GroggyGauge
 			local gg = self.Entity:GetComponent("script.GroggyGauge")
@@ -50,6 +57,12 @@ script EnemyHealth extends Component
 		log("[EnemyHealth] " .. self.Entity.Name .. " died (killed by " .. source .. ")")
 		_StageManager:OnEnemyKilled(self.EnemyKind)
 		self.Entity:Destroy()
+	end
+
+	method boolean IsStunned()
+		-- 서버: 피격 경직 중인지 (사망 아님 + 경직 만료 전). AI가 매 프레임 조회.
+		if self.IsDead then return false end
+		return _WallClock:ServerNow() < self.stunUntil
 	end
 
 	@ExecSpace("Multicast")
