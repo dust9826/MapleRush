@@ -41,7 +41,9 @@ script EnemyRanged extends Component
 		local sprite = self.Entity.SpriteRendererComponent
 		if isvalid(sprite) then self.standClip = sprite.SpriteRUID end
 		self.standClip = self:AnimClip("idle", self.standClip)
-		self.currentClip = self.standClip
+		-- 시작하자마자 idle 애니메이션 재생: currentClip을 비워 실제 스프라이트에 idle 클립을 세팅(0프레임부터).
+		self.currentClip = ""
+		self:PlayClip(self.standClip)
 	end
 
 	method string AnimClip(string key, string fallback)

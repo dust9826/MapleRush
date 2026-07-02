@@ -156,8 +156,11 @@ script StageManager extends Logic
 				for _, hc in ipairs(hcs) do
 					local e = hc.Entity
 					if isvalid(e) then
-						local model = "meleeenemy"
-						if e:GetComponent("script.EnemyRanged") ~= nil then model = "rangedenemy" end
+						-- ★ 배치된 마커의 "실제 모델"을 스폰해야 변종(MeleeEnemy 복제로 클립·수치만 바꾼 적)이 그대로 나온다.
+						--   컴포넌트 타입으로 베이스만 추론하면 변종이 meleeenemy/rangedenemy로 납작해짐(버그). 이름=모델명 규약으로 실제 id 해석.
+						-- 테마 스킨 우선: 이 테마의 melee/ranged 슬롯을 지정 잡몹으로 대체. 지정 없으면 배치된 실제 모델(이름 해석).
+						local model = self:ThemeSkinModel(e)
+						if model == nil then model = self:ResolveMarkerModel(e) end
 						local wp = e.TransformComponent.WorldPosition
 						table.insert(mons, { model = model, x = wp.x, y = wp.y })
 					end
@@ -174,6 +177,56 @@ script StageManager extends Logic
 		end
 		self.preppedMap = map.Name
 		log("[StageManager] PrepareStages map=" .. map.Name .. " stages=" .. tostring(#self.stageOrder))
+	end
+
+	@ExecSpace("ServerOnly")
+	method string BareModelId(string id)
+		-- GetModelIdByName은 "model://<id>" 형태 반환 → SpawnByModelId용 bare id로 정규화(코드베이스 통일). 접두사 없으면 그대로.
+		if string.sub(id, 1, 8) == "model://" then return string.sub(id, 9) end
+		return id
+	end
+
+	@ExecSpace("ServerOnly")
+	method string ThemeSkinModel(Entity e)
+		-- 테마별 잡몹 스킨: 현재 테마의 melee 슬롯/ranged 슬롯을 지정 모델로 대체.
+		-- 슬롯 = 마커의 AI 컴포넌트(EnemyMelee=근접 슬롯 / EnemyRanged=원거리 슬롯). 둘 다 아니면 스킨 안 함(nil).
+		-- 지정 모델은 이름으로 조회(GetModelIdByName + BareModelId). 미지정 테마/모델은 nil → 호출부가 이름 기반 폴백.
+		local isMelee = e:GetComponent("script.EnemyMelee") ~= nil
+		local isRanged = e:GetComponent("script.EnemyRanged") ~= nil
+		if isMelee == false and isRanged == false then return nil end
+		local theme = _FloorManager.CurrentTheme
+		local name = nil
+		if theme == "orbis" then
+			if isRanged then name = "RangedEnemy_Pixie" else name = "MeleeEnemy_Lioner" end
+		elseif theme == "elnath" then
+			if isRanged then name = "ChaserEnemy_Pepe" else name = "MeleeEnemy_WhiteFang" end
+		elseif theme == "deepmine" then
+			if isRanged then name = "RangedEnemy_Boogie" else name = "ChaserEnemy_JuniorBulldog" end
+		end
+		if name == nil then return nil end
+		local id = _EntryService:GetModelIdByName(name)
+		if id ~= nil and id ~= "" then return self:BareModelId(id) end
+		return nil
+	end
+
+	@ExecSpace("ServerOnly")
+	method string ResolveMarkerModel(Entity e)
+		-- 배치된 마커의 실제 model id를 엔티티 이름(=모델명 규약)으로 해석 → 변종(MeleeEnemy 복제) 그대로 스폰.
+		-- 이름 직접 조회 → 끝의 _<숫자> 접미사 제거 후 재조회 → 실패 시 컴포넌트 타입 베이스 폴백.
+		local name = e.Name
+		if name ~= nil and name ~= "" then
+			local id = _EntryService:GetModelIdByName(name)
+			if id ~= nil and id ~= "" then return self:BareModelId(id) end
+			-- 끝의 _<숫자> 접미사 제거 후 재조회 (MeleeEnemy_1 → MeleeEnemy / MeleeEnemy_Lioner_2 → MeleeEnemy_Lioner)
+			local base = string.match(name, "^(.-)_%d+$")
+			if base ~= nil then
+				local id2 = _EntryService:GetModelIdByName(base)
+				if id2 ~= nil and id2 ~= "" then return self:BareModelId(id2) end
+			end
+		end
+		if e:GetComponent("script.EnemyRanged") ~= nil then return "rangedenemy" end
+		if e:GetComponent("script.EnemyChaser") ~= nil then return "chaserenemy" end
+		return "meleeenemy"
 	end
 
 	@ExecSpace("ServerOnly")
@@ -294,8 +347,11 @@ script StageManager extends Logic
 		local count = 3 + _UtilLogic:RandomIntegerRange(0, 1)
 		local comp = {}
 		for i = 1, count do
+			-- 랜덤 풀: 근접 / 원거리 / 추적(chaser). 35% 원거리, 25% 추적, 나머지 근접.
 			local modelId = "meleeenemy"
-			if _UtilLogic:RandomDouble() < 0.4 then modelId = "rangedenemy" end
+			local r = _UtilLogic:RandomDouble()
+			if r < 0.35 then modelId = "rangedenemy"
+			elseif r < 0.6 then modelId = "chaserenemy" end
 			local p = points[((i - 1) % #points) + 1]
 			table.insert(comp, { model = modelId, x = p.x, y = p.y })
 		end

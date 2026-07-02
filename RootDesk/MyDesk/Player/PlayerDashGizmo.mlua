@@ -87,8 +87,8 @@ script PlayerDashGizmo extends Component
 		local foot = Vector2(pos.x, pos.y)
 		local center = Vector2(pos.x, pos.y + _GameConstants.PlayerCenterYOffset)
 
-		-- (1) DashBlock 박스 외곽선
-		self:DrawBlocks()
+		-- (1) DashBlock 박스 외곽선 (전용 토글 — 기본 off. 대시 사거리/레이는 아래에서 계속 표시)
+		if _GameConstants.DashGizmoDrawBlocks then self:DrawBlocks() end
 
 		-- (2) 최대 사거리 원(플레이어 중앙 추종, 매니저가 Transform으로 배치). 중심 마커 원(노랑 r=1)은 제거됨.
 		_GizmoManager:DashRange(center)
