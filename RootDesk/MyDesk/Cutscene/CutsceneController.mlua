@@ -1,0 +1,171 @@
+@Component
+script CutsceneController extends Component
+
+	-- 인트로 컷씬(언더테일식): 게임 시작 즉시 재생. 상단 이미지 + 하단 텍스트(타자기),
+	-- 텍스트 완료 후 3초 자동 넘김, ESC로 즉시 스킵→타이틀(로비). 7장면 후 로비로 인계.
+
+	-- 컷씬 그룹 루트(끝나면 숨김). 바인딩 주입.
+	property Entity cutsceneRoot = "41fb547d-748f-4b06-8baf-4e65938992e5"
+
+	-- 상단 이미지 스프라이트(장면별 RUID 교체). 바인딩 주입.
+	property SpriteGUIRendererComponent imageSprite = "9c26f40f-77df-4f0a-be16-3055194260d9"
+
+	-- 하단 스토리 텍스트(타자기 출력). 바인딩 주입.
+	property TextComponent storyText = "b14211a8-6761-43a1-b2c4-b402bf29757c"
+
+	-- 로비 루트(LobbyGroup의 lobbyRoot). 시작 시 숨기고 끝나면 표시. LobbyController와 동일 UUID.
+	property Entity lobbyRoot = "7bbdf71d-969c-4536-b939-4bd242c7b528"
+
+	-- 초당 출력 글자수(타자기 속도) / 텍스트 완료 후 자동 넘김 대기(초).
+	property number CharsPerSec = 28.0
+
+	property number AutoAdvanceDelay = 3.0
+
+	-- 서버: 아님(클라 UI). 아래는 런타임 상태.
+	property any scenes = nil
+
+	property integer sceneIdx = 0
+
+	-- 현재 장면 텍스트의 글자(UTF-8) 배열 + 개수 + 출력된 글자수(누적 float).
+	property any chars = nil
+
+	property integer charCount = 0
+
+	property number shown = 0.0
+
+	-- "typing" / "waiting" / "done"
+	property string phase = ""
+
+	property number waitTimer = 0.0
+
+	property any escHandler = nil
+
+	@ExecSpace("ClientOnly")
+	method void OnBeginPlay()
+		-- 장면 데이터(이미지 RUID + 원본 해상도 w/h + 대사 + 스토리 BGM 키). BGM: 1~4=early / 5~7=late(=타이틀 유지).
+		-- w/h: 16:9 프레임에 비율 유지로 폭을 채우고 넘치는 위아래는 Mask가 크롭. 1~6=1920x1080, 7=1448x1086(4:3).
+		self.scenes = {
+			{ ruid = "ba75a198e091494ca6e59e1c881cfaeb", w = 1920, h = 1080, bgm = "bgm_story_early", text = "누구도 곁에 두지 않던 만지에게,\n어느 날 한 소녀가 까닭 없이 매일 다가와 말을 건다." },
+			{ ruid = "e93907fe1b3f47408b34762857f39ddd", w = 1920, h = 1080, bgm = "", text = "만지는 몇 번이고 그녀를 밀어낸다." },
+			{ ruid = "bdbd146911ef4525a498f69db02accf0", w = 1920, h = 1080, bgm = "", text = "그러던 어느 날, 하늘이 갈라진다.\n오르비스에서 첫번째 어둠의 균열이 발생한다.\n소녀는 그 균열을 연구하기 시작한다." },
+			{ ruid = "7b80db4e4f954ec0becde63190147f95", w = 1920, h = 1080, bgm = "", text = "균열에 호기심이 인 만지는 오르비스로 가게되었다.\n그리고 그녀와 만나게 되고, 처음으로 마음을 열게된다.\n둘 사이에 대화가 트이기 시작한 것이다." },
+			{ ruid = "3e2de5ba7dba4a4787014788faf789a7", w = 1920, h = 1080, bgm = "bgm_story_late", text = "가까워질 무렵, 균열에 다가간 소녀가 안으로 빨려 들어간다." },
+			{ ruid = "846e0351d5274dc7a872e6618529eac6", w = 1920, h = 1080, bgm = "", text = "만지는 그녀를 구하려 칼을 뽑아 균열로 뛰어든다. 그리고 죽는다." },
+			{ ruid = "4ed387595fec4934b931b7d12692909e", w = 1448, h = 1086, bgm = "", text = "그 순간, 칼이 그를 선착장으로 되돌린다. 회귀가 시작된다." },
+		}
+		-- 로비 숨김(컷씬이 먼저) + 전투 입력 억제(비전투 컨텍스트).
+		if isvalid(self.lobbyRoot) then self.lobbyRoot.Enable = false end
+		_InputRouter:SetContext("Lobby")
+		-- ESC 스킵.
+		self.escHandler = _InputService:ConnectEvent(KeyDownEvent, self.OnKeyDown)
+		self.sceneIdx = 0
+		self:NextScene()
+		log("[CutsceneController] intro started (" .. tostring(#self.scenes) .. " scenes)")
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnKeyDown(KeyDownEvent event)
+		-- ESC → 스토리 스킵(바로 타이틀).
+		if event.key == KeyboardKey.Escape then
+			log("[CutsceneController] ESC skip")
+			self:EndCutscene()
+		end
+	end
+
+	@ExecSpace("ClientOnly")
+	method void NextScene()
+		-- 다음 장면 진입: 이미지 교체 + (필요 시)BGM + 타자기 리셋. 마지막 장면 이후면 종료.
+		self.sceneIdx = self.sceneIdx + 1
+		if self.scenes == nil or self.sceneIdx > #self.scenes then
+			self:EndCutscene()
+			return
+		end
+		local sc = self.scenes[self.sceneIdx]
+		if isvalid(self.imageSprite) then
+			self.imageSprite.ImageRUID = DataRef(sc.ruid)
+			-- 프레임(폭 1100) 기준 비율 유지 → 높이 산출. 16:9보다 세로로 길면 Mask가 위아래를 크롭(cover).
+			local frameW = 1100.0
+			self.imageSprite.Entity.UITransformComponent.RectSize = Vector2(frameW, frameW * sc.h / sc.w)
+		end
+		if sc.bgm ~= "" then
+			_SoundManager:PlayBGMKey(sc.bgm)
+		end
+		self.chars = self:SplitChars(sc.text)
+		self.charCount = #self.chars
+		self.shown = 0.0
+		self.phase = "typing"
+		if isvalid(self.storyText) then self.storyText.Text = "" end
+		log("[CutsceneController] scene " .. tostring(self.sceneIdx) .. " (chars=" .. tostring(self.charCount) .. ")")
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnUpdate(number delta)
+		-- 타자기 출력 → 완료 시 3초 대기 → 자동 넘김.
+		if self.phase == "typing" then
+			self.shown = self.shown + delta * self.CharsPerSec
+			local n = math.floor(self.shown)
+			if n >= self.charCount then
+				n = self.charCount
+				self.phase = "waiting"
+				self.waitTimer = self.AutoAdvanceDelay
+			end
+			if isvalid(self.storyText) then
+				self.storyText.Text = table.concat(self.chars, "", 1, n)
+			end
+		elseif self.phase == "waiting" then
+			self.waitTimer = self.waitTimer - delta
+			if self.waitTimer <= 0 then
+				self:NextScene()
+			end
+		end
+	end
+
+	@ExecSpace("ClientOnly")
+	method void EndCutscene()
+		-- 종료(자연 완료/스킵 공통): ESC 해제 → 로비 표시 + 타이틀 BGM + 로비 컨텍스트 → 컷씬 숨김.
+		if self.phase == "done" then return end
+		self.phase = "done"
+		if self.escHandler ~= nil then
+			_InputService:DisconnectEvent(KeyDownEvent, self.escHandler)
+			self.escHandler = nil
+		end
+		if isvalid(self.lobbyRoot) then self.lobbyRoot.Enable = true end
+		_SoundManager:PlayBGMKey("bgm_title")
+		_InputRouter:SetContext("Lobby")
+		if isvalid(self.cutsceneRoot) then self.cutsceneRoot.Enable = false end
+		log("[CutsceneController] ended -> lobby")
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnEndPlay()
+		-- 핸들러 정리.
+		if self.escHandler ~= nil then
+			_InputService:DisconnectEvent(KeyDownEvent, self.escHandler)
+			self.escHandler = nil
+		end
+	end
+
+	method table SplitChars(string s)
+		-- UTF-8 문자 단위로 분해(한글=3바이트라 byte 자르기 금지). 선행 바이트로 길이 판별.
+		local out = {}
+		local i = 1
+		local len = #s
+		while i <= len do
+			local b = string.byte(s, i)
+			local n = 1
+			if b >= 240 then
+				n = 4
+			elseif b >= 224 then
+				n = 3
+			elseif b >= 192 then
+				n = 2
+			else
+				n = 1
+			end
+			table.insert(out, string.sub(s, i, i + n - 1))
+			i = i + n
+		end
+		return out
+	end
+
+end

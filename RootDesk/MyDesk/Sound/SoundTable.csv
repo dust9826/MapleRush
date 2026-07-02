@@ -1,10 +1,10 @@
-key,kind,ruid,enabled,#wired,#note
+﻿key,kind,ruid,enabled,#wired,#note
 bgm_title,bgm,063f1dddbf8b4a1bb9067b0c7a196922,TRUE,wired:LobbyController,메인화면(타이틀)
 bgm_orbis,bgm,b3460299e70a49579d02bc31f2297c77,TRUE,wired:FloorManager,오르비스
 bgm_elnath,bgm,e708d95c152245e8be3f8a5eb447b308,TRUE,wired:FloorManager,엘나스
 bgm_deepmine,bgm,af3acec8784a4f80a0a354479b2132ff,TRUE,wired:FloorManager,폐광
-bgm_story_early,bgm,0470e1a58d434a58a00c0bcc955f38a1,TRUE,todo,스토리(1~4번째 일러스트=스토리화면 미구현)
-bgm_story_late,bgm,063f1dddbf8b4a1bb9067b0c7a196922,TRUE,todo,스토리(5번째 이후=타이틀 유지)
+bgm_story_early,bgm,0470e1a58d434a58a00c0bcc955f38a1,TRUE,wired:CutsceneController,스토리(1~4번째 일러스트)
+bgm_story_late,bgm,063f1dddbf8b4a1bb9067b0c7a196922,TRUE,wired:CutsceneController,스토리(5번째 이후=타이틀 유지)
 sfx_attack,sfx,5055db77e98c4f118f81f59390a78371,TRUE,wired:PlayerCombat,기본 공격
 sfx_dash,sfx,7130b2db996b4112af59e188b609c10c,TRUE,wired:PlayerDash,대시
 sfx_dash_empowered,sfx,ee328663c4f843d4a229cf4e96cd7a11,TRUE,wired:PlayerDash,강화 대시
