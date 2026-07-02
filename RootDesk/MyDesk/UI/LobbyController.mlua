@@ -50,8 +50,6 @@ script LobbyController extends Component
 
 	property any hSfx = nil
 
-	-- 효과음 슬라이더 드래그 중 테스트음 과다 재생 방지용 스로틀 타임스탬프.
-	property number lastSfxTestTime = 0
 
 	@ExecSpace("ClientOnly")
 	method void OnBeginPlay()
@@ -111,14 +109,11 @@ script LobbyController extends Component
 
 	@ExecSpace("ClientOnly")
 	method void OnSfxChanged(SliderValueChangedEvent event)
-		-- 효과음 슬라이더 값 변경 → SoundManager 반영 + 텍스트 갱신 + 스로틀된 테스트음 재생(현재 볼륨 체감용).
+		-- 효과음 슬라이더 값 변경 → 볼륨/텍스트만 실시간 반영. 클릭음은 UI 공통 전역 클릭 후킹
+		-- (SoundManager.OnGlobalKeyDown)이 슬라이더를 누르는 순간 1회 재생하므로 여기선 소리를 내지 않는다.
+		-- (예전엔 여기서도 테스트음을 내 '누를 때 + 뗄 때' 2번 나던 문제를 제거.)
 		_SoundManager:SetSfxVolume(event.Value)
 		self:UpdateSfxText(event.Value)
-		local now = _UtilLogic.ElapsedSeconds
-		if now - self.lastSfxTestTime > 0.15 then
-			self.lastSfxTestTime = now
-			_SoundManager:PlaySFXKey("sfx_ui_click")
-		end
 	end
 
 	@ExecSpace("ClientOnly")

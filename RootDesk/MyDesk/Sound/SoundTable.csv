@@ -1,49 +1,49 @@
-key,kind,ruid,enabled,#note
-bgm_title,bgm,063f1dddbf8b4a1bb9067b0c7a196922,TRUE,메인화면(타이틀)
-bgm_orbis,bgm,b3460299e70a49579d02bc31f2297c77,TRUE,오르비스
-bgm_elnath,bgm,e708d95c152245e8be3f8a5eb447b308,TRUE,엘나스
-bgm_deepmine,bgm,af3acec8784a4f80a0a354479b2132ff,TRUE,폐광
-bgm_story_early,bgm,0470e1a58d434a58a00c0bcc955f38a1,TRUE,스토리(1~4번째 일러스트)
-bgm_story_late,bgm,063f1dddbf8b4a1bb9067b0c7a196922,TRUE,스토리(5번째 이후=타이틀 유지)
-sfx_attack,sfx,5055db77e98c4f118f81f59390a78371,TRUE,기본 공격
-sfx_dash,sfx,7130b2db996b4112af59e188b609c10c,TRUE,대시
-sfx_dash_empowered,sfx,ee328663c4f843d4a229cf4e96cd7a11,TRUE,강화 대시
-sfx_slowmo,sfx,01f13b1930cf461ab4a327af971eccaf,TRUE,슬로우 모션 발동
-sfx_enemy_hit,sfx,4ab89d1c74b9420683465cc7566b62ef,TRUE,적 피격음
-sfx_player_death,sfx,dc12206201644f8c93b88b52740e49d1,TRUE,플레이어 사망음(회귀음)
-sfx_atk_pixie,sfx,e6c093cf4e5c409d909c70f4ee039c21,TRUE,적 공격음 - 픽시
-sfx_death_pixie,sfx,a4fecde3c01c4d34a124547f55a6ca4d,TRUE,적 사망음 - 픽시
-sfx_atk_lioner,sfx,9d967654f2fe46cf9e8733c423b0dddb,TRUE,적 공격음 - 라이오너
-sfx_death_lioner,sfx,f91099bc6df042698c6d7baff6b39340,TRUE,적 사망음 - 라이오너
-sfx_atk_pepe,sfx,,FALSE,적 공격음 - 페페(접촉형=무음)
-sfx_death_pepe,sfx,a61715af6a6e417c85e3549335fdbe11,TRUE,적 사망음 - 페페
-sfx_atk_whitefang,sfx,93179490d90042c58dc1c0d0b1c3160f,TRUE,적 공격음 - 화이트팽
-sfx_death_whitefang,sfx,c4e796b1fa0b449da05bb54b66ef11e2,TRUE,적 사망음 - 화이트팽
-sfx_atk_jrbulldog,sfx,,FALSE,적 공격음 - 주니어 불독(접촉형=무음)
-sfx_death_jrbulldog,sfx,2ca5b7209d9a4a3582c5643335bc5b2a,TRUE,적 사망음 - 주니어 불독
-sfx_atk_boogie,sfx,294ab0dcf7be43ff9fbe1ad92e211bb3,TRUE,적 공격음 - 부기
-sfx_death_boogie,sfx,a5131b7bc5334f4cbf95f3506d5f6422,TRUE,적 사망음 - 부기
-sfx_boss_elija_atk1,sfx,ec209363c9d5485c8853dfdeddf90998,TRUE,엘리쟈 공격음1(암흑 구체)
-sfx_boss_elija_atk2,sfx,f0b9aa38b71241db8d6ec117d0add0cf,TRUE,엘리쟈 공격음2(암흑 강림)
-sfx_boss_elija_atk3,sfx,f0b9aa38b71241db8d6ec117d0add0cf,TRUE,엘리쟈 공격음3(그림자 쐐기=2와 동일)
-sfx_boss_elija_death,sfx,f937b9ae65054e81895d9555e92b1616,TRUE,엘리쟈 사망음
-sfx_boss_snowman_atk1,sfx,9b888225a1f44f6887c8d75b2b81d12c,TRUE,스노우맨 공격음1(눈주먹 강타)
-sfx_boss_snowman_atk2,sfx,f8ac2900b7c74f28aa94d7cc48369d78,TRUE,스노우맨 공격음2(고드름 발사)
-sfx_boss_snowman_atk3,sfx,,FALSE,스노우맨 공격음3(블리자드=미존재)
-sfx_boss_snowman_death,sfx,5c352ae1664042118c6d527280d67cc3,TRUE,스노우맨 사망음
-sfx_boss_zakum_atk1,sfx,5bbba8eec093474cb91c0a70b81667f9,TRUE,자쿰 공격음1(팔 후려치기)
-sfx_boss_zakum_atk2,sfx,40ffc2ab97de4a2b8de32fe72486ff06,TRUE,자쿰 공격음2(박수 레이저)
-sfx_boss_zakum_atk3,sfx,8681f7ce333f49be932b9fe10e3ab31c,TRUE,자쿰 공격음3(용암 분출)
-sfx_boss_zakum_death,sfx,a6646bf10a874b8c88a2ea823fce6ded,TRUE,자쿰 사망음
-sfx_boss_groggy,sfx,019f9c007ce648efabe73b30e6a0f341,TRUE,보스 그로기 발생
-sfx_theme_select,sfx,,FALSE,테마 선택(후순위=미지정)
-sfx_ui_click,sfx,972843e759204d3e9ad84e7d3fa94f83,TRUE,UI 마우스 클릭음(상시)
-sfx_ability_ironbody,sfx,02c3a2233b6e411190ecbf5d37939b75,TRUE,능력 - 금강불괴
-sfx_ability_chamgong,sfx,0051f5688445447aa6cc9ccbd8e8fdb5,TRUE,능력 - 참공
-sfx_ability_immovable,sfx,cc806c94ccf940fab1ae22b7aa04dc7d,TRUE,능력 - 부동심
-sfx_ability_manji,sfx,863e435b62c342578d4d47daf2dfdb5d,TRUE,능력 - 만지 일섬
-sfx_ability_spin,sfx,a83f33f1aa414b90a70e0b100d7733b2,TRUE,능력 - 회전베기
-sfx_shop_buy,sfx,87e5cd16a3ba43ab994d1ee2fcbc139a,TRUE,상점 아이템 구입
-sfx_item_rock,sfx,a95d1bf786f14216abae27c52bafe749,TRUE,아이템 - 짱돌
-sfx_item_smoke,sfx,ad63f4c64f304b6c876fb68511addb87,TRUE,아이템 - 연막
-sfx_item_flash,sfx,04b36dbd96c94d8996f0ab3c97f718aa,TRUE,아이템 - 섬광
+key,kind,ruid,enabled,#wired,#note
+bgm_title,bgm,063f1dddbf8b4a1bb9067b0c7a196922,TRUE,wired:LobbyController,메인화면(타이틀)
+bgm_orbis,bgm,b3460299e70a49579d02bc31f2297c77,TRUE,wired:FloorManager,오르비스
+bgm_elnath,bgm,e708d95c152245e8be3f8a5eb447b308,TRUE,wired:FloorManager,엘나스
+bgm_deepmine,bgm,af3acec8784a4f80a0a354479b2132ff,TRUE,wired:FloorManager,폐광
+bgm_story_early,bgm,0470e1a58d434a58a00c0bcc955f38a1,TRUE,todo,스토리(1~4번째 일러스트=스토리화면 미구현)
+bgm_story_late,bgm,063f1dddbf8b4a1bb9067b0c7a196922,TRUE,todo,스토리(5번째 이후=타이틀 유지)
+sfx_attack,sfx,5055db77e98c4f118f81f59390a78371,TRUE,wired:PlayerCombat,기본 공격
+sfx_dash,sfx,7130b2db996b4112af59e188b609c10c,TRUE,wired:PlayerDash,대시
+sfx_dash_empowered,sfx,ee328663c4f843d4a229cf4e96cd7a11,TRUE,wired:PlayerDash,강화 대시
+sfx_slowmo,sfx,01f13b1930cf461ab4a327af971eccaf,TRUE,wired:SlowMotion,슬로우 모션 발동
+sfx_enemy_hit,sfx,4ab89d1c74b9420683465cc7566b62ef,TRUE,wired:EnemyHealth,적 피격음
+sfx_player_death,sfx,dc12206201644f8c93b88b52740e49d1,TRUE,wired:StageManager,플레이어 사망음(회귀음)
+sfx_atk_pixie,sfx,e6c093cf4e5c409d909c70f4ee039c21,TRUE,todo:species,적 공격음 - 픽시
+sfx_death_pixie,sfx,a4fecde3c01c4d34a124547f55a6ca4d,TRUE,todo:species,적 사망음 - 픽시
+sfx_atk_lioner,sfx,9d967654f2fe46cf9e8733c423b0dddb,TRUE,todo:species,적 공격음 - 라이오너
+sfx_death_lioner,sfx,f91099bc6df042698c6d7baff6b39340,TRUE,todo:species,적 사망음 - 라이오너
+sfx_atk_pepe,sfx,,FALSE,off,적 공격음 - 페페(접촉형=무음)
+sfx_death_pepe,sfx,a61715af6a6e417c85e3549335fdbe11,TRUE,todo:species,적 사망음 - 페페
+sfx_atk_whitefang,sfx,93179490d90042c58dc1c0d0b1c3160f,TRUE,todo:species,적 공격음 - 화이트팽
+sfx_death_whitefang,sfx,c4e796b1fa0b449da05bb54b66ef11e2,TRUE,todo:species,적 사망음 - 화이트팽
+sfx_atk_jrbulldog,sfx,,FALSE,off,적 공격음 - 주니어 불독(접촉형=무음)
+sfx_death_jrbulldog,sfx,2ca5b7209d9a4a3582c5643335bc5b2a,TRUE,todo:species,적 사망음 - 주니어 불독
+sfx_atk_boogie,sfx,294ab0dcf7be43ff9fbe1ad92e211bb3,TRUE,todo:species,적 공격음 - 부기
+sfx_death_boogie,sfx,a5131b7bc5334f4cbf95f3506d5f6422,TRUE,todo:species,적 사망음 - 부기
+sfx_boss_elija_atk1,sfx,ec209363c9d5485c8853dfdeddf90998,TRUE,wired:BossController,엘리쟈 공격음1(암흑 구체)
+sfx_boss_elija_atk2,sfx,f0b9aa38b71241db8d6ec117d0add0cf,TRUE,wired:BossController,엘리쟈 공격음2(암흑 강림)
+sfx_boss_elija_atk3,sfx,f0b9aa38b71241db8d6ec117d0add0cf,TRUE,wired:BossController,엘리쟈 공격음3(그림자 쐐기=2와 동일)
+sfx_boss_elija_death,sfx,f937b9ae65054e81895d9555e92b1616,TRUE,wired:EnemyHealth,엘리쟈 사망음
+sfx_boss_snowman_atk1,sfx,9b888225a1f44f6887c8d75b2b81d12c,TRUE,wired:BossController,스노우맨 공격음1(눈주먹 강타)
+sfx_boss_snowman_atk2,sfx,f8ac2900b7c74f28aa94d7cc48369d78,TRUE,wired:BossController,스노우맨 공격음2(고드름 발사)
+sfx_boss_snowman_atk3,sfx,,FALSE,off,스노우맨 공격음3(블리자드=미존재)
+sfx_boss_snowman_death,sfx,5c352ae1664042118c6d527280d67cc3,TRUE,wired:EnemyHealth,스노우맨 사망음
+sfx_boss_zakum_atk1,sfx,5bbba8eec093474cb91c0a70b81667f9,TRUE,wired:BossController,자쿰 공격음1(팔 후려치기)
+sfx_boss_zakum_atk2,sfx,40ffc2ab97de4a2b8de32fe72486ff06,TRUE,wired:BossController,자쿰 공격음2(박수 레이저)
+sfx_boss_zakum_atk3,sfx,8681f7ce333f49be932b9fe10e3ab31c,TRUE,wired:BossController,자쿰 공격음3(용암 분출)
+sfx_boss_zakum_death,sfx,a6646bf10a874b8c88a2ea823fce6ded,TRUE,wired:EnemyHealth,자쿰 사망음
+sfx_boss_groggy,sfx,019f9c007ce648efabe73b30e6a0f341,TRUE,wired:GroggyGauge,보스 그로기 발생
+sfx_theme_select,sfx,,FALSE,off,테마 선택(후순위=미지정)
+sfx_ui_click,sfx,972843e759204d3e9ad84e7d3fa94f83,TRUE,wired:SoundManager,UI 마우스 클릭음(상시)
+sfx_ability_ironbody,sfx,02c3a2233b6e411190ecbf5d37939b75,TRUE,todo:map?,능력 - 금강불괴
+sfx_ability_chamgong,sfx,0051f5688445447aa6cc9ccbd8e8fdb5,TRUE,todo:map?,능력 - 참공
+sfx_ability_immovable,sfx,cc806c94ccf940fab1ae22b7aa04dc7d,TRUE,todo:map?,능력 - 부동심
+sfx_ability_manji,sfx,863e435b62c342578d4d47daf2dfdb5d,TRUE,todo:map?,능력 - 만지 일섬
+sfx_ability_spin,sfx,a83f33f1aa414b90a70e0b100d7733b2,TRUE,todo:map?,능력 - 회전베기
+sfx_shop_buy,sfx,87e5cd16a3ba43ab994d1ee2fcbc139a,TRUE,wired:ShopController,상점 아이템 구입
+sfx_item_rock,sfx,a95d1bf786f14216abae27c52bafe749,TRUE,wired:PlayerItems,아이템 - 짱돌
+sfx_item_smoke,sfx,ad63f4c64f304b6c876fb68511addb87,TRUE,wired:PlayerItems,아이템 - 연막
+sfx_item_flash,sfx,04b36dbd96c94d8996f0ab3c97f718aa,TRUE,wired:PlayerItems,아이템 - 섬광
