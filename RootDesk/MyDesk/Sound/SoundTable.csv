@@ -46,4 +46,4 @@ sfx_ability_spin,sfx,a83f33f1aa414b90a70e0b100d7733b2,TRUE,todo:map?,능력 - �
 sfx_shop_buy,sfx,87e5cd16a3ba43ab994d1ee2fcbc139a,TRUE,wired:ShopController,상점 아이템 구입
 sfx_item_rock,sfx,a95d1bf786f14216abae27c52bafe749,TRUE,wired:PlayerItems,아이템 - 짱돌
 sfx_item_smoke,sfx,ad63f4c64f304b6c876fb68511addb87,TRUE,wired:PlayerItems,아이템 - 연막
-sfx_item_flash,sfx,04b36dbd96c94d8996f0ab3c97f718aa,TRUE,wired:PlayerItems,아이템 - 섬광
+sfx_item_flash,sfx,ccf258b8a89942a1b93e4e4f1a2932ad,TRUE,wired:PlayerItems,아이템 - 섬광
