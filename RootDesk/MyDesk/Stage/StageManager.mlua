@@ -518,6 +518,9 @@ script StageManager extends Logic
 	method void OnPlayerDeath(Entity player)
 		-- 사망 처리: 목숨 1 감소 후 재시작 / 목숨 0에서 사망 시 게임 오버 (player_design §1.4).
 		if self.StageActive == false then return end
+		-- 사망(회귀) 효과음 — 죽은 플레이어 클라에서 1회 재생 (목숨 잔여 무관).
+		local deadPc = player.PlayerComponent
+		if deadPc ~= nil then self:ClientPlayerDeathSfx(deadPc.UserId) end
 		if _GameStateManager.CurrentLives > 0 then
 			_GameStateManager.CurrentLives -= 1
 			log("[StageManager] player died -> lives=" .. tostring(_GameStateManager.CurrentLives) .. ", restarting stage")
@@ -525,6 +528,12 @@ script StageManager extends Logic
 		else
 			self:GameOver()
 		end
+	end
+
+	@ExecSpace("Client")
+	method void ClientPlayerDeathSfx()
+		-- 클라: 플레이어 사망(회귀) 효과음 1회.
+		_SoundManager:PlaySFXKey("sfx_player_death")
 	end
 
 	@ExecSpace("ServerOnly")

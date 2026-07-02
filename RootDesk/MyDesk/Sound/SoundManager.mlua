@@ -1,0 +1,155 @@
+@Logic
+script SoundManager extends Logic
+
+	-- 사운드 볼륨(0.0~1.0). 클라이언트 전용 환경설정 값.
+	-- 배경음은 _SoundService:SetBGMVolume 전역 API로 즉시 반영한다.
+	-- 효과음은 전역 볼륨 API가 없어, 모든 효과음을 PlaySFX 단일 진입점으로 보내
+	-- 저장된 sfxVolume을 곱해 적용한다. (직접 _SoundService:PlaySound를 부르면 볼륨 설정이 무시됨)
+	property number bgmVolume = 1.0
+
+	property number sfxVolume = 1.0
+
+	-- 사운드 키→RUID 맵. SoundTable.userdataset(=docs/sound.csv 이관)에서 시작 시 로드.
+	-- 사운드를 추가/교체하려면 CSV만 편집하면 됨(코드 수정 0). enabled=TRUE + RUID 있는 행만 등록.
+	@HideFromInspector
+	property any sfxMap = nil
+
+	property any clickHandler = nil
+
+	@ExecSpace("ClientOnly")
+	method void OnBeginPlay()
+		-- 사운드 테이블 로드 → 볼륨 반영 → 전역 클릭 후킹 → 프리로드.
+		self:LoadTable()
+		_SoundService:SetBGMVolume(self.bgmVolume)
+		self.clickHandler = _InputService:ConnectEvent(KeyDownEvent, self.OnGlobalKeyDown)
+		self:PreloadSounds()
+		log("[SoundManager] init bgm=" .. tostring(self.bgmVolume) .. " sfx=" .. tostring(self.sfxVolume))
+	end
+
+	@ExecSpace("ClientOnly")
+	method void LoadTable()
+		-- SoundTable(UserDataSet)을 키→RUID 맵으로 구축. enabled=TRUE이고 RUID가 있는 행만.
+		self.sfxMap = {}
+		local ds = _DataService:GetTable("SoundTable")
+		if ds == nil then
+			log("[SoundManager] SoundTable NOT FOUND — 사운드 재생 불가")
+			return
+		end
+		local n = ds:GetRowCount()
+		local loaded = 0
+		for i = 1, n do
+			local key = ds:GetCell(i, "key")
+			local ruid = ds:GetCell(i, "ruid")
+			local enabled = ds:GetCell(i, "enabled")
+			if key ~= nil and key ~= "" and ruid ~= nil and ruid ~= "" and enabled == "TRUE" then
+				self.sfxMap[key] = ruid
+				loaded += 1
+			end
+		end
+		log("[SoundManager] SoundTable loaded: " .. tostring(loaded) .. "/" .. tostring(n) .. " keys")
+	end
+
+	@ExecSpace("ClientOnly")
+	method string Ruid(string key)
+		-- 키에 매핑된 RUID 반환. 없거나 비활성/미지정이면 "".
+		if self.sfxMap == nil then return "" end
+		local r = self.sfxMap[key]
+		if r == nil then return "" end
+		return r
+	end
+
+	@ExecSpace("ClientOnly")
+	method void PreloadSounds()
+		-- 등록된 모든 사운드 RUID를 미리 로드해 첫 재생 지연 제거.
+		if self.sfxMap == nil then return end
+		local cnt = 0
+		for _, ruid in pairs(self.sfxMap) do
+			_SoundService:LoadSound(ruid)
+			cnt += 1
+		end
+		log("[SoundManager] preloaded " .. tostring(cnt) .. " sounds")
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnEndPlay()
+		-- 전역 클릭 후킹 해제.
+		if self.clickHandler ~= nil then
+			_InputService:DisconnectEvent(KeyDownEvent, self.clickHandler)
+		end
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnGlobalKeyDown(KeyDownEvent event)
+		-- 좌클릭이면서 포인터가 UI 위일 때만 클릭음(월드 클릭은 무음).
+		if event.key == KeyboardKey.Mouse0 and _InputService:IsPointerOverUI() then
+			self:PlaySFXKey("sfx_ui_click")
+		end
+	end
+
+	@ExecSpace("ClientOnly")
+	method number GetBgmVolume()
+		-- 현재 배경음 볼륨 반환.
+		return self.bgmVolume
+	end
+
+	@ExecSpace("ClientOnly")
+	method number GetSfxVolume()
+		-- 현재 효과음 볼륨 반환.
+		return self.sfxVolume
+	end
+
+	@ExecSpace("ClientOnly")
+	method void SetBgmVolume(number v)
+		-- 배경음 볼륨 설정 + 엔진에 즉시 반영.
+		self.bgmVolume = self:Clamp01(v)
+		_SoundService:SetBGMVolume(self.bgmVolume)
+		log("[SoundManager] SetBgmVolume -> " .. tostring(self.bgmVolume))
+	end
+
+	@ExecSpace("ClientOnly")
+	method void SetSfxVolume(number v)
+		-- 효과음 볼륨 설정. 이후 PlaySFX 호출부터 반영된다.
+		self.sfxVolume = self:Clamp01(v)
+		log("[SoundManager] SetSfxVolume -> " .. tostring(self.sfxVolume))
+	end
+
+	@ExecSpace("ClientOnly")
+	method void PlaySFXKey(string key)
+		-- 효과음 키 재생(권장 진입점). SoundTable에서 RUID 조회 후 재생.
+		self:PlaySFX(self:Ruid(key))
+	end
+
+	@ExecSpace("ClientOnly")
+	method void PlayBGMKey(string key)
+		-- 배경음 키 재생(권장 진입점).
+		self:PlayBGM(self:Ruid(key))
+	end
+
+	@ExecSpace("ClientOnly")
+	method void PlaySFX(string ruid)
+		-- 효과음 RUID 직접 재생. 저장된 sfxVolume 적용. (가능하면 PlaySFXKey 사용)
+		if ruid == nil or ruid == "" then return end
+		_SoundService:PlaySound(ruid, self.sfxVolume)
+	end
+
+	@ExecSpace("ClientOnly")
+	method void PlayBGM(string ruid)
+		-- 배경음 RUID 직접 재생. 저장된 bgmVolume 적용.
+		if ruid == nil or ruid == "" then return end
+		_SoundService:PlayBGM(ruid, self.bgmVolume)
+	end
+
+	@ExecSpace("ClientOnly")
+	method void StopBGM()
+		-- 배경음 정지(즉시 아님 — 자연 페이드).
+		_SoundService:StopBGM(false)
+	end
+
+	method number Clamp01(number v)
+		-- 0.0~1.0 범위로 클램프.
+		if v < 0 then return 0 end
+		if v > 1 then return 1 end
+		return v
+	end
+
+end

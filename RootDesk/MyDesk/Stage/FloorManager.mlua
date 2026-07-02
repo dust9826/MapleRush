@@ -79,7 +79,18 @@ script FloorManager extends Logic
 		self.NormalsClearedThisFloor = 0
 		self.ShopDoneThisFloor = false
 		log("[FloorManager] theme selected: " .. themeId .. " (floor " .. tostring(_GameStateManager.CurrentFloor) .. ")")
+		-- 테마 확정 → 해당 레벨 BGM 시작 (로비에서 StopBGM된 상태를 여기서 채운다).
+		local bgmPc = self:FirstPlayerComponent()
+		if bgmPc ~= nil then self:ClientPlayThemeBgm(themeId, bgmPc.UserId) end
 		_StageManager:EnterMapForTheme()
+	end
+
+	@ExecSpace("Client")
+	method void ClientPlayThemeBgm(string themeId)
+		-- 클라: 테마별 레벨 BGM 재생. 키 규칙 bgm_<themeId> (bgm_orbis / bgm_elnath / bgm_deepmine).
+		local key = "bgm_" .. themeId
+		_SoundManager:PlayBGMKey(key)
+		log("[FloorManager] theme BGM -> " .. key)
 	end
 
 	@ExecSpace("ServerOnly")

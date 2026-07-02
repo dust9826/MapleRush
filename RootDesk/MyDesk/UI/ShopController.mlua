@@ -87,7 +87,12 @@ script ShopController extends Component
 			_UIPopup:Open(label .. "\n메소가 부족합니다.\n보유 " .. tostring(meso) .. " / 필요 " .. tostring(price), nil, nil)
 			return
 		end
-		_UIPopup:Open(label .. "\n가격: " .. tostring(price) .. " 메소\n구입하시겠습니까?", buyFn, nil)
+		-- 구매 확정(OK) 시 구매 효과음 후 실제 구매 실행 (sound.csv #45).
+		local confirmed = function()
+			_SoundManager:PlaySFXKey("sfx_shop_buy")
+			buyFn()
+		end
+		_UIPopup:Open(label .. "\n가격: " .. tostring(price) .. " 메소\n구입하시겠습니까?", confirmed, nil)
 	end
 
 	@ExecSpace("ClientOnly")

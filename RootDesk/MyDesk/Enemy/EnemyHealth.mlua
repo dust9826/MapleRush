@@ -62,6 +62,14 @@ script EnemyHealth extends Component
 		self.IsDead = true
 		log("[EnemyHealth] " .. self.Entity.Name .. " died (killed by " .. source .. ")")
 		_StageManager:OnEnemyKilled(self.EnemyKind)
+		-- 보스 사망음 (테마 보스별 sfx_boss_<kind>_death). 잡몹은 종족 태그가 없어 종족음 미배선.
+		if self.EnemyKind == "boss" then
+			---@type BossController
+			local bc = self.Entity:GetComponent("script.BossController")
+			if bc ~= nil and bc.BossKind ~= "" then
+				self:PlayDeathSfx("sfx_boss_" .. bc.BossKind .. "_death")
+			end
+		end
 		-- 즉시 파괴하지 않고 지연 → AI가 IsDead 감지해 dead 클립 재생(사망 모션). DeadAnimDelay 후 소멸.
 		self.Entity:Destroy(self.DeadAnimDelay)
 	end
@@ -76,6 +84,14 @@ script EnemyHealth extends Component
 		local options = {}
 		options["Alpha"] = 1.0
 		_EffectService:PlayEffect(_GameConstants.EnemyHitEffectClip, self.Entity, center, 0, Vector3(s, s, 1), false, options)
+		-- 적 피격음 (SoundTable: sfx_enemy_hit). Multicast라 전 클라에서 재생.
+		_SoundManager:PlaySFXKey("sfx_enemy_hit")
+	end
+
+	@ExecSpace("Multicast")
+	method void PlayDeathSfx(string key)
+		-- 전 클라: 보스 사망음 재생 (서버 발단 이벤트).
+		_SoundManager:PlaySFXKey(key)
 	end
 
 end

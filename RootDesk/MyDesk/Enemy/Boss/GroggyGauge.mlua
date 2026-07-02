@@ -52,8 +52,15 @@ script GroggyGauge extends Component
 		if self.Gauge >= self.GaugeMax - 0.5 then
 			self.IsGroggy = true
 			self.groggyEndAt = _UtilLogic.ServerElapsedSeconds + _GameConstants.GroggyDuration
+			self:PlayGroggySfx()
 			log("[GroggyGauge] *** GROGGY TRIGGERED *** (" .. tostring(_GameConstants.GroggyDuration) .. "s)")
 		end
+	end
+
+	@ExecSpace("Multicast")
+	method void PlayGroggySfx()
+		-- 전 클라: 보스 그로기 발생음 (sfx_boss_groggy).
+		_SoundManager:PlaySFXKey("sfx_boss_groggy")
 	end
 
 end
