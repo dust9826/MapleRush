@@ -56,7 +56,8 @@ script LobbyController extends Component
 		-- 메인 로비: 부팅 시 기본 표시(default_show). 서브팝업 숨김 + 버튼 연결 + 입력 컨텍스트 = 비전투(Lobby).
 		if isvalid(self.settingsPopup) then self.settingsPopup.Enable = false end
 		if isvalid(self.restConfirm) then self.restConfirm.Enable = false end
-		if isvalid(self.lobbyRoot) then self.lobbyRoot.Enable = true end
+		-- 컷씬(인트로)이 먼저 재생되도록 로비는 숨긴 상태로 시작 — 컷씬 종료 시 CutsceneController가 표시.
+		if isvalid(self.lobbyRoot) then self.lobbyRoot.Enable = false end
 		self.hStart = self.btnStart.Entity:ConnectEvent(ButtonClickEvent, self.OnStartClick)
 		self.hSettings = self.btnSettings.Entity:ConnectEvent(ButtonClickEvent, self.OnSettingsClick)
 		self.hRest = self.btnRest.Entity:ConnectEvent(ButtonClickEvent, self.OnRestClick)
@@ -64,9 +65,8 @@ script LobbyController extends Component
 		self.hSettingsClose = self.btnSettingsClose.Entity:ConnectEvent(ButtonClickEvent, self.OnSettingsClose)
 		self.hRestOk = self.btnRestOk.Entity:ConnectEvent(ButtonClickEvent, self.OnRestOk)
 		self:InitSoundSliders()
-		_SoundManager:PlayBGMKey("bgm_title")
-		_InputRouter:SetContext("Lobby")
-		log("[LobbyController] lobby shown (context=Lobby)")
+		-- 로비 표시·bgm_title·입력 컨텍스트(Lobby)는 컷씬 종료 시 CutsceneController가 담당(이중 재생 방지).
+		log("[LobbyController] init (hidden; cutscene will reveal lobby)")
 	end
 
 	@ExecSpace("ClientOnly")
