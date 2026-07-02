@@ -1,0 +1,191 @@
+@Component
+script EnemyChaser extends Component
+
+	-- 접촉 데미지 추적형 잡몹. 공격 모션·windup·텔레그래프 없이 **플레이어를 향해 상시 이동만** 하고,
+	-- 몸 히트박스가 플레이어 hurtbox와 겹치면 즉시 피격(1피격 즉사)이라 사실상 "닿으면 죽음". 연막 구름 안 플레이어는 못 찾음.
+	-- EnemyMelee의 추격/클립 패턴 재사용, 공격 로직만 접촉으로 대체.
+
+	-- 추적 속도(월드유닛/초). 근접(EnemyChaseSpeed=2.0)보다 빠르게 = 따라붙는 압박. 인스펙터 튜닝.
+	property number ChaseSpeed = 2.8
+
+	-- 접촉 데미지 소스 태그(PlayerHit 로그/디버그용).
+	property string HitSource = "chaser"
+
+	-- 모션 구동: 모델 기본 SpriteRUID(stand)를 캡처해 두고 상태별로 교체.
+	property string standClip = ""
+
+	property string currentClip = ""
+
+	-- 엔티티별 클립셋(EnemyAnimSet, 인스펙터 편집). 없거나 미지정이면 GameConstants 폴백.
+	property any animSet = nil
+
+	-- 맵 타입 캐시: 0=미해석 / 1=SideView / 2=MapleTile (적은 한 맵에서만 살므로 1회 해석 후 캐시).
+	@HideFromInspector
+	property integer mapKindCache = 0
+
+	@ExecSpace("ServerOnly")
+	method void OnBeginPlay()
+		-- 클립셋 캐시 + stand 캡처(모델 기본 SpriteRUID, AnimSet IdleClip 있으면 override).
+		self.animSet = self.Entity:GetComponent("script.EnemyAnimSet")
+		local sprite = self.Entity.SpriteRendererComponent
+		if isvalid(sprite) then self.standClip = sprite.SpriteRUID end
+		self.standClip = self:AnimClip("idle", self.standClip)
+		-- 시작하자마자 idle 애니메이션 재생: currentClip을 비워 실제 스프라이트에 idle 클립을 세팅(0프레임부터).
+		self.currentClip = ""
+		self:PlayClip(self.standClip)
+		log("[EnemyChaser] spawned: " .. self.Entity.Name)
+	end
+
+	method string AnimClip(string key, string fallback)
+		-- EnemyAnimSet에서 key 클립 조회. 컴포넌트 없거나 미지정("")이면 fallback.
+		if self.animSet ~= nil then
+			---@type EnemyAnimSet
+			local a = self.animSet
+			local r = a:Clip(key)
+			if r ~= "" then return r end
+		end
+		return fallback
+	end
+
+	@ExecSpace("ServerOnly")
+	method void PlayClip(string ruid)
+		-- SpriteRUID를 ruid로 교체(변경 시에만 — 매 프레임 재set 시 애니가 0프레임에서 멈추는 것 방지). @Sync라 클라 자동 반영.
+		if ruid == "" or ruid == self.currentClip then return end
+		local sprite = self.Entity.SpriteRendererComponent
+		if isvalid(sprite) then
+			sprite.SpriteRUID = ruid
+			self.currentClip = ruid
+		end
+	end
+
+	@ExecSpace("ServerOnly")
+	method void OnUpdate(number delta)
+		-- 접촉 데미지 추적 AI: 감지 게이팅 없이 상시 플레이어 추격 → 몸 히트박스가 플레이어와 겹치면 RequestHit.
+		---@type EnemyHealth
+		local hp = self.Entity:GetComponent("script.EnemyHealth")
+		if hp ~= nil and hp.IsDead == true then self:PlayClip(self:AnimClip("die", self.standClip)) return end
+		if _StageManager:IsGraceActive() then
+			self:StopMove()
+			self:PlayClip(self.standClip)
+			return
+		end
+		-- 섬광탄 기절: 이동·접촉 완전 정지.
+		if _BattlefieldFx:IsStunActive() then
+			self:StopMove()
+			self:PlayClip(self.standClip)
+			return
+		end
+		-- 피격(HIT) 경직: hit 모션 재생 + 이동·접촉 정지. (windup이 없으므로 취소할 공격은 없음)
+		if hp ~= nil and _UtilLogic.ServerElapsedSeconds < hp.hitClipUntil then
+			self:StopMove()
+			self:PlayClip(self:AnimClip("hit", self.standClip))
+			return
+		end
+		local timeScale = _SlowMotion:Scale()
+		local player = self:FindPlayer()
+		-- 연막탄 은신: 플레이어가 연막 구름 안이면 감지 불가(추격 해제).
+		if player ~= nil then
+			local spp = player.TransformComponent.WorldPosition
+			if _BattlefieldFx:IsSmokeHiding(Vector2(spp.x, spp.y + _GameConstants.PlayerCenterYOffset)) then
+				player = nil
+			end
+		end
+		if player == nil then
+			self:StopMove()
+			self:PlayClip(self.standClip)
+			return
+		end
+		local myPos = self.Entity.TransformComponent.WorldPosition
+		local pp = player.TransformComponent.WorldPosition
+		local playerCenter = Vector2(pp.x, pp.y + _GameConstants.PlayerCenterYOffset)
+		local myCenter = Vector2(myPos.x, myPos.y + 0.5)
+
+		-- 접촉 판정: 내 몸 hurtbox vs 플레이어 hurtbox 겹치면 피격 요청. RequestHit이 i-frame/중복(0.2s)/사망 처리.
+		local myHb = _CombatPrimitives:HurtboxOf(self.Entity, _GameConstants.EnemyHboxHW, _GameConstants.EnemyHboxHH, 0)
+		local pHb = _CombatPrimitives:HurtboxOf(player, _GameConstants.PlayerHboxHW, _GameConstants.PlayerHboxHH, _GameConstants.PlayerCenterYOffset)
+		if _CombatPrimitives:BoxBoxOverlap(Vector2(myHb.cx, myHb.cy), myHb.hw, myHb.hh, Vector2(pHb.cx, pHb.cy), pHb.hw, pHb.hh) then
+			---@type PlayerHit
+			local hitComp = player:GetComponent("script.PlayerHit")
+			if hitComp ~= nil then
+				hitComp:RequestHit(self.HitSource .. ":" .. self.Entity.Name)
+			end
+		end
+
+		-- 상시 추격(집요). 공격/접근 모션 없음 — 이동 중엔 항상 run 클립(닿으면 즉사라 별도 공격 연출 불필요).
+		self:ChaseToward(playerCenter.x, myCenter.x, timeScale, delta)
+		self:PlayClip(self:AnimClip("run", _GameConstants.MeleeMoveClip))
+	end
+
+	@ExecSpace("ServerOnly")
+	method Entity FindPlayer()
+		-- 같은 맵의 첫 번째 유효 플레이어 반환 (1인 1런 전제).
+		local map = self.Entity.CurrentMap
+		if isvalid(map) == false then return nil end
+		local users = _UserService:GetUsersByMapComponent(map.MapComponent)
+		if users == nil then return nil end
+		for _, u in ipairs(users) do
+			if isvalid(u) then return u end
+		end
+		return nil
+	end
+
+	@ExecSpace("ServerOnly")
+	method boolean IsSideViewMap()
+		-- 현재 맵이 RectTile/SideView인지 (RectTileMapComponent 유무). 결과 캐시 → 매 프레임 child 탐색 방지.
+		if self.mapKindCache == 0 then
+			local map = self.Entity.CurrentMap
+			if isvalid(map) == false then return false end
+			if isvalid(map:GetFirstChildComponentByTypeName("MOD.Core.RectTileMapComponent", true)) then
+				self.mapKindCache = 1
+			else
+				self.mapKindCache = 2
+			end
+		end
+		return self.mapKindCache == 1
+	end
+
+	@ExecSpace("ServerOnly")
+	method void ChaseToward(number targetX, number myX, number timeScale, number delta)
+		-- 추격 이동(ChaseSpeed 사용). SideView=MovementComponent:MoveToDirection,
+		-- MapleTile=Rigidbody.MoveVelocity + 풋홀드 낭떠러지 정지. 맵 타입으로 분기.
+		local dir = 1
+		if targetX < myX then dir = -1 end
+		local map = self.Entity.CurrentMap
+		if self:IsSideViewMap() then
+			local svb = self.Entity.SideviewbodyComponent
+			if isvalid(svb) == false or svb:IsOnGround() == false then return end
+			local mc = self.Entity.MovementComponent
+			if isvalid(mc) == false then return end
+			mc.InputSpeed = self.ChaseSpeed * timeScale
+			mc:MoveToDirection(Vector2(dir, 0), delta)
+		else
+			local rb = self.Entity.RigidbodyComponent
+			if isvalid(rb) == false or rb:IsOnGround() == false then return end
+			if isvalid(map) and isvalid(map.FootholdComponent) then
+				local pos = self.Entity.TransformComponent.WorldPosition
+				local probe = Vector2(pos.x + dir * 0.5, pos.y + 0.3)
+				local ground = map.FootholdComponent:Raycast(probe, Vector2(0, -1), 1.0)
+				if ground == nil then
+					self:StopMove()
+					return
+				end
+			end
+			rb.MoveVelocity = Vector2(dir * self.ChaseSpeed * timeScale, 0)
+		end
+		-- 스프라이트는 좌향 기본 → 우측 이동 시 FlipX.
+		local sprite = self.Entity.SpriteRendererComponent
+		if isvalid(sprite) then
+			sprite.FlipX = dir > 0
+		end
+	end
+
+	@ExecSpace("ServerOnly")
+	method void StopMove()
+		-- 이동 정지(양 모드).
+		local mc = self.Entity.MovementComponent
+		if isvalid(mc) then mc:Stop() end
+		local rb = self.Entity.RigidbodyComponent
+		if isvalid(rb) then rb.MoveVelocity = Vector2(0, 0) end
+	end
+
+end

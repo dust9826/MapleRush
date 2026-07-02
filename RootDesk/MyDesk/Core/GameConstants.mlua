@@ -228,6 +228,9 @@ script GameConstants extends Logic
 
 	property boolean DrawGizmo = true
 
+	-- 대시 불가지역(DashBlock) 빨간 박스 기즈모 표시 여부. false면 대시 사거리/레이 등 다른 기즈모는 유지한 채 블록 박스만 숨김.
+	property boolean DashGizmoDrawBlocks = false
+
 	property string DashGizmoLineModelId = "dashgizmoline"
 
 	property integer GizmoLinePoolSize = 62
