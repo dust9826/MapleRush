@@ -14,7 +14,7 @@ script EnemyMelee extends Component
 	-- 이동 속도(월드유닛/초). SideView=InputSpeed, MapleTile=MoveVelocity 배율. 인스펙터 튜닝.
 	property number MoveSpeed = 2.0
 
-	-- 공격박스 치수(폴백). 자식 'AtkBox' 앵커가 있으면 앵커의 로컬위치·Scale이 우선(ComputeAttackBox).
+	-- 공격박스 치수(전방 길이 / 높이). 인스펙터 튜닝. play 중 DrawGizmo가 실제 박스를 그려줌.
 	property number AttackBoxForward = 2.0
 
 	property number AttackBoxHeight = 1.5
@@ -205,14 +205,7 @@ script EnemyMelee extends Component
 
 	@ExecSpace("ServerOnly")
 	method any ComputeAttackBox(number facingX, Vector2 myCenter)
-		-- 공격박스 {cx,cy,hw,hh}. 자식 'AtkBox' 앵커 있으면 로컬위치·Scale 사용(facing으로 x미러), 없으면 숫자 property 폴백.
-		local anchor = self.Entity:GetChildByName("AtkBox", false)
-		if anchor ~= nil and isvalid(anchor) then
-			local tf = anchor.TransformComponent
-			local lp = tf.Position
-			local ls = tf.Scale
-			return { cx = myCenter.x + facingX * math.abs(lp.x), cy = myCenter.y + lp.y, hw = math.abs(ls.x) * 0.5, hh = math.abs(ls.y) * 0.5 }
-		end
+		-- 공격박스 {cx,cy,hw,hh}. 숫자 property 기반(전방 오프셋 = forward/2, facing으로 좌우). play 중 DrawGizmo가 실제 박스 표시.
 		return { cx = myCenter.x + facingX * self.AttackBoxForward * 0.5, cy = myCenter.y, hw = self.AttackBoxForward * 0.5, hh = self.AttackBoxHeight * 0.5 }
 	end
 
