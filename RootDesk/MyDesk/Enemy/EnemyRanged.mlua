@@ -156,6 +156,8 @@ script EnemyRanged extends Component
 		if self.cycleTimer <= 0 then
 			if self.cyclePhase == "aim" then
 				self:Fire(playerCenter, myCenter)
+				-- 종족 공격음(sfx_atk_<species>) — 발사 순간. hp에 종족 태그가 있으면 Multicast로 전 클라 재생.
+				if hp ~= nil then hp:PlaySpeciesSfx("atk") end
 				self.cyclePhase = "cooldown"
 				self.cycleTimer = self.FireCooldown
 			else

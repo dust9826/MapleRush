@@ -1,8 +1,8 @@
 ---
 id: MR-R2
 title: 사운드 잔여 배선 (적 종족음 / 능력음 / 스토리 BGM)
-status: todo
-owner: unassigned
+status: review
+owner: D4LGONA
 area: script
 touches:
   - RootDesk/MyDesk/Sound/SoundTable.csv
@@ -13,7 +13,7 @@ touches:
 depends_on: []
 branch: ""
 created: 2026-07-02
-updated: 2026-07-02
+updated: 2026-07-03
 ---
 
 # 사운드 잔여 배선 (적 종족음 / 능력음 / 스토리 BGM)
@@ -22,17 +22,18 @@ updated: 2026-07-02
 MR-R(사운드 시스템)에서 **다른 작업 선행이 필요해 못 배선한 사운드 17종**을 마저 연결한다. CSV(SoundTable)엔 키·RUID가 이미 준비돼 있어(`#wired`=todo), 각 선행 작업이 풀리면 재생 호출만 붙이면 된다. (MR-R 후속)
 
 ## Acceptance criteria
-- [ ] **적 종족음 10종** — 적 공격/사망 시 종족별 키(`sfx_atk_<species>` / `sfx_death_<species>`) 재생. `#wired`가 `wired:*`로 갱신.
-- [ ] **능력음 5종** — 능력 발동 시 `sfx_ability_<id>` 재생. (`PlayerAbility`)
-- [ ] **스토리 BGM 2종** — 스토리 일러스트 화면 전환에 맞춰 `bgm_story_early`/`bgm_story_late` 재생.
-- [ ] SoundTable.csv `#wired` 컬럼을 실제 배선 위치로 갱신, todo 잔여 0(비활성 `off` 제외).
-- [ ] build/runtime 에러 0.
+- [x] **적 종족음 10종** — 적 공격/사망 시 종족별 키(`sfx_atk_<species>` / `sfx_death_<species>`) 재생. `#wired`가 `wired:*`로 갱신.
+- [ ] **능력음 5종** — 능력 발동 시 `sfx_ability_<id>` 재생. (`PlayerAbility`) — ⏸️ **파킹(나중에)**: 매핑 결정 대기(구현 능력 2종 vs 키 5종). 나머지 2항목 완료로 이 티켓은 review, 능력음은 후속에서 마무리.
+- [x] **스토리 BGM 2종** — 스토리 일러스트 화면 전환에 맞춰 `bgm_story_early`/`bgm_story_late` 재생. (CutsceneController에서 선배선됨)
+- [~] SoundTable.csv `#wired` 컬럼을 실제 배선 위치로 갱신 — 종족음/스토리 BGM 완료. 잔여 todo = 능력음 5종(`todo:map?`)뿐.
+- [x] build/runtime 에러 0.
 
 ## Subtasks
-<owner가 착수 시 채움>
-- [ ] (적 종족음) 종족 태그 소스 확정 → 공격/사망 시점에서 종족 키 조회·재생
-- [ ] (능력음) 능력↔키 매핑 확정 → `RequestUseAbility`에서 재생
-- [ ] (스토리 BGM) 스토리 화면 전환 훅에 `PlayBGMKey` 연결
+- [x] (적 종족음) 종족 태그 소스 확정 → `EnemyHealth.Species` 프로퍼티 신설, 6개 변종 모델(.model Values)에 종족 지정
+- [x] (적 종족음) 공격 시점 배선 — `EnemyMelee`(windup)/`EnemyRanged`(발사)에서 `hp:PlaySpeciesSfx("atk")`. 접촉형(pepe/jrbulldog) atk=off라 미배선
+- [x] (적 종족음) 사망 시점 배선 — `EnemyHealth.Die` 비-보스 분기에서 `PlaySpeciesSfx("death")` (Multicast)
+- [ ] (능력음) 능력↔키 매핑 확정 → `RequestUseAbility`에서 재생 — **design 결정 필요, 나중에 (파킹)**
+- [x] (스토리 BGM) CutsceneController에서 선배선 확인 (본 티켓 착수 시점에 이미 완료)
 
 ## Notes / decisions
 - 관련: [[sound-volume-architecture]] · MR-R(사운드 시스템, PR #30). 배선 방식은 MR-R과 동일 — `_SoundManager:PlaySFXKey/PlayBGMKey(key)`, 서버 이벤트는 Multicast/Client RPC 경유(잡몹 피격음·보스음 참고).

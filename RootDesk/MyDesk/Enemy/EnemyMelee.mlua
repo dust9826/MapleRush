@@ -159,7 +159,8 @@ script EnemyMelee extends Component
 				self.pendingAttack = _CombatPrimitives:RegisterEnemyAttackBox(boxCenter, f * 0.5, _GameConstants.EnemyMeleeBoxHeight * 0.5, 1, self.AttackParryable, self.WindupTime, self.Entity)
 				self:StopMove()
 				self:PlayClip(self:AnimClip("attack", _GameConstants.MeleeAttackClip))
-				log("[EnemyMelee] " .. self.Entity.Name .. " windup start (parryable=" .. tostring(self.AttackParryable) .. ")")
+				if hp ~= nil then hp:PlaySpeciesSfx("atk") end
+					log("[EnemyMelee] " .. self.Entity.Name .. " windup start (parryable=" .. tostring(self.AttackParryable) .. ")")
 			elseif dist <= self.DetectRadius then
 				self:ChaseToward(playerCenter.x, myCenter.x, timeScale, delta)
 				self:PlayClip(self:AnimClip("run", _GameConstants.MeleeMoveClip))

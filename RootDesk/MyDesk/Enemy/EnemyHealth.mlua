@@ -9,6 +9,10 @@ script EnemyHealth extends Component
 	-- melee / ranged / boss / dummy
 	property string EnemyKind = "dummy"
 
+	-- 종족 태그(pixie/lioner/pepe/whitefang/jrbulldog/boogie). 잡몹 종족 공격/사망음 키 구성용.
+	-- 빈 문자열이면 종족음 미재생(제네릭 잡몹). 변종 모델(.model Values)에서 지정. 보스는 EnemyKind="boss"로 별도 처리라 미사용.
+	property string Species = ""
+
 	@Sync
 	property boolean IsDead = false
 
@@ -62,13 +66,16 @@ script EnemyHealth extends Component
 		self.IsDead = true
 		log("[EnemyHealth] " .. self.Entity.Name .. " died (killed by " .. source .. ")")
 		_StageManager:OnEnemyKilled(self.EnemyKind)
-		-- 보스 사망음 (테마 보스별 sfx_boss_<kind>_death). 잡몹은 종족 태그가 없어 종족음 미배선.
+		-- 보스 사망음 (테마 보스별 sfx_boss_<kind>_death).
 		if self.EnemyKind == "boss" then
 			---@type BossController
 			local bc = self.Entity:GetComponent("script.BossController")
 			if bc ~= nil and bc.BossKind ~= "" then
 				self:PlayDeathSfx("sfx_boss_" .. bc.BossKind .. "_death")
 			end
+		else
+			-- 잡몹 종족 사망음 (sfx_death_<species>). Species 미지정(제네릭)이면 PlaySpeciesSfx가 무음 처리.
+			self:PlaySpeciesSfx("death")
 		end
 		-- 즉시 파괴하지 않고 지연 → AI가 IsDead 감지해 dead 클립 재생(사망 모션). DeadAnimDelay 후 소멸.
 		self.Entity:Destroy(self.DeadAnimDelay)
@@ -92,6 +99,14 @@ script EnemyHealth extends Component
 	method void PlayDeathSfx(string key)
 		-- 전 클라: 보스 사망음 재생 (서버 발단 이벤트).
 		_SoundManager:PlaySFXKey(key)
+	end
+
+	@ExecSpace("Multicast")
+	method void PlaySpeciesSfx(string action)
+		-- 전 클라: 잡몹 종족음 재생. action=atk/death → sfx_<action>_<species>.
+		-- Species 미지정이면 무음. 접촉형(pepe/jrbulldog) atk는 CSV enabled=FALSE라 Ruid=""=무음.
+		if self.Species == "" then return end
+		_SoundManager:PlaySFXKey("sfx_" .. action .. "_" .. self.Species)
 	end
 
 end

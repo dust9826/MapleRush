@@ -73,7 +73,7 @@
             "$type": "MODNativeType",
             "type": "System.Double, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
           },
-          "Value": 20.0
+          "Value": 20
         },
         {
           "TargetType": "script.EnemyHealth",
@@ -106,7 +106,7 @@
           },
           "Value": {
             "$type": "MOD.Core.MODVector2, MOD.Core",
-            "x": 0.0,
+            "x": 0,
             "y": 0.585
           }
         },
@@ -119,10 +119,10 @@
           },
           "Value": {
             "$type": "MOD.Core.MODQuaternion, MOD.Core",
-            "x": 0.0,
-            "y": 0.0,
-            "z": 0.0,
-            "w": 1.0
+            "x": 0,
+            "y": 0,
+            "z": 0,
+            "w": 1
           }
         },
         {
@@ -163,8 +163,8 @@
           },
           "Value": {
             "$type": "MOD.Core.MODVector2, MOD.Core",
-            "x": 0.0,
-            "y": 0.0
+            "x": 0,
+            "y": 0
           }
         },
         {
@@ -176,8 +176,8 @@
           },
           "Value": {
             "$type": "MOD.Core.MODVector2, MOD.Core",
-            "x": 0.0,
-            "y": 0.0
+            "x": 0,
+            "y": 0
           }
         },
         {
@@ -225,8 +225,8 @@
           },
           "Value": {
             "$type": "MOD.Core.MODVector2, MOD.Core",
-            "x": 0.0,
-            "y": 0.0
+            "x": 0,
+            "y": 0
           }
         },
         {
@@ -336,6 +336,15 @@
             "type": "System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
           },
           "Value": true
+        },
+        {
+          "TargetType": "script.EnemyHealth",
+          "Name": "Species",
+          "ValueType": {
+            "$type": "MODNativeType",
+            "type": "System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
+          },
+          "Value": "boogie"
         }
       ],
       "EventLinks": [],
@@ -381,9 +390,9 @@
                 },
                 "Value": {
                   "$type": "MOD.Core.MODVector3, MOD.Core",
-                  "x": 0.0,
+                  "x": 0,
                   "y": 1.1,
-                  "z": 0.0
+                  "z": 0
                 }
               },
               {
@@ -395,10 +404,10 @@
                 },
                 "Value": {
                   "$type": "MOD.Core.MODQuaternion, MOD.Core",
-                  "x": 0.0,
-                  "y": 0.0,
-                  "z": 0.0,
-                  "w": 1.0
+                  "x": 0,
+                  "y": 0,
+                  "z": 0,
+                  "w": 1
                 }
               },
               {
