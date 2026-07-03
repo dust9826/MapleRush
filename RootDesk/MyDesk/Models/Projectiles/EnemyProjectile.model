@@ -62,8 +62,17 @@
             "$type": "MOD.Core.MODVector3, MOD.Core",
             "x": 0.4,
             "y": 0.4,
-            "z": 1
+            "z": 1.0
           }
+        },
+        {
+          "TargetType": "script.Projectile",
+          "Name": "HitRadius",
+          "ValueType": {
+            "$type": "MODNativeType",
+            "type": "System.Double, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
+          },
+          "Value": 0.2
         }
       ],
       "EventLinks": [],
