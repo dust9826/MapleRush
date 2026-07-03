@@ -25,10 +25,6 @@ script GameConstants extends Logic
 
 	property number SmokeBoxHalfDown = 1.0
 
-	property number EnemyMeleeBoxForward = 2.0
-
-	property number EnemyMeleeBoxHeight = 1.5
-
 	property number BossSlamBoxForward = 2.5
 
 	property number BossSlamBoxHeight = 2.0
@@ -93,10 +89,6 @@ script GameConstants extends Logic
 
 	property number GroggyDuration = 3.0
 
-	property number RangedAimTime = 1.0
-
-	property number RangedFireCooldown = 1.0
-
 	property number ProjectileSpeed = 10.0
 
 	property number RadiusEnemyHitbox = 0.5
@@ -107,12 +99,6 @@ script GameConstants extends Logic
 	property number PlayerHboxHH = 0.6
 	property number EnemyHboxHW = 0.45
 	property number EnemyHboxHH = 0.55
-
-	property number MeleeEnemyHP = 30.0
-
-	property number RangedEnemyHP = 20.0
-
-	property number EnemyMoveSpeed = 1.5
 
 	-- 스폰 시 몬스터 Y를 이만큼 살짝 들어올려 스폰(방어적 보정). MapleTile foothold는 위에서만 잡으므로,
 	-- authoring 마커가 의도한 발판보다 미세하게(관측상 ~0.08) 아래로 박혀 있으면 통과→낙하한다.
@@ -175,8 +161,6 @@ script GameConstants extends Logic
 	property string MapShop = "map04"
 
 	property string NormalMapChoice = "map02"
-
-	property number EnemyChaseSpeed = 2.0
 
 	property string MatGrayScale = "GrayScale"
 
@@ -372,6 +356,8 @@ script GameConstants extends Logic
 		if theme == "orbis" then return "OrbisLevel" end
 		if theme == "elnath" then return "ElnathLevel" end
 		if theme == "deepmine" then return "DeepMineLevel" end
+		-- ★ 빈/미지정 테마 fallback: 의도치 않게 ElnathLevel이 대상이 됨(엘나스 맵 마커 오삭제 후보). 반드시 눈에 띄게.
+		log_error("[GameConstants] MapForTheme: 미지정/빈 테마 '" .. tostring(theme) .. "' -> ElnathLevel fallback (엘나스 맵이 의도치 않게 prep/삭제 대상이 됨)")
 		return "ElnathLevel"
 	end
 

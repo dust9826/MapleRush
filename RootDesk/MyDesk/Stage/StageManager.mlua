@@ -64,6 +64,10 @@ script StageManager extends Logic
 	property any stageData = nil
 	property any stageOrder = nil
 	property string preppedMap = ""
+	-- 서버: 맵별 영속 스캔 캐시 { mapName -> { stageData, stageOrder } }. @Logic이라 세션 내내 유지.
+	-- 마커는 첫 prep 때 1회 영구삭제되고 다시 안 생기므로, 재방문 시 재스캔하면 0마리가 된다.
+	-- → 재방문은 재스캔 대신 이 캐시를 복원해야 한다 (재진입 스폰버그 근본 해결).
+	property any preppedCache = nil
 
 	@ExecSpace("ServerOnly")
 	method void OnPlayerReady(Entity player)
@@ -136,9 +140,25 @@ script StageManager extends Logic
 	method void PrepareStages(Entity map)
 		-- 테마맵 활성 상태에서 1회: Stage* 컨테이너별 (플레이어 스폰 + 몬스터 위치·종류) 캐시 후 프로토타입 전멸.
 		if map == nil or isvalid(map) == false then return end
-		if self.preppedMap == map.Name then return end
+		if self.preppedCache == nil then self.preppedCache = {} end
+		if self.preppedMap == map.Name then
+			-- 이미 활성 맵: 현재 stageData/stageOrder가 이 맵 것 → 그대로 사용(연속 스테이지).
+			log("[StageManager] PrepareStages 캐시 유지(active) map=" .. map.Name)
+			return
+		end
+		-- ★맵별 영속 캐시 복원: 예전에 prep한 맵을 다시 밟은 경우, 재스캔하면 마커가 이미 삭제됐어 0마리가 된다.
+		--   재스캔 대신 첫 prep 때 저장해둔 캐시를 되살린다 (보스 처치→테마교체→재방문 / ESC→재진입 전부 해결).
+		local cached = self.preppedCache[map.Name]
+		if cached ~= nil then
+			self.stageData = cached.stageData
+			self.stageOrder = cached.stageOrder
+			self.preppedMap = map.Name
+			log("[StageManager] PrepareStages 캐시 복원(restore) map=" .. map.Name .. " stages=" .. tostring(#self.stageOrder))
+			return
+		end
 		self.stageData = {}
 		self.stageOrder = {}
+		local totalMobs = 0
 		for _, child in ipairs(map.Children:ToTable()) do
 			local n = child.Name
 			if n ~= nil and string.sub(n, 1, 5) == "Stage" then
@@ -172,17 +192,29 @@ script StageManager extends Logic
 					end
 				end
 				self.stageData[n] = { sx = sx, sy = sy, monsters = mons }
+				totalMobs = totalMobs + #mons
 				table.insert(self.stageOrder, n)
 				log("[StageManager] stage '" .. n .. "' spawn=(" .. tostring(sx) .. "," .. tostring(sy) .. ") mobs=" .. tostring(#mons))
 			end
 		end
 		-- 프로토타입(및 잔존 flat 적) 전멸 — 실제 전투 적은 캐시에서 fresh 스폰.
 		local all = map:GetChildComponentsByTypeName("script.EnemyHealth", true)
+		local destroyed = 0
 		for _, hc in ipairs(all) do
-			if isvalid(hc.Entity) then hc.Entity:Destroy() end
+			if isvalid(hc.Entity) then
+				hc.Entity:Destroy()
+				destroyed = destroyed + 1
+			end
 		end
 		self.preppedMap = map.Name
-		log("[StageManager] PrepareStages map=" .. map.Name .. " stages=" .. tostring(#self.stageOrder))
+		-- 첫 스캔 결과를 맵별 영속 캐시에 저장 → 다음 방문은 복원으로 처리(재스캔 금지).
+		self.preppedCache[map.Name] = { stageData = self.stageData, stageOrder = self.stageOrder }
+		log("[StageManager] PrepareStages map=" .. map.Name .. " stages=" .. tostring(#self.stageOrder) .. " cachedMobs=" .. tostring(totalMobs) .. " destroyedMarkers=" .. tostring(destroyed))
+		-- ★재진입 스폰버그 스모킹건: Stage 컨테이너는 있는데(=stages>0) 캐시된 몹이 0마리면,
+		--   이 맵의 마커가 "이전 prep/이전 세션"에서 이미 삭제된 뒤 재스캔된 것 (preppedMap 가드 우회 경로).
+		if #self.stageOrder > 0 and totalMobs == 0 then
+			log_error("[StageManager] ★재진입 스폰버그: map='" .. map.Name .. "' prep했으나 캐시몹 0마리 (마커 이미 삭제됨, 재스캔 무의미). destroyedMarkers=" .. tostring(destroyed))
+		end
 	end
 
 	@ExecSpace("ServerOnly")
@@ -249,6 +281,10 @@ script StageManager extends Logic
 			self.composition = sd.monsters
 			self.curSpawnX = sd.sx
 			self.curSpawnY = sd.sy
+			-- ★ sd는 있는데(=stage 키 존재) monsters가 빈 배열이면 RollComposition fallback도 안 타고 조용히 0마리 스폰 = 재진입 버그의 실제 순간.
+			if self.composition == nil or #self.composition == 0 then
+				log_error("[StageManager] ★재진입 스폰버그(실행 시점): stage '" .. tostring(stageName) .. "' 캐시몹 0마리 -> 스폰 안 됨. preppedMap='" .. tostring(self.preppedMap) .. "' (이 맵 마커가 이미 삭제된 뒤 재스캔된 상태)")
+			end
 		else
 			log_warning("[StageManager] stage '" .. tostring(stageName) .. "' not cached — fallback RollComposition")
 			self.composition = self:RollComposition()

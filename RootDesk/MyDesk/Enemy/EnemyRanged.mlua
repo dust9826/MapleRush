@@ -3,7 +3,16 @@ script EnemyRanged extends Component
 
 	property number DetectRadius = 5.0
 
-	property number AimTime = 1.0
+	-- 조준 3단계: 조준(추적)→확정(고정)→공격. TrackTime 동안 방향 추적, 이후 고정. TrackTime=0이면 즉시 고정.
+	property number TrackTime = 0.3
+
+	property number LockedTime = 0.7
+
+	-- 이동 속도(월드유닛/초). SideView=InputSpeed, MapleTile=MoveVelocity 배율.
+	property number MoveSpeed = 2.0
+
+	-- 투사체 속도(이 적 전용; 전역 ProjectileSpeed와 별개).
+	property number ProjectileSpeed = 10.0
 
 	property number FireCooldown = 1.0
 
@@ -39,7 +48,7 @@ script EnemyRanged extends Component
 	method void OnBeginPlay()
 		-- 조준 사이클 초기화 + 클립셋 캐시 + stand 캡처(AnimSet StandClip 있으면 override).
 		self.cyclePhase = "aim"
-		self.cycleTimer = self.AimTime
+		self.cycleTimer = (self.TrackTime + self.LockedTime)
 		self.animSet = self.Entity:GetComponent("script.EnemyAnimSet")
 		local sprite = self.Entity.SpriteRendererComponent
 		if isvalid(sprite) then self.standClip = sprite.SpriteRUID end
@@ -102,7 +111,7 @@ script EnemyRanged extends Component
 			self.IsAiming = false
 			self.aimLocked = false
 			self.cyclePhase = "aim"
-			self.cycleTimer = self.AimTime
+			self.cycleTimer = (self.TrackTime + self.LockedTime)
 			self:StopMove()
 			self:PlayClip(self:AnimClip("hit", self.standClip))
 			return
@@ -118,7 +127,7 @@ script EnemyRanged extends Component
 				self.IsAiming = false
 				self.aimLocked = false
 				self.cyclePhase = "aim"
-				self.cycleTimer = self.AimTime
+				self.cycleTimer = (self.TrackTime + self.LockedTime)
 				self:StopMove()
 				self:PlayClip(self.standClip)
 				return
@@ -142,14 +151,14 @@ script EnemyRanged extends Component
 
 		if dist > self.DetectRadius then
 			-- 감지 이탈: 조준 취소 후 대기
-			if self.cyclePhase == "aim" and self.cycleTimer < self.AimTime then
+			if self.cyclePhase == "aim" and self.cycleTimer < (self.TrackTime + self.LockedTime) then
 				log("[EnemyRanged] aim canceled (player out of range)")
 			end
 			self:ClearTelegraph()
 			self.IsAiming = false
 			self.aimLocked = false
 			self.cyclePhase = "aim"
-			self.cycleTimer = self.AimTime
+			self.cycleTimer = (self.TrackTime + self.LockedTime)
 			self:StopMove()
 			self:PlayClip(self.standClip)
 			return
@@ -174,21 +183,28 @@ script EnemyRanged extends Component
 				self.cycleTimer = self.FireCooldown
 			else
 				self.cyclePhase = "aim"
-				self.cycleTimer = self.AimTime
+				self.cycleTimer = (self.TrackTime + self.LockedTime)
 			end
 		end
 
 		-- 조준 단계 동기화 + 발사 방향 고정. 조준 첫 프레임에 방향을 잠가(플레이어 추적 금지) 발사·기즈모 공용.
 		if self.cyclePhase == "aim" then
 			self.IsAiming = true
-			if self.aimLocked == false then
+			local aimElapsed = (self.TrackTime + self.LockedTime) - self.cycleTimer
+			if aimElapsed < self.TrackTime then
+				-- 추적 구간: 매 프레임 플레이어 방향으로 갱신(아직 미고정)
+				local d = _CombatPrimitives:DirectionTo(myCenter, playerCenter)
+				self.AimDirX = d.x
+				self.AimDirY = d.y
+			elseif self.aimLocked == false then
+				-- 확정 시점: 현재 방향으로 고정 + 예고 레인 표시(LockedTime 동안)
 				local d = _CombatPrimitives:DirectionTo(myCenter, playerCenter)
 				self.AimDirX = d.x
 				self.AimDirY = d.y
 				self.aimLocked = true
 				-- 공격 예고: 발사축을 따라가는 레인 게이지(보스 Telegraph 재사용). 방향은 잠긴 AimDir(추적 안 함). 채움=aim 진행도.
 				if _GameConstants.ShowEnemyTelegraph then
-					self.telegraphId = _TelegraphService:Show(self.Entity, myCenter, _GameConstants.GizmoRangedLaneLength * 0.5, _GameConstants.GizmoRangedLaneWidth * 0.5, self.AimTime, self.ProjectileParryable, "ranged", self.AimDirX, self.AimDirY)
+					self.telegraphId = _TelegraphService:Show(self.Entity, myCenter, _GameConstants.GizmoRangedLaneLength * 0.5, _GameConstants.GizmoRangedLaneWidth * 0.5, self.LockedTime, self.ProjectileParryable, "ranged", self.AimDirX, self.AimDirY)
 				end
 				log("[EnemyRanged] aim LOCKED dir=(" .. string.format("%.2f", d.x) .. "," .. string.format("%.2f", d.y) .. ")")
 			end
@@ -225,7 +241,7 @@ script EnemyRanged extends Component
 		---@type Projectile
 		local comp = proj:GetComponent("script.Projectile")
 		if comp ~= nil then
-			comp:Launch(dir.x, dir.y, _GameConstants.ProjectileSpeed, 1, self.ProjectileParryable)
+			comp:Launch(dir.x, dir.y, self.ProjectileSpeed, 1, self.ProjectileParryable)
 			log("[EnemyRanged] " .. self.Entity.Name .. " fired projectile dir=(" .. string.format("%.2f", dir.x) .. "," .. string.format("%.2f", dir.y) .. ")")
 		end
 	end
@@ -283,7 +299,7 @@ script EnemyRanged extends Component
 			if isvalid(svb) == false or svb:IsOnGround() == false then return end
 			local mc = self.Entity.MovementComponent
 			if isvalid(mc) == false then return end
-			mc.InputSpeed = _GameConstants.EnemyChaseSpeed * timeScale
+			mc.InputSpeed = self.MoveSpeed * timeScale
 			mc:MoveToDirection(Vector2(dir, 0), delta)
 		else
 			-- MapleTile (기존 로직 유지)
@@ -298,7 +314,7 @@ script EnemyRanged extends Component
 					return
 				end
 			end
-			rb.MoveVelocity = Vector2(dir * timeScale, 0)
+			rb.MoveVelocity = Vector2(dir * self.MoveSpeed * timeScale, 0)
 		end
 		-- 스프라이트는 좌향 기본 → 우측 이동 시 FlipX
 		local sprite = self.Entity.SpriteRendererComponent
