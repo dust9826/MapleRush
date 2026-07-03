@@ -1,7 +1,7 @@
 {
   "Id": "",
   "GameId": "",
-  "EntryKey": "model://enemyprojectile_ice",
+  "EntryKey": "model://enemyprojectile_dark",
   "ContentType": "x-mod/model",
   "Content": "",
   "Usage": 0,
@@ -14,9 +14,9 @@
     "Use": "Json",
     "Json": {
       "Version": 1,
-      "Name": "EnemyProjectile_ice",
+      "Name": "EnemyProjectile_dark",
       "BaseModelId": null,
-      "Id": "enemyprojectile_ice",
+      "Id": "enemyprojectile_dark",
       "Components": [
         "MOD.Core.TransformComponent",
         "MOD.Core.SpriteRendererComponent",
@@ -31,7 +31,7 @@
             "$type": "MODNativeType",
             "type": "System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
           },
-          "Value": "db94dacc4a58427eb2cc8d8889371947"
+          "Value": "59a7a4cd19c8492c8f1a5fa541b7c64b"
         },
         {
           "TargetType": "MOD.Core.SpriteRendererComponent",
@@ -60,8 +60,8 @@
           },
           "Value": {
             "$type": "MOD.Core.MODVector3, MOD.Core",
-            "x": -4.0,
-            "y": 4.0,
+            "x": 1.0,
+            "y": 1.0,
             "z": 1.0
           }
         },
@@ -72,7 +72,7 @@
             "$type": "MODNativeType",
             "type": "System.Double, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
           },
-          "Value": 0.6
+          "Value": 0.2
         }
       ],
       "EventLinks": [],

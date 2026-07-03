@@ -23,16 +23,6 @@ script GameConstants extends Logic
 
 	property number SmokeBoxHalfDown = 1.0
 
-	property number BossSlamBoxForward = 2.5
-
-	property number BossSlamBoxHeight = 2.0
-
-	property number BossRedSmashBoxHalfW = 3.5
-
-	property number BossRedSmashBoxHalfH = 1.2
-
-	property number BossTripleSpread = 0.6
-
 	property number GizmoRangedLaneLength = 6.0
 
 	property number GizmoRangedLaneWidth = 0.4
@@ -109,13 +99,9 @@ script GameConstants extends Logic
 
 	property number FallRespawnDuration = 0.5
 
-	property number BossHP = 500.0
-
 	property number GroggyGaugeRatio = 0.2
 
 	property number GroggyDecayPerSec = 0.02
-
-	property number BossPatternDelay = 1.5
 
 	property number MesoCap = 4294967295.0
 
@@ -262,78 +248,6 @@ script GameConstants extends Logic
 	property Color TelegraphColorRed = Color(1.0, 0.2, 0.15, 1.0)
 
 	property number TelegraphPxBaseWorld = 0.16
-
-	property number BossO1Windup = 0.6
-
-	property number BossO1Cd = 1.0
-
-	property number BossO2Windup = 1.0
-
-	property number BossO2Cd = 2.5
-
-	property number BossO2BoxHW = 2.0
-
-	property number BossO2BoxHH = 1.5
-
-	property number BossO3Windup = 1.1
-
-	property number BossO3Cd = 2.8
-
-	property number BossO3BoxHW = 2.0
-
-	property number BossO3BoxHH = 1.5
-
-	property number BossE1Windup = 0.9
-
-	property number BossE1Cd = 1.2
-
-	property number BossE1BoxHW = 1.8
-
-	property number BossE1BoxHH = 1.0
-
-	property number BossE2Windup = 0.7
-
-	property number BossE2Cd = 1.1
-
-	property number BossE3Windup = 1.1
-
-	property number BossE3Cd = 2.8
-
-	property number BossE3BoxHW = 3.5
-
-	property number BossE3BoxHH = 2.0
-
-	property number BossZ1Windup = 0.7
-
-	property number BossZ1Cd = 1.0
-
-	property number BossZ1BoxHW = 2.0
-
-	property number BossZ1BoxHH = 1.0
-
-	property number BossZ2Windup = 0.8
-
-	property number BossZ2Cd = 1.0
-
-	property number BossZakumBeamOffsetX = 4.0
-
-	property number BossZ3Windup = 1.0
-
-	property number BossZ3Cd = 2.5
-
-	property number BossZ3BoxHW = 1.5
-
-	property number BossZ3BoxHH = 1.5
-
-	property integer BossZ3Points = 3
-
-	property number BossSidesSafeHalf = 1.0
-
-	property number BossMultiSpreadX = 6.0
-
-	property number BossBandClose = 4.0
-
-	property number BossBandMid = 7.5
 
 	method integer NormalStagesForFloor(integer floor)
 		-- 층별 일반 스테이지 진행 횟수: 4 + 1*(층수-1) (stage_design_doc §2.2.3)
