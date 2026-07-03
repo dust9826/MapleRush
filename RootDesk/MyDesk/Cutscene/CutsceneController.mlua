@@ -43,7 +43,7 @@ script CutsceneController extends Component
 	@ExecSpace("ClientOnly")
 	method void OnBeginPlay()
 		-- 장면 데이터(이미지 RUID + 원본 해상도 w/h + 대사 + 스토리 BGM 키). BGM: 1~4=early / 5~7=late(=타이틀 유지).
-		-- w/h: 16:9 프레임에 비율 유지로 폭을 채우고 넘치는 위아래는 Mask가 크롭. 1~6=1920x1080, 7=1448x1086(4:3).
+		-- w/h: 16:9 프레임에 비율 유지로 폭을 채우고 넘치는 위아래는 Mask가 크롭. 전 장면 1920x1080(16:9).
 		self.scenes = {
 			{ ruid = "ba75a198e091494ca6e59e1c881cfaeb", w = 1920, h = 1080, bgm = "bgm_story_early", text = "누구도 곁에 두지 않던 만지에게,\n어느 날 한 소녀가 까닭 없이 매일 다가와 말을 건다." },
 			{ ruid = "e93907fe1b3f47408b34762857f39ddd", w = 1920, h = 1080, bgm = "", text = "만지는 몇 번이고 그녀를 밀어낸다." },
@@ -51,7 +51,7 @@ script CutsceneController extends Component
 			{ ruid = "7b80db4e4f954ec0becde63190147f95", w = 1920, h = 1080, bgm = "", text = "균열에 호기심이 인 만지는 오르비스로 가게되었다.\n그리고 그녀와 만나게 되고, 처음으로 마음을 열게된다.\n둘 사이에 대화가 트이기 시작한 것이다." },
 			{ ruid = "3e2de5ba7dba4a4787014788faf789a7", w = 1920, h = 1080, bgm = "bgm_story_late", text = "가까워질 무렵, 균열에 다가간 소녀가 안으로 빨려 들어간다." },
 			{ ruid = "846e0351d5274dc7a872e6618529eac6", w = 1920, h = 1080, bgm = "", text = "만지는 그녀를 구하려 칼을 뽑아 균열로 뛰어든다. 그리고 죽는다." },
-			{ ruid = "4ed387595fec4934b931b7d12692909e", w = 1448, h = 1086, bgm = "", text = "그 순간, 칼이 그를 선착장으로 되돌린다. 회귀가 시작된다." },
+			{ ruid = "d5afe4b5f99d454da07c866d6261d05e", w = 1920, h = 1080, bgm = "", text = "그 순간, 칼이 그를 선착장으로 되돌린다. 회귀가 시작된다." },
 		}
 		-- 로비 숨김(컷씬이 먼저) + 전투 입력 억제(비전투 컨텍스트).
 		if isvalid(self.lobbyRoot) then self.lobbyRoot.Enable = false end
