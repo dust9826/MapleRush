@@ -120,8 +120,8 @@ script PlayerItems extends Component
 
 	@ExecSpace("Server")
 	method void RequestUseItem(integer slotIdx, number targetX, number targetY)
-		-- 서버 검증 + 아이템 효과 발동 + 슬롯 비움 (stage_design §3.2.2). 전투 스테이지에서만.
-		if _StageManager.StageActive == false then return end
+		-- 서버 검증 + 아이템 효과 발동 + 슬롯 비움 (stage_design §3.2.2). 전투 스테이지 또는 튜토리얼(연습장)에서만.
+		if _StageManager.StageActive == false and _TutorialManager.TutorialActive == false then return end
 		local itemId = ""
 		if slotIdx == 1 then itemId = self.Slot1
 		elseif slotIdx == 2 then itemId = self.Slot2

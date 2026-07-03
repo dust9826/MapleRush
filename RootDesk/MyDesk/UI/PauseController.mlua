@@ -63,8 +63,8 @@ script PauseController extends Component
 
 	@ExecSpace("ClientOnly")
 	method boolean CanPause()
-		-- 런 진행 중 + 전투 컨텍스트일 때만 일시정지 허용 (로비/컷씬/보상/노드/상점/게임오버 중엔 무시).
-		return _GameStateManager.RunActive and _InputRouter.CurrentContext == "Combat"
+		-- 런 진행 중(또는 튜토리얼 중) + 전투 컨텍스트일 때만 일시정지 허용 (로비/컷씬/보상/노드/상점/게임오버 중엔 무시).
+		return (_GameStateManager.RunActive or _TutorialManager.TutorialActive) and _InputRouter.CurrentContext == "Combat"
 	end
 
 	@ExecSpace("ClientOnly")
@@ -154,7 +154,12 @@ script PauseController extends Component
 		_UtilLogic:SetClientTimeScale(1.0)
 		_WallClock:SetClientPaused(false)
 		self:FreezePlayer(false)
-		_StageManager:RequestAbandonToLobby()
+		-- 튜토리얼이면 튜토리얼 종료 경로(무적 off + 적 정리 + 서버 pause 해제), 아니면 일반 런 포기.
+		if _TutorialManager.TutorialActive then
+			_TutorialManager:RequestEndTutorial()
+		else
+			_StageManager:RequestAbandonToLobby()
+		end
 		local lobby = _EntityService:GetEntityByPath("/ui/LobbyGroup/Root")
 		if lobby ~= nil then lobby.Enable = true end
 		_InputRouter:SetContext("Lobby")
