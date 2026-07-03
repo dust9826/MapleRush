@@ -499,7 +499,7 @@ script StageManager extends Logic
 	@ExecSpace("Server")
 	method void RequestSetPaused(boolean paused)
 		-- 클라 일시정지 메뉴 → (1) 동작 정지(combatPaused: 적 AI/투사체 프리즈) + (2) 게임 시계 정지(WallClock: 모든 서버 타이머 프리즈).
-		if _GameStateManager.RunActive == false then return end
+		if _GameStateManager.RunActive == false and _TutorialManager.TutorialActive == false then return end
 		self.combatPaused = paused
 		_WallClock:SetServerPaused(paused)
 		log("[StageManager] combatPaused = " .. tostring(paused))

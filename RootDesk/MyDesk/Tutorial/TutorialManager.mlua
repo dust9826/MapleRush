@@ -1,0 +1,183 @@
+@Logic
+script TutorialManager extends Logic
+
+	-- 튜토리얼 진행 중 여부 (서버 권위). 무적 판정(PlayerHit)·ESC 탈출(PauseController)이 참조하므로 @Sync.
+	@Sync
+	property boolean TutorialActive = false
+
+	-- 서버: 튜토리얼 맵 도착 대기 (이동 요청 후 CurrentMap 폴링).
+	property boolean awaitingMap = false
+
+	-- 서버: 이번 튜토리얼 적 구성 캐시 [{model,x,y}]. 첫 진입 때 배치 적을 스캔해 캐시 →
+	-- 재진입 시 (반쯤 죽은 상태 방지) 동일 구성 재스폰. @Logic이라 세션 내내 유지.
+	property any composition = nil
+
+	property integer totalEnemies = 0
+
+	property integer killedEnemies = 0
+
+	property integer spawnSerial = 0
+
+	@ExecSpace("Server")
+	method void RequestStartTutorial()
+		-- 로비 "튜토리얼" 버튼 → 튜토리얼 시작: 무적 on + 튜토리얼 맵으로 이동(도착은 OnUpdate 폴링).
+		if self.TutorialActive then return end
+		if _GameStateManager.RunActive then
+			log_warning("[TutorialManager] RequestStartTutorial ignored — run active")
+			return
+		end
+		local player = _StageManager:GetPlayer()
+		if player == nil then
+			log_warning("[TutorialManager] RequestStartTutorial ignored — no tracked player yet")
+			return
+		end
+		self.TutorialActive = true
+		self.awaitingMap = true
+		-- SpawnLocation 기준 크로스맵 이동 (보스맵과 동일 방식: 맵마다 지면높이 달라 고정좌표 대신 스폰포인트 사용).
+		player.PlayerComponent:MoveToEntityByPath("/maps/" .. _GameConstants.MapTutorial .. "/SpawnLocation")
+		log("[TutorialManager] tutorial start -> moving to " .. _GameConstants.MapTutorial)
+	end
+
+	method void OnUpdate(number delta)
+		-- 서버: 튜토리얼 맵 도착 폴링 → 도착 시 적 세팅 + 클라 전투 컨텍스트.
+		if self:IsServer() == false then return end
+		if self.awaitingMap == false then return end
+		local player = _StageManager:GetPlayer()
+		if player == nil then return end
+		local cm = player.CurrentMap
+		if cm == nil or isvalid(cm) == false then return end
+		if cm.Name == _GameConstants.MapTutorial then
+			self.awaitingMap = false
+			self:OnArrived(cm)
+		end
+	end
+
+	@ExecSpace("ServerOnly")
+	method void OnArrived(Entity map)
+		-- 도착 1회: (첫 진입) 배치 적 스캔 캐시 → 적 재스폰 + 카운터 리셋 → 클라 전투 컨텍스트.
+		if self.composition == nil then
+			self.composition = {}
+			local hcs = map:GetChildComponentsByTypeName("script.EnemyHealth", true)
+			for _, hc in ipairs(hcs) do
+				local e = hc.Entity
+				if isvalid(e) then
+					-- 배치된 마커의 실제 모델을 이름으로 해석 (변종 잡몹 그대로 재스폰). StageManager 로직 재사용.
+					local model = _StageManager:ResolveMarkerModel(e)
+					local wp = e.TransformComponent.WorldPosition
+					table.insert(self.composition, { model = model, x = wp.x, y = wp.y })
+				end
+			end
+			log("[TutorialManager] cached composition mobs=" .. tostring(#self.composition))
+		end
+		self:RespawnEnemies(map)
+		local player = _StageManager:GetPlayer()
+		if player ~= nil and player.PlayerComponent ~= nil then
+			self:ClientTutorialReady(player.PlayerComponent.UserId)
+		end
+	end
+
+	@ExecSpace("ServerOnly")
+	method void RespawnEnemies(Entity map)
+		-- 잔존 적 소멸 → 캐시 구성으로 재스폰 → 카운터 리셋 → 짧은 진입 유예(스폰캠핑 방지).
+		local hcs = map:GetChildComponentsByTypeName("script.EnemyHealth", true)
+		for _, hc in ipairs(hcs) do
+			if isvalid(hc.Entity) then hc.Entity:Destroy() end
+		end
+		self.killedEnemies = 0
+		self.totalEnemies = 0
+		if self.composition ~= nil then
+			for _, c in ipairs(self.composition) do
+				self.spawnSerial += 1
+				-- +SpawnYLift: 발판 아래로 미세하게 박힌 좌표도 발판 위에서 스폰되게 보정.
+				local e = _SpawnService:SpawnByModelId(c.model, "TutE" .. tostring(self.spawnSerial), Vector3(c.x, c.y + _GameConstants.SpawnYLift, 0), map)
+				if e == nil then
+					log_error("[TutorialManager] spawn failed: " .. tostring(c.model))
+				else
+					self.totalEnemies += 1
+				end
+			end
+		end
+		-- 진입 유예: 방금 텔레포트한 플레이어 앞에서 즉시 공격 방지 (StageManager grace 재사용 — 튜토리얼 중 StageManager는 비활성이라 무해).
+		_StageManager.combatGraceUntil = _WallClock:ServerNow() + 1.5
+		log("[TutorialManager] enemies respawned total=" .. tostring(self.totalEnemies))
+	end
+
+	@ExecSpace("ServerOnly")
+	method void NotifyEnemyKilled()
+		-- EnemyHealth.Die가 호출: 튜토리얼 중일 때만 처치 카운트. 전멸 시 타이틀 복귀.
+		if self.TutorialActive == false then return end
+		self.killedEnemies += 1
+		log("[TutorialManager] kill " .. tostring(self.killedEnemies) .. "/" .. tostring(self.totalEnemies))
+		if self.totalEnemies > 0 and self.killedEnemies >= self.totalEnemies then
+			-- 짧은 텀 뒤 종료 (StageClear 패턴): 마지막 적 Die() 실행 중 EndTutorial의 동기 파괴가
+			-- 그 적(=자기 자신)을 즉시 없애면 Die() 잔여 줄에서 LEA-2011(파괴된 self 접근)이 난다. 타이머로 분리.
+			_TimerService:SetTimerOnce(function()
+				if self.TutorialActive then self:EndTutorial("clear") end
+			end, _GameConstants.StageEndDelay)
+		end
+	end
+
+	@ExecSpace("ServerOnly")
+	method void EndTutorial(string reason)
+		-- 튜토리얼 종료(전멸/ESC 공통): 무적 off + 잔존 적/투사체 정리 + 클라 타이틀 복귀.
+		if self.TutorialActive == false then return end
+		self.TutorialActive = false
+		self.awaitingMap = false
+		-- 일시정지 상태에서 나갔을 수 있으니 서버 pause(적 프리즈 + 게임시계)를 반드시 해제 (다음 런 오염 방지).
+		_StageManager.combatPaused = false
+		_WallClock:SetServerPaused(false)
+		local map = _EntityService:GetEntityByPath("/maps/" .. _GameConstants.MapTutorial)
+		if map ~= nil and isvalid(map) then
+			local hcs = map:GetChildComponentsByTypeName("script.EnemyHealth", true)
+			for _, hc in ipairs(hcs) do
+				if isvalid(hc.Entity) then hc.Entity:Destroy() end
+			end
+			local projs = map:GetChildComponentsByTypeName("script.Projectile", true)
+			for _, pj in ipairs(projs) do
+				if isvalid(pj.Entity) then pj.Entity:Destroy() end
+			end
+		end
+		local player = _StageManager:GetPlayer()
+		if player ~= nil and player.PlayerComponent ~= nil then
+			self:ClientReturnToTitle(reason, player.PlayerComponent.UserId)
+		end
+		log("[TutorialManager] tutorial end (" .. reason .. ")")
+	end
+
+	@ExecSpace("Server")
+	method void RequestEndTutorial()
+		-- 클라 ESC → 튜토리얼 중단(타이틀 복귀).
+		self:EndTutorial("esc")
+	end
+
+	@ExecSpace("Client")
+	method void ClientTutorialReady()
+		-- 클라: 튜토리얼 맵 도착 → 전투 입력 컨텍스트 + 이동 컨트롤러 활성 + 타임스케일 정상.
+		_UtilLogic:SetClientTimeScale(1.0)
+		local player = _UserService.LocalPlayer
+		if player ~= nil and isvalid(player) then
+			local pcc = player.PlayerControllerComponent
+			if isvalid(pcc) then pcc.Enable = true end
+		end
+		_InputRouter:SetContext("Combat")
+		log("[TutorialManager] client ready (combat context)")
+	end
+
+	@ExecSpace("Client")
+	method void ClientReturnToTitle(string reason)
+		-- 클라: 타이틀(로비 오버레이) 복귀 — PauseController 타이틀 복귀와 동일 시퀀스.
+		_UtilLogic:SetClientTimeScale(1.0)
+		_WallClock:SetClientPaused(false)
+		local player = _UserService.LocalPlayer
+		if player ~= nil and isvalid(player) then
+			local pcc = player.PlayerControllerComponent
+			if isvalid(pcc) then pcc.Enable = true end
+		end
+		local lobby = _EntityService:GetEntityByPath("/ui/LobbyGroup/Root")
+		if lobby ~= nil then lobby.Enable = true end
+		_InputRouter:SetContext("Lobby")
+		_SoundManager:PlayBGMKey("bgm_title")
+		log("[TutorialManager] -> title (" .. reason .. ")")
+	end
+
+end

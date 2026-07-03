@@ -6,6 +6,9 @@ script LobbyController extends Component
 
 	property ButtonComponent btnStart = "775dac4e-ef17-4c0e-b16f-28a680298ed0"
 
+	-- "튜토리얼" 버튼 → 튜토리얼 맵 진입 (무적 연습장). 바인딩 주입.
+	property ButtonComponent btnTutorial = "1188778b-16d1-41f0-9aa4-9572f2fabeeb"
+
 	property ButtonComponent btnSettings = "e5f542ab-23f3-4958-9fcd-33ab9f6e74e2"
 
 	property ButtonComponent btnRest = "c2e314d1-0dad-426e-8feb-8af03dc5931a"
@@ -22,6 +25,8 @@ script LobbyController extends Component
 
 	property any hStart = nil
 
+	property any hTutorial = nil
+
 	property any hSettings = nil
 
 	property any hRest = nil
@@ -36,6 +41,7 @@ script LobbyController extends Component
 		if isvalid(self.restConfirm) then self.restConfirm.Enable = false end
 		if isvalid(self.lobbyRoot) then self.lobbyRoot.Enable = false end
 		self.hStart = self.btnStart.Entity:ConnectEvent(ButtonClickEvent, self.OnStartClick)
+		self.hTutorial = self.btnTutorial.Entity:ConnectEvent(ButtonClickEvent, self.OnTutorialClick)
 		self.hSettings = self.btnSettings.Entity:ConnectEvent(ButtonClickEvent, self.OnSettingsClick)
 		self.hRest = self.btnRest.Entity:ConnectEvent(ButtonClickEvent, self.OnRestClick)
 		self.hUpgrade = self.btnUpgrade.Entity:ConnectEvent(ButtonClickEvent, self.OnUpgradeClick)
@@ -47,6 +53,7 @@ script LobbyController extends Component
 	method void OnEndPlay()
 		-- 연결한 버튼 핸들러 전부 해제.
 		if self.hStart ~= nil then self.btnStart.Entity:DisconnectEvent(ButtonClickEvent, self.hStart) end
+		if self.hTutorial ~= nil then self.btnTutorial.Entity:DisconnectEvent(ButtonClickEvent, self.hTutorial) end
 		if self.hSettings ~= nil then self.btnSettings.Entity:DisconnectEvent(ButtonClickEvent, self.hSettings) end
 		if self.hRest ~= nil then self.btnRest.Entity:DisconnectEvent(ButtonClickEvent, self.hRest) end
 		if self.hUpgrade ~= nil then self.btnUpgrade.Entity:DisconnectEvent(ButtonClickEvent, self.hUpgrade) end
@@ -60,6 +67,15 @@ script LobbyController extends Component
 		_SoundManager:StopBGM()
 		_StageManager:RequestStartRun()
 		log("[LobbyController] start run requested")
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnTutorialClick(ButtonClickEvent event)
+		-- "튜토리얼": 로비 숨김 → 타이틀 BGM 정지 → 서버에 튜토리얼 시작 요청(맵 이동 + 무적 연습장).
+		self.lobbyRoot.Enable = false
+		_SoundManager:StopBGM()
+		_TutorialManager:RequestStartTutorial()
+		log("[LobbyController] tutorial requested")
 	end
 
 	@ExecSpace("ClientOnly")

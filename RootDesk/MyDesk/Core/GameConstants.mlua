@@ -149,6 +149,8 @@ script GameConstants extends Logic
 
 	property string MapShop = "map04"
 
+	property string MapTutorial = "TutorialLevel"
+
 	property string NormalMapChoice = "map02"
 
 	property string MatGrayScale = "GrayScale"
