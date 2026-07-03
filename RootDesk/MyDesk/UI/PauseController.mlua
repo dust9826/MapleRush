@@ -1,0 +1,251 @@
+@Component
+script PauseController extends Component
+
+	-- 일시정지 오버레이 루트 (딤 + 창 전체 토글). PauseGroup은 default_show=true, 이 Root만 켜고 끈다.
+	property Entity pauseRoot = "038b8c73-68e7-4fe2-bcfa-284a5e83223a"
+
+	-- 메인 창 버튼 3종.
+	property ButtonComponent btnResume = "d94b7f30-c319-435f-a74f-5bc2701b4756"
+
+	property ButtonComponent btnSettings = "da43cdd8-d080-4b79-91b6-e839c20a64cc"
+
+	property ButtonComponent btnTitle = "f8cec1dc-37fa-431a-b2f0-8ca82d523f66"
+
+	-- 설정 서브팝업 (BGM/SFX 슬라이더). 로비 설정과 동일하게 SoundManager 연동.
+	property Entity settingsPopup = "59e98ed1-0456-4c03-a1d2-988f9d3ecc44"
+
+	property ButtonComponent btnSettingsClose = "aac41eb2-33fe-4adf-a91b-e3fcbca74628"
+
+	property SliderComponent bgmSlider = "d4c26a9d-caec-4af3-b4f5-b221ea73d65f"
+
+	property SliderComponent sfxSlider = "33495966-f9fb-4a5e-9cf3-5c082a1ba66c"
+
+	property TextComponent bgmValueText = "f0e54e71-8b86-42b7-ad6c-8123895c458a"
+
+	property TextComponent sfxValueText = "ece67443-c223-4f6e-923d-6071471f4114"
+
+	-- 타이틀 복귀 확인 서브팝업.
+	property Entity confirmPopup = "44da305e-4aa3-43f3-9b05-9e1cc3f76f89"
+
+	property ButtonComponent btnConfirmYes = "69da3914-9ba1-4b10-8548-aad5a67ec2de"
+
+	property ButtonComponent btnConfirmNo = "d1fe4326-8c88-4088-bc43-dd0a024a1033"
+
+	property any hKeyDown = nil
+
+	property any hResume = nil
+
+	property any hSettings = nil
+
+	property any hSettingsClose = nil
+
+	property any hTitle = nil
+
+	property any hConfirmYes = nil
+
+	property any hConfirmNo = nil
+
+	property any hBgm = nil
+
+	property any hSfx = nil
+
+	@ExecSpace("ClientOnly")
+	method void OnBeginPlay()
+		-- 부팅: 오버레이/서브팝업 숨김 + 버튼·슬라이더·ESC 키 연결. (PauseGroup default_show=true라 이 스크립트는 항상 구동)
+		if isvalid(self.pauseRoot) then self.pauseRoot.Enable = false end
+		if isvalid(self.settingsPopup) then self.settingsPopup.Enable = false end
+		if isvalid(self.confirmPopup) then self.confirmPopup.Enable = false end
+		self.hKeyDown = _InputService:ConnectEvent(KeyDownEvent, self.OnKeyDown)
+		self.hResume = self.btnResume.Entity:ConnectEvent(ButtonClickEvent, self.OnResumeClick)
+		self.hSettings = self.btnSettings.Entity:ConnectEvent(ButtonClickEvent, self.OnSettingsClick)
+		self.hSettingsClose = self.btnSettingsClose.Entity:ConnectEvent(ButtonClickEvent, self.OnSettingsClose)
+		self.hTitle = self.btnTitle.Entity:ConnectEvent(ButtonClickEvent, self.OnTitleClick)
+		self.hConfirmYes = self.btnConfirmYes.Entity:ConnectEvent(ButtonClickEvent, self.OnConfirmYes)
+		self.hConfirmNo = self.btnConfirmNo.Entity:ConnectEvent(ButtonClickEvent, self.OnConfirmNo)
+		self:InitSoundSliders()
+		log("[PauseController] OnBeginPlay: ready")
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnEndPlay()
+		-- 연결한 입력/버튼/슬라이더 핸들러 전부 해제.
+		if self.hKeyDown ~= nil then _InputService:DisconnectEvent(KeyDownEvent, self.hKeyDown) end
+		if self.hResume ~= nil then self.btnResume.Entity:DisconnectEvent(ButtonClickEvent, self.hResume) end
+		if self.hSettings ~= nil then self.btnSettings.Entity:DisconnectEvent(ButtonClickEvent, self.hSettings) end
+		if self.hSettingsClose ~= nil then self.btnSettingsClose.Entity:DisconnectEvent(ButtonClickEvent, self.hSettingsClose) end
+		if self.hTitle ~= nil then self.btnTitle.Entity:DisconnectEvent(ButtonClickEvent, self.hTitle) end
+		if self.hConfirmYes ~= nil then self.btnConfirmYes.Entity:DisconnectEvent(ButtonClickEvent, self.hConfirmYes) end
+		if self.hConfirmNo ~= nil then self.btnConfirmNo.Entity:DisconnectEvent(ButtonClickEvent, self.hConfirmNo) end
+		if self.hBgm ~= nil and isvalid(self.bgmSlider) then self.bgmSlider.Entity:DisconnectEvent(SliderValueChangedEvent, self.hBgm) end
+		if self.hSfx ~= nil and isvalid(self.sfxSlider) then self.sfxSlider.Entity:DisconnectEvent(SliderValueChangedEvent, self.hSfx) end
+	end
+
+	@ExecSpace("ClientOnly")
+	method boolean IsPaused()
+		-- 현재 일시정지 오버레이가 떠 있는지.
+		return isvalid(self.pauseRoot) and self.pauseRoot.Enable
+	end
+
+	@ExecSpace("ClientOnly")
+	method boolean CanPause()
+		-- 런 진행 중 + 전투 컨텍스트일 때만 일시정지 허용 (로비/컷씬/보상/노드/상점/게임오버 중엔 무시).
+		return _GameStateManager.RunActive and _InputRouter.CurrentContext == "Combat"
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnKeyDown(KeyDownEvent event)
+		-- ESC: 서브팝업 열림 → 서브팝업 닫기 / 일시정지 중 → 재개 / 전투 중 → 일시정지.
+		if event.key ~= KeyboardKey.Escape then return end
+		if isvalid(self.confirmPopup) and self.confirmPopup.Enable then
+			self.confirmPopup.Enable = false
+			return
+		end
+		if isvalid(self.settingsPopup) and self.settingsPopup.Enable then
+			self.settingsPopup.Enable = false
+			return
+		end
+		if self:IsPaused() then
+			self:Resume()
+		elseif self:CanPause() then
+			self:Pause()
+		end
+	end
+
+	@ExecSpace("ClientOnly")
+	method void Pause()
+		-- 완전 정지: 오버레이 표시 + 클라 타임스케일 0 + 플레이어 이동 잠금 + 입력 컨텍스트 Paused + 서버 적 AI 정지.
+		if isvalid(self.settingsPopup) then self.settingsPopup.Enable = false end
+		if isvalid(self.confirmPopup) then self.confirmPopup.Enable = false end
+		if isvalid(self.pauseRoot) then self.pauseRoot.Enable = true end
+		_UtilLogic:SetClientTimeScale(0.0)
+		self:FreezePlayer(true)
+		_InputRouter:SetContext("Paused")
+		_StageManager:RequestSetPaused(true)
+		log("[PauseController] paused")
+	end
+
+	@ExecSpace("ClientOnly")
+	method void Resume()
+		-- 재개: 오버레이/서브팝업 숨김 + 타임스케일 복원 + 플레이어 잠금 해제 + 전투 컨텍스트 + 서버 적 AI 재개.
+		if isvalid(self.settingsPopup) then self.settingsPopup.Enable = false end
+		if isvalid(self.confirmPopup) then self.confirmPopup.Enable = false end
+		if isvalid(self.pauseRoot) then self.pauseRoot.Enable = false end
+		_UtilLogic:SetClientTimeScale(1.0)
+		self:FreezePlayer(false)
+		_InputRouter:SetContext("Combat")
+		_StageManager:RequestSetPaused(false)
+		log("[PauseController] resumed")
+	end
+
+	@ExecSpace("ClientOnly")
+	method void FreezePlayer(boolean frozen)
+		-- 로컬 플레이어 이동 컨트롤러 on/off (타임스케일 0과 함께 확실히 정지).
+		local player = _UserService.LocalPlayer
+		if player == nil or isvalid(player) == false then return end
+		local pcc = player.PlayerControllerComponent
+		if isvalid(pcc) then pcc.Enable = not frozen end
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnResumeClick(ButtonClickEvent event)
+		-- "계속하기": 재개.
+		self:Resume()
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnSettingsClick(ButtonClickEvent event)
+		-- "설정": 설정 서브팝업 표시 + 현재 볼륨값으로 슬라이더/텍스트 동기화.
+		if isvalid(self.bgmSlider) then
+			local bv = _SoundManager:GetBgmVolume()
+			self.bgmSlider.Value = bv
+			self:UpdateBgmText(bv)
+		end
+		if isvalid(self.sfxSlider) then
+			local sv = _SoundManager:GetSfxVolume()
+			self.sfxSlider.Value = sv
+			self:UpdateSfxText(sv)
+		end
+		if isvalid(self.settingsPopup) then self.settingsPopup.Enable = true end
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnSettingsClose(ButtonClickEvent event)
+		-- 설정 서브팝업 닫기.
+		if isvalid(self.settingsPopup) then self.settingsPopup.Enable = false end
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnTitleClick(ButtonClickEvent event)
+		-- "타이틀로 돌아가기": 진행 중인 런이 사라지므로 확인 팝업 표시.
+		if isvalid(self.confirmPopup) then self.confirmPopup.Enable = true end
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnConfirmNo(ButtonClickEvent event)
+		-- 확인 취소 → 일시정지 메뉴로 복귀.
+		if isvalid(self.confirmPopup) then self.confirmPopup.Enable = false end
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnConfirmYes(ButtonClickEvent event)
+		-- 나가기 확정: 런 포기 + 메인 로비 오버레이 표시 (GameOver "로비로"와 동일 경로).
+		if isvalid(self.confirmPopup) then self.confirmPopup.Enable = false end
+		if isvalid(self.pauseRoot) then self.pauseRoot.Enable = false end
+		_UtilLogic:SetClientTimeScale(1.0)
+		self:FreezePlayer(false)
+		_StageManager:RequestAbandonToLobby()
+		local lobby = _EntityService:GetEntityByPath("/ui/LobbyGroup/Root")
+		if lobby ~= nil then lobby.Enable = true end
+		_InputRouter:SetContext("Lobby")
+		log("[PauseController] -> title (run abandoned)")
+	end
+
+	@ExecSpace("ClientOnly")
+	method void InitSoundSliders()
+		-- 슬라이더 초기값을 SoundManager 저장값으로 세팅 후(핸들러 트리거 방지 위해 ConnectEvent보다 먼저) 변경 이벤트 연결.
+		if isvalid(self.bgmSlider) then
+			local bv = _SoundManager:GetBgmVolume()
+			self.bgmSlider.Value = bv
+			self:UpdateBgmText(bv)
+			self.hBgm = self.bgmSlider.Entity:ConnectEvent(SliderValueChangedEvent, self.OnBgmChanged)
+		end
+		if isvalid(self.sfxSlider) then
+			local sv = _SoundManager:GetSfxVolume()
+			self.sfxSlider.Value = sv
+			self:UpdateSfxText(sv)
+			self.hSfx = self.sfxSlider.Entity:ConnectEvent(SliderValueChangedEvent, self.OnSfxChanged)
+		end
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnBgmChanged(SliderValueChangedEvent event)
+		-- 배경음 볼륨 변경 → SoundManager 반영 + 텍스트 갱신.
+		_SoundManager:SetBgmVolume(event.Value)
+		self:UpdateBgmText(event.Value)
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnSfxChanged(SliderValueChangedEvent event)
+		-- 효과음 볼륨 변경 → SoundManager 반영 + 텍스트 갱신. (클릭음은 전역 후킹이 담당하므로 여기선 소리 안 냄)
+		_SoundManager:SetSfxVolume(event.Value)
+		self:UpdateSfxText(event.Value)
+	end
+
+	@ExecSpace("ClientOnly")
+	method void UpdateBgmText(number v)
+		-- 배경음 현재값 % 표기.
+		if isvalid(self.bgmValueText) then self.bgmValueText.Text = self:FormatPct(v) end
+	end
+
+	@ExecSpace("ClientOnly")
+	method void UpdateSfxText(number v)
+		-- 효과음 현재값 % 표기.
+		if isvalid(self.sfxValueText) then self.sfxValueText.Text = self:FormatPct(v) end
+	end
+
+	method string FormatPct(number v)
+		-- 0.0~1.0 볼륨을 "NN%" 문자열로 변환.
+		return tostring(math.floor(v * 100 + 0.5)) .. "%"
+	end
+
+end

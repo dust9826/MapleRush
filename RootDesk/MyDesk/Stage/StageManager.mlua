@@ -22,6 +22,9 @@ script StageManager extends Logic
 	-- 진입 유예: 이 시각(ServerElapsedSeconds)까지 적 행동 정지 (스폰 캠핑 방지)
 	property number combatGraceUntil = -999.0
 
+	-- 일시정지: true면 IsGraceActive가 항상 true → 전 적 AI 정지 (ESC 일시정지 메뉴, 서버 권위).
+	property boolean combatPaused = false
+
 	-- 클라: 보상 UI 컨트롤러 참조 (RewardController가 등록)
 	property any rewardUI = nil
 
@@ -447,8 +450,41 @@ script StageManager extends Logic
 
 	@ExecSpace("ServerOnly")
 	method boolean IsGraceActive()
-		-- 진입 유예 중인지 (적 AI가 폴링).
+		-- 진입 유예 중인지 (적 AI가 폴링). 일시정지 중이면 항상 정지.
+		if self.combatPaused then return true end
 		return _UtilLogic.ServerElapsedSeconds < self.combatGraceUntil
+	end
+
+	@ExecSpace("Server")
+	method void RequestSetPaused(boolean paused)
+		-- 클라 일시정지 메뉴 → 서버 적 AI 정지/재개 토글 (IsGraceActive 경유). 런 진행 중에만 유효.
+		if _GameStateManager.RunActive == false then return end
+		self.combatPaused = paused
+		log("[StageManager] combatPaused = " .. tostring(paused))
+	end
+
+	@ExecSpace("Server")
+	method void RequestAbandonToLobby()
+		-- 일시정지 메뉴 "타이틀로 돌아가기" → 진행 런 포기: 런/스테이지 종료 + 잔존 적/투사체 정리.
+		self.combatPaused = false
+		self.StageActive = false
+		_GameStateManager.RunActive = false
+		local map = self:GetMap()
+		if map ~= nil and isvalid(map) then
+			local enemies = map:GetChildComponentsByTypeName("script.EnemyHealth", true)
+			for _, compAny in ipairs(enemies) do
+				---@type EnemyHealth
+				local comp = compAny
+				if isvalid(comp.Entity) then comp.Entity:Destroy() end
+			end
+			local projs = map:GetChildComponentsByTypeName("script.Projectile", true)
+			for _, compAny in ipairs(projs) do
+				---@type Projectile
+				local comp = compAny
+				if isvalid(comp.Entity) then comp.Entity:Destroy() end
+			end
+		end
+		log("[StageManager] run abandoned -> lobby")
 	end
 
 	@ExecSpace("ServerOnly")
