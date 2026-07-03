@@ -127,9 +127,9 @@ script PlayerItems extends Component
 					---@type Projectile
 					local comp = proj:GetComponent("script.Projectile")
 					if comp ~= nil then
-						comp:Launch(dir.x, dir.y, _GameConstants.ProjectileSpeed, _GameStateManager.AttackStat * _GameConstants.DmgRockPct, false)
+						comp:Launch(dir.x, dir.y, _GameConstants.ProjectileSpeed, _GameStateManager.AttackStat * _PlayerConfig.DmgRockPct, false)
 						comp.OwnerSide = "player"
-						log("[PlayerItems] ROCK thrown (dmg=" .. tostring(_GameStateManager.AttackStat * _GameConstants.DmgRockPct) .. ")")
+						log("[PlayerItems] ROCK thrown (dmg=" .. tostring(_GameStateManager.AttackStat * _PlayerConfig.DmgRockPct) .. ")")
 					end
 				end
 			end

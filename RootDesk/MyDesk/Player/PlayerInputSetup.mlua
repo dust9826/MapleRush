@@ -3,19 +3,54 @@ script PlayerInputSetup extends Component
 
 	@ExecSpace("ClientOnly")
 	method void OnBeginPlay()
-		-- WASD 이동 키 매핑 (기존 화살표 액션을 복사). Space 점프는 기본 제공.
+		-- 이동 키를 _PlayerConfig 설정값으로 매핑(기존 화살표 액션 재사용) + 아래점프 삭제(EnableDownJump=false).
 		if self.Entity ~= _UserService.LocalPlayer then return end
 		local pc = self.Entity.PlayerControllerComponent
 		if pc == nil then return end
+		-- 화살표에 매핑된 엔진 기본 액션 이름을 그대로 가져와 설정 키에 재부여.
 		local leftAction = pc:GetActionName(KeyboardKey.LeftArrow)
 		local rightAction = pc:GetActionName(KeyboardKey.RightArrow)
 		local upAction = pc:GetActionName(KeyboardKey.UpArrow)
 		local downAction = pc:GetActionName(KeyboardKey.DownArrow)
-		if leftAction ~= nil and leftAction ~= "" then pc:SetActionKey(KeyboardKey.A, leftAction) end
-		if rightAction ~= nil and rightAction ~= "" then pc:SetActionKey(KeyboardKey.D, rightAction) end
-		if upAction ~= nil and upAction ~= "" then pc:SetActionKey(KeyboardKey.W, upAction) end
-		if downAction ~= nil and downAction ~= "" then pc:SetActionKey(KeyboardKey.S, downAction) end
-		log("[PlayerInputSetup] WASD mapped (L=" .. tostring(leftAction) .. " R=" .. tostring(rightAction) .. " U=" .. tostring(upAction) .. " D=" .. tostring(downAction) .. ")")
+		self:MapKey(pc, _PlayerConfig.KeyLeft, leftAction)
+		self:MapKey(pc, _PlayerConfig.KeyRight, rightAction)
+		self:MapKey(pc, _PlayerConfig.KeyUp, upAction)
+		if _PlayerConfig.EnableDownJump then
+			self:MapKey(pc, _PlayerConfig.KeyDown, downAction)
+		else
+			-- 아래점프 삭제: down 이동 액션(MoveDown)을 전 키에서 제거 → down 입력이 사라져 down+jump 콤보 성립 불가.
+			-- (DefaultPlayer는 S=MoveDown 기본 매핑. 특정 키 하나만 지우면 다른 키의 MoveDown이 남아 실패 → 액션명으로 전부 제거.)
+			pc:RemoveAllActionKeyByActionName("MoveDown")
+			log("[PlayerInputSetup] down-jump DISABLED (MoveDown removed; S=" .. tostring(pc:GetActionName(KeyboardKey.S)) .. ")")
+		end
+		log("[PlayerInputSetup] keys mapped (L=" .. _PlayerConfig.KeyLeft .. " R=" .. _PlayerConfig.KeyRight .. " U=" .. _PlayerConfig.KeyUp .. " D=" .. _PlayerConfig.KeyDown .. " downJump=" .. tostring(_PlayerConfig.EnableDownJump) .. ")")
+	end
+
+	@ExecSpace("ClientOnly")
+	method void MapKey(PlayerControllerComponent pc, string keyName, string actionName)
+		-- 설정 키 문자열을 KeyboardKey로 변환해 액션에 매핑. 액션/키 미유효 시 무시(경고).
+		if actionName == nil or actionName == "" then return end
+		local key = self:ResolveKey(keyName)
+		if key == KeyboardKey.None then
+			log_warning("[PlayerInputSetup] unknown key '" .. tostring(keyName) .. "' — mapping skipped")
+			return
+		end
+		pc:SetActionKey(key, actionName)
+	end
+
+	@ExecSpace("ClientOnly")
+	method any ResolveKey(string keyName)
+		-- 지원 키 문자(단일 알파벳 A~Z) → KeyboardKey. 미지원이면 KeyboardKey.None.
+		local letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+		local map = {}
+		local i = 1
+		while i <= 26 do
+			map[string.sub(letters, i, i)] = KeyboardKey.CastFrom(96 + i)
+			i = i + 1
+		end
+		local k = map[keyName]
+		if k == nil then return KeyboardKey.None end
+		return k
 	end
 
 end

@@ -62,8 +62,8 @@ script PlayerAbility extends Component
 		if self.AbilityId == "" or self.UsesLeft <= 0 then return end
 		self.UsesLeft -= 1
 		if self.AbilityId == "invincible" then
-			self.abilityInvincibleUntil = _WallClock:ServerNow() + _GameConstants.InvincibleAbilityDuration
-			log("[PlayerAbility] INVINCIBLE for " .. tostring(_GameConstants.InvincibleAbilityDuration) .. "s (left=" .. tostring(self.UsesLeft) .. ")")
+			self.abilityInvincibleUntil = _WallClock:ServerNow() + _PlayerConfig.InvincibleAbilityDuration
+			log("[PlayerAbility] INVINCIBLE for " .. tostring(_PlayerConfig.InvincibleAbilityDuration) .. "s (left=" .. tostring(self.UsesLeft) .. ")")
 		elseif self.AbilityId == "clearProjectiles" then
 			local map = self.Entity.CurrentMap
 			local removed = 0
@@ -93,7 +93,7 @@ script PlayerAbility extends Component
 		-- [치트] 능력 즉시 장착 + 사용횟수 충전 (획득 플로우 전 테스트용; 숫자키 7/8). 서버 가드: CheatMode일 때만.
 		if _GameConstants.CheatMode == false then return end
 		self.AbilityId = abilityId
-		self.UsesLeft = _GameConstants.AbilityUsesNormal
+		self.UsesLeft = _PlayerConfig.AbilityUsesNormal
 		log("[PlayerAbility] CHEAT grant: " .. abilityId .. " uses=" .. tostring(self.UsesLeft))
 	end
 
@@ -108,9 +108,9 @@ script PlayerAbility extends Component
 	method void ResetUses(string stageType)
 		-- 스테이지 진입 시 사용 횟수 초기화 (일반 1 / 보스 2).
 		if stageType == "boss" then
-			self.UsesLeft = _GameConstants.AbilityUsesBoss
+			self.UsesLeft = _PlayerConfig.AbilityUsesBoss
 		else
-			self.UsesLeft = _GameConstants.AbilityUsesNormal
+			self.UsesLeft = _PlayerConfig.AbilityUsesNormal
 		end
 	end
 

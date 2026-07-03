@@ -230,7 +230,7 @@ script GizmoManager extends Logic
 		local rw = _GameConstants.DashGizmoRayWidth
 		local cw = _GameConstants.GizmoCombatWidth
 		-- 대시
-		self:BakeCircle(self.IdxRange, _GameConstants.DashDistance, Color(0.3, 0.8, 1.0, 0.95), lw)
+		self:BakeCircle(self.IdxRange, _PlayerConfig.DashDistance, Color(0.3, 0.8, 1.0, 0.95), lw)
 		-- slot 1: 플레이어 피격박스(실제 판정 PlayerHbox, green). 단위정사각 bake → 매 프레임 PlaceBoxAABB로 치수 적용.
 		self:BakeSquare(self.IdxPlayerHbox, Color(0.4, 1.0, 0.4, 0.75), cw)
 		self:BakeSegment(self.IdxRay, Color(0.2, 1.0, 0.3, 0.9), rw)

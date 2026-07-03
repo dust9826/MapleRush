@@ -38,9 +38,9 @@ script GameStateManager extends Logic
 		self.BossClears = 0
 		self.RunKills = 0
 		self.CurrentFloor = 1
-		self.MaxLives = _GameConstants.BaseMaxLives + _MetaProgression:GetBonusLives()
+		self.MaxLives = _PlayerConfig.BaseMaxLives + _MetaProgression:GetBonusLives()
 		self.CurrentLives = self.MaxLives
-		self.AttackStat = _GameConstants.BaseAttack + _MetaProgression:GetBonusAttack()
+		self.AttackStat = _PlayerConfig.BaseAttack + _MetaProgression:GetBonusAttack()
 		self.RunActive = true
 		log("[GameStateManager] run started: lives=" .. tostring(self.CurrentLives) .. " ATK=" .. tostring(self.AttackStat) .. " (meta bonus lives+" .. tostring(_MetaProgression:GetBonusLives()) .. " atk+" .. tostring(_MetaProgression:GetBonusAttack()) .. ")")
 	end
