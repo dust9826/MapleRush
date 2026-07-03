@@ -68,7 +68,7 @@ script EnemyMelee extends Component
 		-- 근거리 적 AI: 감지(3) → 추격 → 공격(1, 텔레그래프 0.6s) → 쿨다운. 슬로우 배율 적용, 낭떠러지 정지.
 		---@type EnemyHealth
 		local hp = self.Entity:GetComponent("script.EnemyHealth")
-		if hp ~= nil and hp.IsDead == true then self:ClearTelegraph() self:PlayClip(self:AnimClip("die", self.standClip)) return end
+		if hp ~= nil and hp.IsDead == true then self:ClearTelegraph() self:StopMove() self:PlayClip(self:AnimClip("die", self.standClip)) return end
 		if _StageManager:IsGraceActive() then
 			self:ClearTelegraph()
 			self:StopMove()

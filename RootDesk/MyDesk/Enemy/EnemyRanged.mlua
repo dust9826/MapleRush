@@ -76,7 +76,7 @@ script EnemyRanged extends Component
 		-- 원거리 적 AI: 감지(5) 내 플레이어를 향해 이동하며 조준 1s → 발사 1발 → 쿨 1s 반복. 감지 이탈 시 조준 취소.
 		---@type EnemyHealth
 		local hp = self.Entity:GetComponent("script.EnemyHealth")
-		if hp ~= nil and hp.IsDead == true then self:ClearTelegraph() self.IsAiming = false self.aimLocked = false self:PlayClip(self:AnimClip("die", self.standClip)) return end
+		if hp ~= nil and hp.IsDead == true then self:ClearTelegraph() self.IsAiming = false self.aimLocked = false self:StopMove() self:PlayClip(self:AnimClip("die", self.standClip)) return end
 		if _StageManager:IsGraceActive() then
 			self:ClearTelegraph()
 			self.IsAiming = false

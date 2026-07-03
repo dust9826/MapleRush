@@ -66,7 +66,7 @@ script EnemyChaser extends Component
 		-- 접촉 데미지 추적 AI: DetectRange 안이면 플레이어 추격 → 몸 히트박스가 플레이어와 겹치면 RequestHit.
 		---@type EnemyHealth
 		local hp = self.Entity:GetComponent("script.EnemyHealth")
-		if hp ~= nil and hp.IsDead == true then self:PlayClip(self:AnimClip("die", self.standClip)) return end
+		if hp ~= nil and hp.IsDead == true then self:StopMove() self:PlayClip(self:AnimClip("die", self.standClip)) return end
 		if _StageManager:IsGraceActive() then
 			self:StopMove()
 			self:PlayClip(self.standClip)
