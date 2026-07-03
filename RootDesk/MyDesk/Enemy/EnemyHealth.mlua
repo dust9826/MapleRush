@@ -37,7 +37,7 @@ script EnemyHealth extends Component
 		-- 서버 권위 데미지 적용. 보스는 그로기 게이지 충전 (일반공격=데미지량 / 반사 명중=(ATK×100%)×2). HP 0 이하 시 사망.
 		if self.IsDead then return end
 		-- 피격 스턴/모션 윈도우 개시(AI가 공격 중단 + hit 클립). 사망 시엔 die 클립이 우선.
-		self.hitClipUntil = _UtilLogic.ServerElapsedSeconds + self.HitStunDuration
+		self.hitClipUntil = _WallClock:ServerNow() + self.HitStunDuration
 		self.HP = self.HP - amount
 		log("[EnemyHealth] " .. self.Entity.Name .. " took " .. tostring(amount) .. " dmg from " .. source .. " -> HP=" .. tostring(self.HP))
 		self:PlayHitEffect()

@@ -62,7 +62,7 @@ script PlayerAbility extends Component
 		if self.AbilityId == "" or self.UsesLeft <= 0 then return end
 		self.UsesLeft -= 1
 		if self.AbilityId == "invincible" then
-			self.abilityInvincibleUntil = _UtilLogic.ServerElapsedSeconds + _GameConstants.InvincibleAbilityDuration
+			self.abilityInvincibleUntil = _WallClock:ServerNow() + _GameConstants.InvincibleAbilityDuration
 			log("[PlayerAbility] INVINCIBLE for " .. tostring(_GameConstants.InvincibleAbilityDuration) .. "s (left=" .. tostring(self.UsesLeft) .. ")")
 		elseif self.AbilityId == "clearProjectiles" then
 			local map = self.Entity.CurrentMap
@@ -85,7 +85,7 @@ script PlayerAbility extends Component
 	@ExecSpace("ServerOnly")
 	method boolean IsAbilityInvincible()
 		-- 능력 무적 판정 (PlayerHit이 호출).
-		return _UtilLogic.ServerElapsedSeconds < self.abilityInvincibleUntil
+		return _WallClock:ServerNow() < self.abilityInvincibleUntil
 	end
 
 	@ExecSpace("Server")

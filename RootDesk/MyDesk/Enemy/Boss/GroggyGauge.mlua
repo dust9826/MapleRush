@@ -29,8 +29,10 @@ script GroggyGauge extends Component
 	@ExecSpace("ServerOnly")
 	method void OnUpdate(number delta)
 		-- 자동 감소 초당 2% (서버 실시간 — 슬로우 무관) / 그로기 지속 3초 처리. 섬광탄 시 감소만 정지.
+		-- 일시정지: 게이지 자동감소(delta 기반)를 프리즈. 그로기 지속(groggyEndAt)은 게임 시계(WallClock)로 판정하므로 자동 정지 — 여기선 early-return으로 감소만 막으면 됨.
+		if _StageManager:IsCombatPaused() then return end
 		if self.IsGroggy then
-			if _UtilLogic.ServerElapsedSeconds >= self.groggyEndAt then
+			if _WallClock:ServerNow() >= self.groggyEndAt then
 				self.IsGroggy = false
 				self.Gauge = 0
 				log("[GroggyGauge] groggy END — gauge reset")
@@ -51,7 +53,7 @@ script GroggyGauge extends Component
 		log("[GroggyGauge] +" .. tostring(amount) .. " (" .. source .. ") -> " .. string.format("%.1f", self.Gauge) .. "/" .. tostring(self.GaugeMax))
 		if self.Gauge >= self.GaugeMax - 0.5 then
 			self.IsGroggy = true
-			self.groggyEndAt = _UtilLogic.ServerElapsedSeconds + _GameConstants.GroggyDuration
+			self.groggyEndAt = _WallClock:ServerNow() + _GameConstants.GroggyDuration
 			self:PlayGroggySfx()
 			log("[GroggyGauge] *** GROGGY TRIGGERED *** (" .. tostring(_GameConstants.GroggyDuration) .. "s)")
 		end

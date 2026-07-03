@@ -1,34 +1,80 @@
 @Logic
 script WallClock extends Logic
 
+	-- 일시정지 가능한 "게임 시계". 실제 경과시간에서 '정지 중 누적시간'을 빼서 반환한다.
+	-- → 게임플레이 타이머가 이 시계를 쓰면 ESC 일시정지 동안 자동으로 얼어붙고, 재개 시 멈춘 지점부터 이어간다.
+	-- 클라/서버 각 Logic 인스턴스가 자기 쪽 정지상태를 관리 (클라=SetClientPaused / 서버=SetServerPaused).
+	-- ⚠ '동작 정지'(적이 안 움직이게 = combatPaused)와는 별개 — 여기선 '시간이 안 흐르게'만 담당.
+	-- 정지 중에도 원본 ElapsedSeconds는 흐르므로, 누적을 매 프레임 더하지 않고 '읽는 순간' 계산한다(OnUpdate 불필요).
+
+	@HideFromInspector property boolean clientPaused = false
+	@HideFromInspector property number clientPauseStart = 0.0
+	@HideFromInspector property number clientPausedAccum = 0.0
+
+	@HideFromInspector property boolean serverPaused = false
+	@HideFromInspector property number serverPauseStart = 0.0
+	@HideFromInspector property number serverPausedAccum = 0.0
+
+	@ExecSpace("ClientOnly")
+	method void SetClientPaused(boolean paused)
+		-- 클라 게임시계 정지/재개 (PauseController). 재개 시 정지 구간을 누적에 합산.
+		if paused == self.clientPaused then return end
+		local raw = _UtilLogic.ElapsedSeconds
+		if paused then
+			self.clientPauseStart = raw
+		else
+			self.clientPausedAccum = self.clientPausedAccum + (raw - self.clientPauseStart)
+		end
+		self.clientPaused = paused
+	end
+
+	@ExecSpace("ServerOnly")
+	method void SetServerPaused(boolean paused)
+		-- 서버 게임시계 정지/재개 (StageManager.RequestSetPaused). 재개 시 정지 구간을 누적에 합산.
+		if paused == self.serverPaused then return end
+		local raw = _UtilLogic.ServerElapsedSeconds
+		if paused then
+			self.serverPauseStart = raw
+		else
+			self.serverPausedAccum = self.serverPausedAccum + (raw - self.serverPauseStart)
+		end
+		self.serverPaused = paused
+	end
+
 	method number Now()
-		-- 실제 시간(Wall-clock) 현재값. SetClientTimeScale의 영향을 받지 않음 (C-1 실측).
-		return _UtilLogic.ElapsedSeconds
+		-- 클라 게임시간(정지 제외). 정지 중이면 정지 시작 시점 값에서 멈춘다.
+		local raw = _UtilLogic.ElapsedSeconds
+		local acc = self.clientPausedAccum
+		if self.clientPaused then acc = acc + (raw - self.clientPauseStart) end
+		return raw - acc
 	end
 
 	method number ServerNow()
-		-- 서버 기준 실제 시간. 그로기 게이지 등 서버 권위 타이머에 사용 (C-5).
-		return _UtilLogic.ServerElapsedSeconds
+		-- 서버 기준 게임시간(정지 제외). 그로기·패링·쿨다운 등 서버 권위 타이머용.
+		local raw = _UtilLogic.ServerElapsedSeconds
+		local acc = self.serverPausedAccum
+		if self.serverPaused then acc = acc + (raw - self.serverPauseStart) end
+		return raw - acc
 	end
 
 	method number Elapsed(number startTime)
-		-- startTime 스냅샷 이후 경과한 실제 시간(초).
-		return _UtilLogic.ElapsedSeconds - startTime
+		-- startTime(게임시간 스냅샷) 이후 경과한 게임시간(초).
+		return self:Now() - startTime
 	end
 
 	method boolean IsExpired(number startTime, number duration)
-		-- startTime 스냅샷 기준 duration(초)이 경과했는지. ⛔ delta 누산 금지 — 스냅샷 차분만 사용.
-		return _UtilLogic.ElapsedSeconds - startTime >= duration
+		-- 게임시간 기준 만료 판정. ⛔ delta 누산 금지 — 스냅샷 차분만 사용.
+		return self:Now() - startTime >= duration
 	end
 
 	method number ServerElapsed(number startTime)
-		-- 서버 시간 기준 경과 시간(초).
-		return _UtilLogic.ServerElapsedSeconds - startTime
+		-- 서버 게임시간 기준 경과 시간(초).
+		return self:ServerNow() - startTime
 	end
 
 	method boolean IsServerExpired(number startTime, number duration)
-		-- 서버 시간 기준 만료 판정.
-		return _UtilLogic.ServerElapsedSeconds - startTime >= duration
+		-- 서버 게임시간 기준 만료 판정.
+		return self:ServerNow() - startTime >= duration
 	end
 
 end

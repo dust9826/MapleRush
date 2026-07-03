@@ -32,7 +32,7 @@ script BattlefieldFx extends Logic
 	method void ActivateSmoke(Vector2 center, number duration)
 		-- 연막탄: 생성 위치 고정 은신 영역. 일반 적 감지/조준 해제 (보스 무시 — Phase 6).
 		self.smokeCenter = center
-		self.smokeUntil = _UtilLogic.ServerElapsedSeconds + duration
+		self.smokeUntil = _WallClock:ServerNow() + duration
 		self:ClientSmokeFx(center.x, center.y, duration)
 		log("[BattlefieldFx] SMOKE active for " .. tostring(duration) .. "s at (" .. string.format("%.1f", center.x) .. "," .. string.format("%.1f", center.y) .. ")")
 	end
@@ -59,14 +59,14 @@ script BattlefieldFx extends Logic
 	@ExecSpace("ServerOnly")
 	method boolean IsSmokeActive()
 		-- 연막 은신 활성 여부 (시간만; 전역). 위치 기반 판정은 IsSmokeHiding 사용.
-		return _UtilLogic.ServerElapsedSeconds < self.smokeUntil
+		return _WallClock:ServerNow() < self.smokeUntil
 	end
 
 	@ExecSpace("ServerOnly")
 	method boolean IsSmokeHiding(Vector2 pos)
 		-- 공간 은신 판정: 연막 활성 + pos가 연막 중심 기준 사각형(±SmokeBoxHalfW/H) 안이면 은신.
 		-- 플레이어가 연막 구역 안에 있을 때만 일반 적이 감지/조준 해제 — 구역 밖으로 나가면 다시 들킴.
-		if _UtilLogic.ServerElapsedSeconds >= self.smokeUntil then return false end
+		if _WallClock:ServerNow() >= self.smokeUntil then return false end
 		local dx = pos.x - self.smokeCenter.x
 		if dx < 0 then dx = -dx end
 		if dx > _GameConstants.SmokeBoxHalfW then return false end
@@ -80,8 +80,8 @@ script BattlefieldFx extends Logic
 	@ExecSpace("ServerOnly")
 	method void ActivateStun(number duration)
 		-- 섬광탄: 일반 적 전체 기절 (이동·공격 정지). 보스는 기절 면역 — 대신 그로기 감소만 5초 정지 (충전 가능).
-		self.stunUntil = _UtilLogic.ServerElapsedSeconds + duration
-		self.groggyDecayPauseUntil = _UtilLogic.ServerElapsedSeconds + _GameConstants.FlashBossGroggyPause
+		self.stunUntil = _WallClock:ServerNow() + duration
+		self.groggyDecayPauseUntil = _WallClock:ServerNow() + _GameConstants.FlashBossGroggyPause
 		self:ClientFlashFx()
 		log("[BattlefieldFx] STUN active for " .. tostring(duration) .. "s (normal enemies) + boss groggy decay paused " .. tostring(_GameConstants.FlashBossGroggyPause) .. "s")
 	end
@@ -154,13 +154,13 @@ script BattlefieldFx extends Logic
 	@ExecSpace("ServerOnly")
 	method boolean IsGroggyDecayPaused()
 		-- 보스 그로기 게이지 자동 감소 정지 여부 (GroggyGauge가 폴링).
-		return _UtilLogic.ServerElapsedSeconds < self.groggyDecayPauseUntil
+		return _WallClock:ServerNow() < self.groggyDecayPauseUntil
 	end
 
 	@ExecSpace("ServerOnly")
 	method boolean IsStunActive()
 		-- 기절 활성 여부 (일반 적 AI가 폴링).
-		return _UtilLogic.ServerElapsedSeconds < self.stunUntil
+		return _WallClock:ServerNow() < self.stunUntil
 	end
 
 	@ExecSpace("ServerOnly")

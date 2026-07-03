@@ -69,6 +69,8 @@ script EnemyMelee extends Component
 		---@type EnemyHealth
 		local hp = self.Entity:GetComponent("script.EnemyHealth")
 		if hp ~= nil and hp.IsDead == true then self:ClearTelegraph() self:PlayClip(self:AnimClip("die", self.standClip)) return end
+		-- 일시정지: 프리즈만. 이동만 멈추고 aiState/pendingAttack/타이머/예고 유지 → 재개 시 진행 중 공격 이어감 (grace처럼 취소하지 않음).
+		if _StageManager:IsCombatPaused() then self:StopMove() return end
 		if _StageManager:IsGraceActive() then
 			self:ClearTelegraph()
 			self:StopMove()
@@ -83,7 +85,7 @@ script EnemyMelee extends Component
 			return
 		end
 		-- 피격(HIT) 상태: 진행 중이던 공격(windup) 취소 → 공격이 멈춘다. hit 모션 재생(없으면 stand). 윈도우 동안 이동·공격 정지.
-		if hp ~= nil and _UtilLogic.ServerElapsedSeconds < hp.hitClipUntil then
+		if hp ~= nil and _WallClock:ServerNow() < hp.hitClipUntil then
 			if self.aiState == "windup" and self.pendingAttack ~= nil then
 				if self.pendingAttack.id ~= nil then _CombatPrimitives:BroadcastCancel(self.Entity.CurrentMap, self.pendingAttack.id) end
 				self.pendingAttack.canceled = true

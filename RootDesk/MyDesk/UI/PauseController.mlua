@@ -118,6 +118,7 @@ script PauseController extends Component
 		if isvalid(self.confirmPopup) then self.confirmPopup.Enable = false end
 		if isvalid(self.pauseRoot) then self.pauseRoot.Enable = true end
 		_UtilLogic:SetClientTimeScale(0.0)
+		_WallClock:SetClientPaused(true)
 		self:FreezePlayer(true)
 		_InputRouter:SetContext("Paused")
 		_StageManager:RequestSetPaused(true)
@@ -131,6 +132,7 @@ script PauseController extends Component
 		if isvalid(self.confirmPopup) then self.confirmPopup.Enable = false end
 		if isvalid(self.pauseRoot) then self.pauseRoot.Enable = false end
 		_UtilLogic:SetClientTimeScale(1.0)
+		_WallClock:SetClientPaused(false)
 		self:FreezePlayer(false)
 		_InputRouter:SetContext("Combat")
 		_StageManager:RequestSetPaused(false)
@@ -192,6 +194,7 @@ script PauseController extends Component
 		if isvalid(self.confirmPopup) then self.confirmPopup.Enable = false end
 		if isvalid(self.pauseRoot) then self.pauseRoot.Enable = false end
 		_UtilLogic:SetClientTimeScale(1.0)
+		_WallClock:SetClientPaused(false)
 		self:FreezePlayer(false)
 		_StageManager:RequestAbandonToLobby()
 		local lobby = _EntityService:GetEntityByPath("/ui/LobbyGroup/Root")

@@ -11,7 +11,7 @@ script PlayerHit extends Component
 		-- 1피격 즉사 중앙 처리: 다중 피격 1회 / 대시 무적(i-frame) 면제 / 비전투 단계 무시.
 		if self.IsDead then return end
 		if _StageManager.StageActive == false then return end
-		local now = _UtilLogic.ServerElapsedSeconds
+		local now = _WallClock:ServerNow()
 		if now - self.lastHitServer < 0.2 then return end
 		---@type PlayerDash
 		local dash = self.Entity:GetComponent("script.PlayerDash")

@@ -67,6 +67,8 @@ script EnemyChaser extends Component
 		---@type EnemyHealth
 		local hp = self.Entity:GetComponent("script.EnemyHealth")
 		if hp ~= nil and hp.IsDead == true then self:PlayClip(self:AnimClip("die", self.standClip)) return end
+		-- 일시정지: 프리즈만 (추격 정지). 접촉 판정도 함께 멈춘다.
+		if _StageManager:IsCombatPaused() then self:StopMove() return end
 		if _StageManager:IsGraceActive() then
 			self:StopMove()
 			self:PlayClip(self.standClip)
@@ -79,7 +81,7 @@ script EnemyChaser extends Component
 			return
 		end
 		-- 피격(HIT) 경직: hit 모션 재생 + 이동·접촉 정지. (windup이 없으므로 취소할 공격은 없음)
-		if hp ~= nil and _UtilLogic.ServerElapsedSeconds < hp.hitClipUntil then
+		if hp ~= nil and _WallClock:ServerNow() < hp.hitClipUntil then
 			self:StopMove()
 			self:PlayClip(self:AnimClip("hit", self.standClip))
 			return

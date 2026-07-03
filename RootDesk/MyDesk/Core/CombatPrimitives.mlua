@@ -21,9 +21,9 @@ script CombatPrimitives extends Logic
 
 	@ExecSpace("ServerOnly")
 	method void OnUpdate(number delta)
-		-- 만료된 공격 레코드 정리 (서버, 매 프레임).
+		-- 만료된 공격 레코드 정리 (서버, 매 프레임). now=게임 시계(WallClock) → 일시정지 중엔 시간이 안 흘러 만료·판정·패링 윈도우가 자동 정지·정렬 유지.
 		if self.activeAttacks == nil then return end
-		local now = _UtilLogic.ServerElapsedSeconds
+		local now = _WallClock:ServerNow()
 		for i = #self.activeAttacks, 1, -1 do
 			if self.activeAttacks[i].expireAt < now then
 				table.remove(self.activeAttacks, i)
@@ -38,7 +38,7 @@ script CombatPrimitives extends Logic
 		-- sourceEntity: 공격 주체 적(맵/유저 산출용 — 기즈모 브로드캐스트 대상). 판정 로직엔 미사용(무손상).
 		if self.activeAttacks == nil then self.activeAttacks = {} end
 		self.nextAttackId += 1
-		local now = _UtilLogic.ServerElapsedSeconds
+		local now = _WallClock:ServerNow()
 		local rec = {
 			id = self.nextAttackId,
 			shape = "box",
@@ -108,7 +108,7 @@ script CombatPrimitives extends Logic
 		-- 평타 판정 박스와 겹치는 parryable 공격 처리: 근접 공격 무효화 / 투사체 반사(ATK×200%). 반환: 패링 수.
 		local count = 0
 		-- 근접 패링 윈도우(§1.4): 명중시점 hitAt 기준 선행 Lead·후행 Trail 안에서만 성립. now/hitAt 모두 ServerElapsedSeconds.
-		local now = _UtilLogic.ServerElapsedSeconds
+		local now = _WallClock:ServerNow()
 		local parryLead = _GameConstants.ParryWindowLead
 		local parryTrail = _GameConstants.ParryWindowTrail
 		if self.activeAttacks ~= nil then
