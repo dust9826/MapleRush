@@ -7077,11 +7077,6 @@
           "@components": [
             {
               "@type": "MOD.Core.TransformComponent",
-              "Rotation": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0
-              },
               "Position": {
                 "x": 5.1449,
                 "y": -2.5,
@@ -7091,14 +7086,13 @@
                 "x": 0.0,
                 "y": 0.0,
                 "z": 0.0,
-                "w": -1.0
+                "w": 1.0
               },
               "Scale": {
                 "x": 2.0,
                 "y": 2.0,
                 "z": 1.0
               },
-              "ZRotation": 0.0,
               "Enable": true
             },
             {
@@ -7432,11 +7426,6 @@
           "@components": [
             {
               "@type": "MOD.Core.TransformComponent",
-              "Rotation": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0
-              },
               "Position": {
                 "x": 1.1584,
                 "y": 0.18,
@@ -7446,14 +7435,13 @@
                 "x": 0.0,
                 "y": 0.0,
                 "z": 0.0,
-                "w": -1.0
+                "w": 1.0
               },
               "Scale": {
                 "x": 0.5,
                 "y": 0.5,
                 "z": 1.0
               },
-              "ZRotation": 0.0,
               "Enable": true
             },
             {
@@ -7801,6 +7789,7 @@
             {
               "@type": "script.EnemyMelee",
               "Enable": true,
+              "telegraphId": 0,
               "mapKindCache": 0
             },
             {
@@ -7928,6 +7917,7 @@
             {
               "@type": "script.EnemyMelee",
               "Enable": true,
+              "telegraphId": 0,
               "mapKindCache": 0
             },
             {
@@ -8055,6 +8045,7 @@
             {
               "@type": "script.EnemyMelee",
               "Enable": true,
+              "telegraphId": 0,
               "mapKindCache": 0
             },
             {
@@ -8186,11 +8177,6 @@
           "@components": [
             {
               "@type": "MOD.Core.TransformComponent",
-              "Rotation": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0
-              },
               "Position": {
                 "x": -38.351,
                 "y": -2.6159,
@@ -8200,18 +8186,21 @@
                 "x": 0.0,
                 "y": 0.0,
                 "z": 0.0,
-                "w": -1.0
+                "w": 1.0
               },
               "Scale": {
                 "x": 2.62814355,
                 "y": 1.29530132,
                 "z": 1.0
               },
-              "ZRotation": 0.0,
               "Enable": true
             },
             {
               "@type": "MOD.Core.TriggerComponent",
+              "BoxSize": {
+                "x": 0.5,
+                "y": 0.5
+              },
               "IsLegacy": false,
               "Enable": true
             }
@@ -8244,11 +8233,6 @@
           "@components": [
             {
               "@type": "MOD.Core.TransformComponent",
-              "Rotation": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0
-              },
               "Position": {
                 "x": -37.8061,
                 "y": -2.3775,
@@ -8258,18 +8242,21 @@
                 "x": 0.0,
                 "y": 0.0,
                 "z": 0.0,
-                "w": -1.0
+                "w": 1.0
               },
               "Scale": {
                 "x": 1.21884215,
                 "y": 2.78194261,
                 "z": 1.0
               },
-              "ZRotation": 0.0,
               "Enable": true
             },
             {
               "@type": "MOD.Core.TriggerComponent",
+              "BoxSize": {
+                "x": 0.5,
+                "y": 0.5
+              },
               "IsLegacy": false,
               "Enable": true
             }
@@ -8302,11 +8289,6 @@
           "@components": [
             {
               "@type": "MOD.Core.TransformComponent",
-              "Rotation": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0
-              },
               "Position": {
                 "x": -31.7989,
                 "y": -1.827,
@@ -8316,18 +8298,21 @@
                 "x": 0.0,
                 "y": 0.0,
                 "z": 0.0,
-                "w": -1.0
+                "w": 1.0
               },
               "Scale": {
                 "x": 2.40155983,
                 "y": 0.5404261,
                 "z": 1.0
               },
-              "ZRotation": 0.0,
               "Enable": true
             },
             {
               "@type": "MOD.Core.TriggerComponent",
+              "BoxSize": {
+                "x": 0.5,
+                "y": 0.5
+              },
               "IsLegacy": false,
               "Enable": true
             }
@@ -8373,8 +8358,8 @@
               "QuaternionRotation": {
                 "x": 0.0,
                 "y": 0.0,
-                "z": -0.471788943,
-                "w": 0.881711543
+                "z": 0.471789151,
+                "w": -0.8817114
               },
               "Scale": {
                 "x": 0.7946124,
@@ -8386,6 +8371,10 @@
             },
             {
               "@type": "MOD.Core.TriggerComponent",
+              "BoxSize": {
+                "x": 0.5,
+                "y": 0.5
+              },
               "IsLegacy": false,
               "Enable": true
             }
@@ -8418,11 +8407,6 @@
           "@components": [
             {
               "@type": "MOD.Core.TransformComponent",
-              "Rotation": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0
-              },
               "Position": {
                 "x": -31.4993,
                 "y": -2.3746,
@@ -8432,18 +8416,21 @@
                 "x": 0.0,
                 "y": 0.0,
                 "z": 0.0,
-                "w": -1.0
+                "w": 1.0
               },
               "Scale": {
                 "x": 1.21884215,
                 "y": 2.78194261,
                 "z": 1.0
               },
-              "ZRotation": 0.0,
               "Enable": true
             },
             {
               "@type": "MOD.Core.TriggerComponent",
+              "BoxSize": {
+                "x": 0.5,
+                "y": 0.5
+              },
               "IsLegacy": false,
               "Enable": true
             }
@@ -8476,11 +8463,6 @@
           "@components": [
             {
               "@type": "MOD.Core.TransformComponent",
-              "Rotation": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0
-              },
               "Position": {
                 "x": -21.6054,
                 "y": -2.5866,
@@ -8490,18 +8472,21 @@
                 "x": 0.0,
                 "y": 0.0,
                 "z": 0.0,
-                "w": -1.0
+                "w": 1.0
               },
               "Scale": {
                 "x": 1.21884215,
                 "y": 1.21884215,
                 "z": 1.0
               },
-              "ZRotation": 0.0,
               "Enable": true
             },
             {
               "@type": "MOD.Core.TriggerComponent",
+              "BoxSize": {
+                "x": 0.5,
+                "y": 0.5
+              },
               "IsLegacy": false,
               "Enable": true
             }
@@ -8534,11 +8519,6 @@
           "@components": [
             {
               "@type": "MOD.Core.TransformComponent",
-              "Rotation": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0
-              },
               "Position": {
                 "x": -17.9989,
                 "y": -2.5864,
@@ -8548,18 +8528,21 @@
                 "x": 0.0,
                 "y": 0.0,
                 "z": 0.0,
-                "w": -1.0
+                "w": 1.0
               },
               "Scale": {
                 "x": 1.21884215,
                 "y": 1.21884215,
                 "z": 1.0
               },
-              "ZRotation": 0.0,
               "Enable": true
             },
             {
               "@type": "MOD.Core.TriggerComponent",
+              "BoxSize": {
+                "x": 0.5,
+                "y": 0.5
+              },
               "IsLegacy": false,
               "Enable": true
             }
@@ -8592,11 +8575,6 @@
           "@components": [
             {
               "@type": "MOD.Core.TransformComponent",
-              "Rotation": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0
-              },
               "Position": {
                 "x": -10.7337,
                 "y": -2.3527,
@@ -8606,18 +8584,21 @@
                 "x": 0.0,
                 "y": 0.0,
                 "z": 0.0,
-                "w": -1.0
+                "w": 1.0
               },
               "Scale": {
                 "x": 0.9482802,
                 "y": 2.6432333,
                 "z": 1.0
               },
-              "ZRotation": 0.0,
               "Enable": true
             },
             {
               "@type": "MOD.Core.TriggerComponent",
+              "BoxSize": {
+                "x": 0.5,
+                "y": 0.5
+              },
               "IsLegacy": false,
               "Enable": true
             }
@@ -8663,8 +8644,8 @@
               "QuaternionRotation": {
                 "x": 0.0,
                 "y": 0.0,
-                "z": -0.287617177,
-                "w": -0.957745433
+                "z": 0.287617177,
+                "w": 0.957745433
               },
               "Scale": {
                 "x": 2.2377367,
@@ -8676,6 +8657,10 @@
             },
             {
               "@type": "MOD.Core.TriggerComponent",
+              "BoxSize": {
+                "x": 0.5,
+                "y": 0.5
+              },
               "IsLegacy": false,
               "Enable": true
             }
@@ -8708,11 +8693,6 @@
           "@components": [
             {
               "@type": "MOD.Core.TransformComponent",
-              "Rotation": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0
-              },
               "Position": {
                 "x": -12.1074,
                 "y": -2.4783,
@@ -8722,18 +8702,21 @@
                 "x": 0.0,
                 "y": 0.0,
                 "z": 0.0,
-                "w": -1.0
+                "w": 1.0
               },
               "Scale": {
                 "x": 1.97063625,
                 "y": 0.7458518,
                 "z": 1.0
               },
-              "ZRotation": 0.0,
               "Enable": true
             },
             {
               "@type": "MOD.Core.TriggerComponent",
+              "BoxSize": {
+                "x": 0.5,
+                "y": 0.5
+              },
               "IsLegacy": false,
               "Enable": true
             }
@@ -8766,11 +8749,6 @@
           "@components": [
             {
               "@type": "MOD.Core.TransformComponent",
-              "Rotation": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0
-              },
               "Position": {
                 "x": -10.3662,
                 "y": -2.4894,
@@ -8780,18 +8758,21 @@
                 "x": 0.0,
                 "y": 0.0,
                 "z": 0.0,
-                "w": -1.0
+                "w": 1.0
               },
               "Scale": {
                 "x": 1.97063625,
                 "y": 0.7458518,
                 "z": 1.0
               },
-              "ZRotation": 0.0,
               "Enable": true
             },
             {
               "@type": "MOD.Core.TriggerComponent",
+              "BoxSize": {
+                "x": 0.5,
+                "y": 0.5
+              },
               "IsLegacy": false,
               "Enable": true
             }
@@ -8837,8 +8818,8 @@
               "QuaternionRotation": {
                 "x": 0.0,
                 "y": 0.0,
-                "z": -0.2857296,
-                "w": 0.9583103
+                "z": 0.2857298,
+                "w": -0.958310246
               },
               "Scale": {
                 "x": 2.2377367,
@@ -8850,6 +8831,10 @@
             },
             {
               "@type": "MOD.Core.TriggerComponent",
+              "BoxSize": {
+                "x": 0.5,
+                "y": 0.5
+              },
               "IsLegacy": false,
               "Enable": true
             }
@@ -8882,11 +8867,6 @@
           "@components": [
             {
               "@type": "MOD.Core.TransformComponent",
-              "Rotation": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0
-              },
               "Position": {
                 "x": -11.2483,
                 "y": -1.8617,
@@ -8896,18 +8876,21 @@
                 "x": 0.0,
                 "y": 0.0,
                 "z": 0.0,
-                "w": -1.0
+                "w": 1.0
               },
               "Scale": {
                 "x": 3.01620579,
                 "y": 0.7458518,
                 "z": 1.0
               },
-              "ZRotation": 0.0,
               "Enable": true
             },
             {
               "@type": "MOD.Core.TriggerComponent",
+              "BoxSize": {
+                "x": 0.5,
+                "y": 0.5
+              },
               "IsLegacy": false,
               "Enable": true
             }
@@ -8940,11 +8923,6 @@
           "@components": [
             {
               "@type": "MOD.Core.TransformComponent",
-              "Rotation": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0
-              },
               "Position": {
                 "x": -1.8048,
                 "y": -2.5866,
@@ -8954,18 +8932,21 @@
                 "x": 0.0,
                 "y": 0.0,
                 "z": 0.0,
-                "w": -1.0
+                "w": 1.0
               },
               "Scale": {
                 "x": 1.21884215,
                 "y": 1.21884215,
                 "z": 1.0
               },
-              "ZRotation": 0.0,
               "Enable": true
             },
             {
               "@type": "MOD.Core.TriggerComponent",
+              "BoxSize": {
+                "x": 0.5,
+                "y": 0.5
+              },
               "IsLegacy": false,
               "Enable": true
             }
@@ -8998,11 +8979,6 @@
           "@components": [
             {
               "@type": "MOD.Core.TransformComponent",
-              "Rotation": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0
-              },
               "Position": {
                 "x": 3.5967,
                 "y": -2.5866,
@@ -9012,18 +8988,21 @@
                 "x": 0.0,
                 "y": 0.0,
                 "z": 0.0,
-                "w": -1.0
+                "w": 1.0
               },
               "Scale": {
                 "x": 1.21884215,
                 "y": 1.21884215,
                 "z": 1.0
               },
-              "ZRotation": 0.0,
               "Enable": true
             },
             {
               "@type": "MOD.Core.TriggerComponent",
+              "BoxSize": {
+                "x": 0.5,
+                "y": 0.5
+              },
               "IsLegacy": false,
               "Enable": true
             }
@@ -9056,11 +9035,6 @@
           "@components": [
             {
               "@type": "MOD.Core.TransformComponent",
-              "Rotation": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0
-              },
               "Position": {
                 "x": 10.7951,
                 "y": -2.5877,
@@ -9070,18 +9044,21 @@
                 "x": 0.0,
                 "y": 0.0,
                 "z": 0.0,
-                "w": -1.0
+                "w": 1.0
               },
               "Scale": {
                 "x": 1.21884215,
                 "y": 1.21884215,
                 "z": 1.0
               },
-              "ZRotation": 0.0,
               "Enable": true
             },
             {
               "@type": "MOD.Core.TriggerComponent",
+              "BoxSize": {
+                "x": 0.5,
+                "y": 0.5
+              },
               "IsLegacy": false,
               "Enable": true
             }
@@ -9114,11 +9091,6 @@
           "@components": [
             {
               "@type": "MOD.Core.TransformComponent",
-              "Rotation": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0
-              },
               "Position": {
                 "x": 15.2976,
                 "y": -2.5966,
@@ -9128,18 +9100,21 @@
                 "x": 0.0,
                 "y": 0.0,
                 "z": 0.0,
-                "w": -1.0
+                "w": 1.0
               },
               "Scale": {
                 "x": 1.21884215,
                 "y": 1.21884215,
                 "z": 1.0
               },
-              "ZRotation": 0.0,
               "Enable": true
             },
             {
               "@type": "MOD.Core.TriggerComponent",
+              "BoxSize": {
+                "x": 0.5,
+                "y": 0.5
+              },
               "IsLegacy": false,
               "Enable": true
             }
@@ -9172,11 +9147,6 @@
           "@components": [
             {
               "@type": "MOD.Core.TransformComponent",
-              "Rotation": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0
-              },
               "Position": {
                 "x": -11.7749,
                 "y": -2.3586,
@@ -9186,18 +9156,21 @@
                 "x": 0.0,
                 "y": 0.0,
                 "z": 0.0,
-                "w": -1.0
+                "w": 1.0
               },
               "Scale": {
                 "x": 0.9482802,
                 "y": 2.6432333,
                 "z": 1.0
               },
-              "ZRotation": 0.0,
               "Enable": true
             },
             {
               "@type": "MOD.Core.TriggerComponent",
+              "BoxSize": {
+                "x": 0.5,
+                "y": 0.5
+              },
               "IsLegacy": false,
               "Enable": true
             }
@@ -9230,11 +9203,6 @@
           "@components": [
             {
               "@type": "MOD.Core.TransformComponent",
-              "Rotation": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0
-              },
               "Position": {
                 "x": 15.3069,
                 "y": 5.5333,
@@ -9244,18 +9212,21 @@
                 "x": 0.0,
                 "y": 0.0,
                 "z": 0.0,
-                "w": -1.0
+                "w": 1.0
               },
               "Scale": {
                 "x": 1.22135353,
                 "y": 31.4314251,
                 "z": 1.0
               },
-              "ZRotation": 0.0,
               "Enable": true
             },
             {
               "@type": "MOD.Core.TriggerComponent",
+              "BoxSize": {
+                "x": 0.5,
+                "y": 0.5
+              },
               "IsLegacy": false,
               "Enable": true
             }
@@ -9288,11 +9259,6 @@
           "@components": [
             {
               "@type": "MOD.Core.TransformComponent",
-              "Rotation": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0
-              },
               "Position": {
                 "x": -47.3991,
                 "y": 4.4628,
@@ -9302,18 +9268,21 @@
                 "x": 0.0,
                 "y": 0.0,
                 "z": 0.0,
-                "w": -1.0
+                "w": 1.0
               },
               "Scale": {
                 "x": 1.22135353,
                 "y": 31.4314251,
                 "z": 1.0
               },
-              "ZRotation": 0.0,
               "Enable": true
             },
             {
               "@type": "MOD.Core.TriggerComponent",
+              "BoxSize": {
+                "x": 0.5,
+                "y": 0.5
+              },
               "IsLegacy": false,
               "Enable": true
             }
@@ -9346,11 +9315,6 @@
           "@components": [
             {
               "@type": "MOD.Core.TransformComponent",
-              "Rotation": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0
-              },
               "Position": {
                 "x": -15.7223,
                 "y": -3.1419,
@@ -9360,18 +9324,21 @@
                 "x": 0.0,
                 "y": 0.0,
                 "z": 0.0,
-                "w": -1.0
+                "w": 1.0
               },
               "Scale": {
                 "x": 125.299568,
                 "y": 1.0,
                 "z": 1.0
               },
-              "ZRotation": 0.0,
               "Enable": true
             },
             {
               "@type": "MOD.Core.TriggerComponent",
+              "BoxSize": {
+                "x": 0.5,
+                "y": 0.5
+              },
               "IsLegacy": false,
               "Enable": true
             }
