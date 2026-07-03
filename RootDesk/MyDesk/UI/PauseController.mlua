@@ -158,6 +158,7 @@ script PauseController extends Component
 		local lobby = _EntityService:GetEntityByPath("/ui/LobbyGroup/Root")
 		if lobby ~= nil then lobby.Enable = true end
 		_InputRouter:SetContext("Lobby")
+		_SoundManager:PlayBGMKey("bgm_title")
 		log("[PauseController] -> title (run abandoned)")
 	end
 

@@ -27,6 +27,12 @@ script Spring extends TriggerComponent
 					vx = vx - 1
 				end
 				rigidbody:SetForce(Vector2(vx, 15))
+
+				-- 점프대 사용 효과음(SoundTable: sfx_jumppad). 트리거는 서버/클라 양쪽 발화하므로
+				-- 클라에서 튕긴 대상이 로컬 플레이어일 때만 1회 재생(PlaySFXKey는 ClientOnly).
+				if self:IsClient() and player == _UserService.LocalPlayer then
+					_SoundManager:PlaySFXKey("sfx_jumppad")
+				end
 	end
 
 end

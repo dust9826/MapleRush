@@ -2,7 +2,10 @@
 bgm_title,bgm,063f1dddbf8b4a1bb9067b0c7a196922,TRUE,wired:LobbyController,메인화면(타이틀)
 bgm_orbis,bgm,b3460299e70a49579d02bc31f2297c77,TRUE,wired:FloorManager,오르비스
 bgm_elnath,bgm,e708d95c152245e8be3f8a5eb447b308,TRUE,wired:FloorManager,엘나스
-bgm_deepmine,bgm,af3acec8784a4f80a0a354479b2132ff,TRUE,wired:FloorManager,폐광
+bgm_deepmine,bgm,af3acec8784a4f80a0a354479b2132ff,TRUE,wired:FloorManager,폐광(일반)
+bgm_orbis_boss,bgm,26dcb0c38e6b4360b565c8420d4d9a78,TRUE,wired:FloorManager,오르비스(보스 스테이지)
+bgm_elnath_boss,bgm,bc730b6f06c7434880ff08cd1d112634,TRUE,wired:FloorManager,엘나스(보스 스테이지)
+bgm_deepmine_boss,bgm,bf1f1c64293943baa5ce66a2b6c8ce76,TRUE,wired:FloorManager,폐광(보스 스테이지)
 bgm_story_early,bgm,0470e1a58d434a58a00c0bcc955f38a1,TRUE,wired:CutsceneController,스토리(1~4번째 일러스트)
 bgm_story_late,bgm,063f1dddbf8b4a1bb9067b0c7a196922,TRUE,wired:CutsceneController,스토리(5번째 이후=타이틀 유지)
 sfx_attack,sfx,5055db77e98c4f118f81f59390a78371,TRUE,wired:PlayerCombat,기본 공격
@@ -47,3 +50,4 @@ sfx_shop_buy,sfx,87e5cd16a3ba43ab994d1ee2fcbc139a,TRUE,wired:ShopController,상�
 sfx_item_rock,sfx,a95d1bf786f14216abae27c52bafe749,TRUE,wired:PlayerItems,아이템 - 짱돌
 sfx_item_smoke,sfx,ad63f4c64f304b6c876fb68511addb87,TRUE,wired:PlayerItems,아이템 - 연막
 sfx_item_flash,sfx,ccf258b8a89942a1b93e4e4f1a2932ad,TRUE,wired:PlayerItems,아이템 - 섬광
+sfx_jumppad,sfx,5b84bbcf3b9f4c9b945d16775e65df5e,TRUE,wired:Spring,점프대 사용
