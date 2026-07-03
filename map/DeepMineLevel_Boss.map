@@ -121,11 +121,11 @@
                     "Id": 3,
                     "StartPoint": {
                       "x": -4.95,
-                      "y": 2.44999981
+                      "y": 2.45
                     },
                     "EndPoint": {
                       "x": -4.05,
-                      "y": 2.44999981
+                      "y": 2.45
                     },
                     "Variance": {
                       "x": 1.0,
@@ -152,11 +152,11 @@
                     "Id": 4,
                     "StartPoint": {
                       "x": -4.05,
-                      "y": 2.44999981
+                      "y": 2.45
                     },
                     "EndPoint": {
                       "x": -3.14999986,
-                      "y": 2.44999981
+                      "y": 2.45
                     },
                     "Variance": {
                       "x": 1.0,
@@ -195,7 +195,7 @@
                     }
                   },
                   {
-                    "Length": 0.899999738,
+                    "Length": 0.9,
                     "NextFootholdId": 7,
                     "PreviousFootholdId": 5,
                     "groupID": 1,
@@ -214,11 +214,11 @@
                     "Id": 6,
                     "StartPoint": {
                       "x": -2.24999976,
-                      "y": 2.44999981
+                      "y": 2.45
                     },
                     "EndPoint": {
-                      "x": -1.35,
-                      "y": 2.44999981
+                      "x": -1.34999979,
+                      "y": 2.45
                     },
                     "Variance": {
                       "x": 1.0,
@@ -307,11 +307,11 @@
                     "Id": 9,
                     "StartPoint": {
                       "x": 0.450000018,
-                      "y": 2.42999983
+                      "y": 2.43
                     },
                     "EndPoint": {
                       "x": 1.35,
-                      "y": 2.42999983
+                      "y": 2.43
                     },
                     "Variance": {
                       "x": 1.0,
@@ -338,11 +338,11 @@
                     "Id": 10,
                     "StartPoint": {
                       "x": 1.34999979,
-                      "y": 2.44999981
+                      "y": 2.45
                     },
                     "EndPoint": {
                       "x": 2.25,
-                      "y": 2.44999981
+                      "y": 2.45
                     },
                     "Variance": {
                       "x": 1.0,
@@ -368,12 +368,12 @@
                     "OwnerId": "d2117095-6ad4-4b4b-a04e-36bedf479526",
                     "Id": 11,
                     "StartPoint": {
-                      "x": 2.25,
-                      "y": 2.44999981
+                      "x": 2.24999976,
+                      "y": 2.45
                     },
                     "EndPoint": {
-                      "x": 3.15,
-                      "y": 2.44999981
+                      "x": 3.14999986,
+                      "y": 2.45
                     },
                     "Variance": {
                       "x": 1.0,
@@ -431,11 +431,11 @@
                     "Id": 13,
                     "StartPoint": {
                       "x": 4.05,
-                      "y": 2.44999981
+                      "y": 2.45
                     },
                     "EndPoint": {
                       "x": 4.95,
-                      "y": 2.44999981
+                      "y": 2.45
                     },
                     "Variance": {
                       "x": 1.0,
@@ -443,7 +443,7 @@
                     }
                   },
                   {
-                    "Length": 0.5999994,
+                    "Length": 0.5999999,
                     "NextFootholdId": 45,
                     "PreviousFootholdId": 13,
                     "groupID": 1,
@@ -461,7 +461,7 @@
                     "OwnerId": "d2117095-6ad4-4b4b-a04e-36bedf479526",
                     "Id": 14,
                     "StartPoint": {
-                      "x": 4.95000029,
+                      "x": 4.95,
                       "y": 2.48
                     },
                     "EndPoint": {
@@ -4410,6 +4410,234 @@
             },
             {
               "@type": "MOD.Core.SpawnLocationComponent",
+              "Enable": true
+            }
+          ],
+          "@version": 1
+        }
+      },
+      {
+        "id": "2b040352-0793-4011-b32a-82a145185c0c",
+        "path": "/maps/DeepMineLevel_Boss/DashBlockRegions",
+        "componentNames": "MOD.Core.TransformComponent",
+        "jsonString": {
+          "name": "DashBlockRegions",
+          "path": "/maps/DeepMineLevel_Boss/DashBlockRegions",
+          "nameEditable": true,
+          "enable": true,
+          "visible": true,
+          "localize": false,
+          "displayOrder": 4,
+          "pathConstraints": "///",
+          "revision": 1,
+          "origin": {
+            "type": "Model",
+            "entry_id": "mapempty",
+            "sub_entity_id": null,
+            "root_entity_id": "2b040352-0793-4011-b32a-82a145185c0c",
+            "replaced_model_id": null
+          },
+          "modelId": "mapempty",
+          "@components": [
+            {
+              "@type": "MOD.Core.TransformComponent",
+              "Position": {
+                "x": -0.331784636,
+                "y": 1.48760831,
+                "z": 999.999
+              },
+              "QuaternionRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+              },
+              "Enable": true
+            }
+          ],
+          "@version": 1
+        }
+      },
+      {
+        "id": "fb60b374-aac8-4803-abec-fbb2f107f298",
+        "path": "/maps/DeepMineLevel_Boss/DashBlockRegions/DashBlockRegion",
+        "componentNames": "MOD.Core.TransformComponent,MOD.Core.TriggerComponent",
+        "jsonString": {
+          "name": "DashBlockRegion",
+          "path": "/maps/DeepMineLevel_Boss/DashBlockRegions/DashBlockRegion",
+          "nameEditable": true,
+          "enable": true,
+          "visible": true,
+          "localize": false,
+          "displayOrder": 0,
+          "pathConstraints": "////",
+          "revision": 1,
+          "origin": {
+            "type": "Model",
+            "entry_id": "dashblockregion",
+            "sub_entity_id": null,
+            "root_entity_id": "fb60b374-aac8-4803-abec-fbb2f107f298",
+            "replaced_model_id": null
+          },
+          "modelId": "dashblockregion",
+          "@components": [
+            {
+              "@type": "MOD.Core.TransformComponent",
+              "Rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+              },
+              "Position": {
+                "x": 0.3248,
+                "y": 0.3125,
+                "z": 0.0
+              },
+              "QuaternionRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": -1.0
+              },
+              "Scale": {
+                "x": 25.91658,
+                "y": 2.719703,
+                "z": 1.0
+              },
+              "ZRotation": 0.0,
+              "Enable": true
+            },
+            {
+              "@type": "MOD.Core.TriggerComponent",
+              "BoxSize": {
+                "x": 0.5,
+                "y": 0.5
+              },
+              "ColliderOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "IsLegacy": false,
+              "Enable": true
+            }
+          ],
+          "@version": 1
+        }
+      },
+      {
+        "id": "3f87e182-7751-41fa-961d-1ff05155f65a",
+        "path": "/maps/DeepMineLevel_Boss/DashBlockRegions/DashBlockRegion_1",
+        "componentNames": "MOD.Core.TransformComponent,MOD.Core.TriggerComponent",
+        "jsonString": {
+          "name": "DashBlockRegion_1",
+          "path": "/maps/DeepMineLevel_Boss/DashBlockRegions/DashBlockRegion_1",
+          "nameEditable": true,
+          "enable": true,
+          "visible": true,
+          "localize": false,
+          "displayOrder": 1,
+          "pathConstraints": "////",
+          "revision": 1,
+          "origin": {
+            "type": "Model",
+            "entry_id": "dashblockregion",
+            "sub_entity_id": null,
+            "root_entity_id": "fb60b374-aac8-4803-abec-fbb2f107f298",
+            "replaced_model_id": null
+          },
+          "modelId": "dashblockregion",
+          "@components": [
+            {
+              "@type": "MOD.Core.TransformComponent",
+              "Position": {
+                "x": 6.4569,
+                "y": 3.5596,
+                "z": 0.0
+              },
+              "QuaternionRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+              },
+              "Scale": {
+                "x": 1.82163584,
+                "y": 14.0124159,
+                "z": 1.0
+              },
+              "Enable": true
+            },
+            {
+              "@type": "MOD.Core.TriggerComponent",
+              "BoxSize": {
+                "x": 0.5,
+                "y": 0.5
+              },
+              "ColliderOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "IsLegacy": false,
+              "Enable": true
+            }
+          ],
+          "@version": 1
+        }
+      },
+      {
+        "id": "b425140f-8380-40c8-bfba-c1e272eb647d",
+        "path": "/maps/DeepMineLevel_Boss/DashBlockRegions/DashBlockRegion_2",
+        "componentNames": "MOD.Core.TransformComponent,MOD.Core.TriggerComponent",
+        "jsonString": {
+          "name": "DashBlockRegion_2",
+          "path": "/maps/DeepMineLevel_Boss/DashBlockRegions/DashBlockRegion_2",
+          "nameEditable": true,
+          "enable": true,
+          "visible": true,
+          "localize": false,
+          "displayOrder": 2,
+          "pathConstraints": "////",
+          "revision": 1,
+          "origin": {
+            "type": "Model",
+            "entry_id": "dashblockregion",
+            "sub_entity_id": null,
+            "root_entity_id": "fb60b374-aac8-4803-abec-fbb2f107f298",
+            "replaced_model_id": null
+          },
+          "modelId": "dashblockregion",
+          "@components": [
+            {
+              "@type": "MOD.Core.TransformComponent",
+              "Position": {
+                "x": -5.7812,
+                "y": 3.7131,
+                "z": 0.0
+              },
+              "QuaternionRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+              },
+              "Scale": {
+                "x": 1.82163584,
+                "y": 14.9678068,
+                "z": 1.0
+              },
+              "Enable": true
+            },
+            {
+              "@type": "MOD.Core.TriggerComponent",
+              "BoxSize": {
+                "x": 0.5,
+                "y": 0.5
+              },
+              "ColliderOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "IsLegacy": false,
               "Enable": true
             }
           ],
