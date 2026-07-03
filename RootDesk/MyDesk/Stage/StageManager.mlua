@@ -508,6 +508,9 @@ script StageManager extends Logic
 		local player = _UserService.LocalPlayer
 		if player ~= nil then
 			player.MovementComponent:SetWorldPosition(Vector2(sx, sy))
+			-- 종료 텀 동안 잠갔던 이동 컨트롤러 복원 (스테이지 재개 시점).
+			local pcc = player.PlayerControllerComponent
+			if isvalid(pcc) then pcc.Enable = true end
 			-- 대시 충전 만충 리셋 (DashCount는 클라 전용 → 서버 ResetStage가 직접 못 씀, 여기서 처리).
 			---@type PlayerDash
 			local dash = player:GetComponent("script.PlayerDash")
@@ -515,6 +518,18 @@ script StageManager extends Logic
 		end
 		_UtilLogic:SetClientTimeScale(1.0)
 		_InputRouter:SetContext("Combat")
+	end
+
+	@ExecSpace("Client")
+	method void ClientFreezePlayer()
+		-- 스테이지 종료 텀 동안 로컬 플레이어 이동/액션 정지: 이동 컨트롤러 비활성 + 라우터 비전투 컨텍스트(대시·공격 차단).
+		-- 복원은 재개 시 ClientStageReset(이동 컨트롤러) / 각 UI 컨텍스트 전환이 담당.
+		local player = _UserService.LocalPlayer
+		if player ~= nil and isvalid(player) then
+			local pcc = player.PlayerControllerComponent
+			if isvalid(pcc) then pcc.Enable = false end
+		end
+		_InputRouter:SetContext("Frozen")
 	end
 
 	@ExecSpace("ServerOnly")
@@ -526,9 +541,11 @@ script StageManager extends Logic
 		log("[StageManager] kill " .. tostring(self.KilledCount) .. "/" .. tostring(self.SpawnedCount) .. " (" .. enemyKind .. ")")
 		if self.KilledCount >= self.SpawnedCount then
 			-- 클리어 텀: 마지막 적 처치 후 곧바로 보상 팝업을 띄우지 않고 같은 텀을 둔 뒤 StageClear.
-			-- 즉시 StageActive=false로 중복 클리어/피격 차단 + grace 연장(적 프리즈).
+			-- 즉시 StageActive=false로 중복 클리어/피격 차단 + grace 연장(적 프리즈) + 플레이어 이동 정지.
 			self.StageActive = false
 			self.combatGraceUntil = _UtilLogic.ServerElapsedSeconds + _GameConstants.StageEndDelay + 1.5
+			local cp = self:GetPlayer()
+			if cp ~= nil and cp.PlayerComponent ~= nil then self:ClientFreezePlayer(cp.PlayerComponent.UserId) end
 			_TimerService:SetTimerOnce(function()
 				if _GameStateManager.RunActive then self:StageClear() end
 			end, _GameConstants.StageEndDelay)
@@ -587,6 +604,8 @@ script StageManager extends Logic
 		-- 사망(회귀) 효과음 — 죽은 플레이어 클라에서 1회 재생 (목숨 잔여 무관).
 		local deadPc = player.PlayerComponent
 		if deadPc ~= nil then self:ClientPlayerDeathSfx(deadPc.UserId) end
+		-- 종료 텀 동안 이동 정지 (부활/게임오버 공통). 재개는 ClientStageReset이 복원.
+		if deadPc ~= nil then self:ClientFreezePlayer(deadPc.UserId) end
 		if _GameStateManager.CurrentLives > 0 then
 			_GameStateManager.CurrentLives -= 1
 			log("[StageManager] player died -> lives=" .. tostring(_GameStateManager.CurrentLives) .. ", reviving in " .. tostring(_GameConstants.StageEndDelay) .. "s")
