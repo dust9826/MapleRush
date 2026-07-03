@@ -69,7 +69,7 @@ script CombatGizmo extends Component
 				local e = comp.Entity
 				if isvalid(e) and comp.OwnerSide == "enemy" then
 					local p = e.TransformComponent.WorldPosition
-					_GizmoManager:Projectile(Vector2(p.x, p.y))
+					_GizmoManager:Projectile(Vector2(p.x, p.y), comp.HitRadius)
 				end
 			end
 		end

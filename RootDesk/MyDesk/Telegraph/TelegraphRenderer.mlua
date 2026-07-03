@@ -17,6 +17,9 @@ script TelegraphRenderer extends Logic
 	@HideFromInspector property number gizmoZ = 0.0
 	@HideFromInspector property boolean overflowed = false
 
+	-- 플레이어 조준 레인 전용 홀더(맵 자식, 1개). 적 텔레그래프 풀과 분리 — HideAll이 안 건드리고 PlayerItems가 클라 로컬로 직접 그림/숨김.
+	@HideFromInspector property any aimHolder = nil
+
 	@ExecSpace("ClientOnly")
 	method void OnBeginPlay()
 		-- 클라 1회 초기화.
@@ -44,6 +47,7 @@ script TelegraphRenderer extends Logic
 			self.holdersMapName = map.Name
 			self.frameHolders = {}
 			self.fillHolders = {}
+			self.aimHolder = nil
 		end
 		if self.frameHolders == nil then self.frameHolders = {} end
 		if self.fillHolders == nil then self.fillHolders = {} end
@@ -175,6 +179,39 @@ script TelegraphRenderer extends Logic
 	end
 
 	@ExecSpace("ClientOnly")
+	method any AimHolder()
+		-- 조준 레인 홀더(맵 자식) 조회(캐시 + isvalid 재조회).
+		if self.aimHolder ~= nil and isvalid(self.aimHolder) then return self.aimHolder end
+		if self.boundMap == nil or isvalid(self.boundMap) == false then return nil end
+		self.aimHolder = self.boundMap:GetChildByName(_GameConstants.TelegraphFramePrefix .. "Aim", false)
+		return self.aimHolder
+	end
+
+	@ExecSpace("ClientOnly")
+	method void DrawAimLane(Vector2 center, number laneLen, number laneWidth, number dirX, number dirY)
+		-- 플레이어 조준 레인: 원점(center)에서 dir로 laneLen만큼 뻗는 반투명 필드 레인(게이지 없음). PlayerItems가 매 프레임 호출.
+		local e = self:AimHolder()
+		if e == nil or isvalid(e) == false then return end
+		local L = laneLen
+		if L < 0.0001 then L = 0.0001 end
+		local ang = math.deg(math.atan(dirY, dirX))
+		local cx = center.x + dirX * L * 0.5
+		local cy = center.y + dirY * L * 0.5
+		-- 색: 플레이어 조준(하늘색 계열, 반투명 0.5) — 적 예고(노랑/빨강)와 구분. 적 프레임(30000)보다 아래(29999).
+		local col = Color(0.35, 0.75, 1.0, 0.5)
+		self:PutHolder(e, cx, cy, L, laneWidth, ang, col, 29999)
+	end
+
+	@ExecSpace("ClientOnly")
+	method void HideAimLane()
+		-- 조준 레인 숨김(조준 아님/발사/비전투). PlayerItems가 매 프레임 else에서 호출.
+		local e = self:AimHolder()
+		if e == nil or isvalid(e) == false then return end
+		local pr = e.PixelRendererComponent
+		if isvalid(pr) then pr.Enable = false end
+	end
+
+	@ExecSpace("ClientOnly")
 	method void HideAll()
 		-- 전 프레임+필 홀더 숨김.
 		local i = 0
@@ -225,7 +262,11 @@ script TelegraphRenderer extends Logic
 				j += 1
 			end
 		end
-		log("[TelegraphRenderer] telegraph pool spawned under map '" .. tostring(map.Name) .. "' (" .. tostring(n) .. " frame + " .. tostring(n) .. " fill)")
+		-- 플레이어 조준 레인 홀더(1개) — 같은 모델 재사용.
+		if map:GetChildByName(fp .. "Aim", false) == nil then
+			_SpawnService:SpawnByModelId(model, fp .. "Aim", Vector3(0, 0, 0), map)
+		end
+		log("[TelegraphRenderer] telegraph pool spawned under map '" .. tostring(map.Name) .. "' (" .. tostring(n) .. " frame + " .. tostring(n) .. " fill + 1 aim)")
 	end
 
 	@ExecSpace("ClientOnly")
