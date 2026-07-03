@@ -42,6 +42,21 @@ script PlayerConfig extends Logic
 	property number AirAcceleration = 1.0       -- 공중 가속(AirAccelerationX). 엔진 기본.
 	property number AirDeceleration = 1.0       -- 공중 감속(AirDecelerationX). 엔진 기본.
 
+	-- ===== 능력: 부동심 (immovable, ability_design §3.3) =====
+	property number ImmovableWindow = 8.0          -- 보험 유효 시간(초)
+	property number ImmovableGraceInvincible = 0.5 -- 흡수 직후 무적(초)
+
+	-- ===== 능력: 만지 일섬 (manji, ability_design §4.1) =====
+	property number ManjiDashDistance = 6.0        -- 돌진 거리(wu)
+	property number ManjiDashDuration = 0.1        -- 돌진 시간(초) = 무적 시간
+	property number ManjiPathRadius = 1.0          -- 경로 좌우 판정 반지름(wu)
+	property number ManjiDmgPct = 4.0              -- 데미지 배율(공격력×400%)
+
+	-- ===== 능력: 회전베기 (spin, ability_design §4.2) =====
+	property number SpinRadius = 3.0               -- 원형 판정 반지름(wu)
+	property number SpinDuration = 0.2             -- 지속·무적·이동잠금 시간(초)
+	property number SpinDmgPct = 2.5               -- 데미지 배율(공격력×250%)
+
 	-- ===== 컨트롤 =====
 	property boolean EnableDownJump = false     -- 아래점프 허용 여부 (false = 삭제). PlayerInputSetup이 반영.
 	property string KeyLeft = "A"

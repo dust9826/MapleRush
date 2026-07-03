@@ -206,6 +206,21 @@ script MetaProgression extends Logic
 		return self:GetLevel("ironbody") * _MetaConfig.IronBodyPerLevel
 	end
 
+	method integer GetImmovableBonus()
+		-- 부동심 추가 흡수 횟수(+1/Lv). 총 흡수 = 1 + 이 값.
+		return math.floor(self:GetLevel("immovable") * _MetaConfig.ImmovablePerLevel)
+	end
+
+	method number GetManjiBonus()
+		-- 만지 일섬 추가 데미지 배율(+ATK×50%/Lv → 계수 +0.5/Lv). 총 배율 = base + 이 값.
+		return self:GetLevel("manji") * _MetaConfig.ManjiPerLevel
+	end
+
+	method number GetSpinBonus()
+		-- 회전베기 추가 반지름(+0.5 wu/Lv). 총 반지름 = base + 이 값.
+		return self:GetLevel("spin") * _MetaConfig.SpinPerLevel
+	end
+
 	@ExecSpace("ClientOnly")
 	method void OnSyncProperty(string name, any value)
 		-- 점수/레벨 동기화 → 등록된 메타 강화 UI 갱신 (구매/환불은 항상 MetaScore를 바꾸므로 확실히 발화).

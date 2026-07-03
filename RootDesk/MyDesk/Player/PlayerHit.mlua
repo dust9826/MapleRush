@@ -25,6 +25,12 @@ script PlayerHit extends Component
 			log("[PlayerHit] hit IGNORED (ability invincible) from " .. source)
 			return
 		end
+		-- 부동심 보험: 죽을 피격을 1회 흡수(횟수 소모 + 0.5s 무적 + 슬로우). 흡수 시 사망하지 않음.
+		if ability ~= nil and ability:TryConsumeImmovable() == true then
+			self.lastHitServer = now
+			log("[PlayerHit] hit ABSORBED (immovable) from " .. source)
+			return
+		end
 		self.lastHitServer = now
 		log("[PlayerHit] PLAYER HIT by " .. source .. " -> death (1-hit rule)")
 		_StageManager:OnPlayerDeath(self.Entity)

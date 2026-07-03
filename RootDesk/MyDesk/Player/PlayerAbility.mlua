@@ -1,15 +1,25 @@
 @Component
 script PlayerAbility extends Component
 
-	-- "" / "invincible"(임시 무적 1초) / "clearProjectiles"(전 투사체 무효화)
+	-- "" / "invincible"(임시무적1초) / "clearProjectiles"(전투사체무효화) / "immovable"(부동심) / "manji"(만지일섬) / "spin"(회전베기)
 	@Sync
 	property string AbilityId = ""
 
 	@Sync
 	property integer UsesLeft = 0
 
-	-- 서버: 능력 무적 종료 시각 (ServerElapsedSeconds)
+	-- 서버: 능력 무적 종료 시각 (ServerNow 기준). 임시무적·부동심 흡수·만지·회전 공통 사용.
 	property number abilityInvincibleUntil = -999.0
+
+	-- 서버: 부동심 보험 창 종료 시각 + 남은 흡수 횟수. 창 안에서 피격 시 흡수.
+	property number immovableUntil = -999.0
+
+	property integer immovableCharges = 0
+
+	-- 클라: 회전베기 이동잠금 종료 시각(Now 기준) + 잠금 전 컨트롤러 상태. OnUpdate가 만료 시 복원.
+	@HideFromInspector property number spinLockUntil = -999.0
+
+	@HideFromInspector property boolean spinPrevControllerEnable = true
 
 	property any routerHandler = nil
 
@@ -42,6 +52,10 @@ script PlayerAbility extends Component
 			-- [치트] 숫자키 6 → 보스 스테이지 직행 (서버 RPC, CheatMode 가드).
 			_FloorManager:DebugWarpBoss()
 			return
+		elseif event.action == "debugCycleAbility" then
+			-- [치트] 숫자키 7 → 다음 능력으로 순환 교체 + 사용횟수 충전 (서버 RPC, CheatMode 가드).
+			self:DebugCycleAbility()
+			return
 		end
 		-- ability 액션(휠클릭) → 사용 요청. 미보유/소진 시 무시 (UI 피드백은 Phase 8).
 		if event.action ~= "ability" then return end
@@ -53,7 +67,14 @@ script PlayerAbility extends Component
 			log("[PlayerAbility] no uses left this stage")
 			return
 		end
-		self:RequestUseAbility()
+		-- 만지/회전은 클라 이동·이동잠금을 동반하므로 전용 클라 시작 경로. 나머지(임시무적/투사체무효화/부동심)는 서버 즉발.
+		if self.AbilityId == "manji" then
+			self:StartManji()
+		elseif self.AbilityId == "spin" then
+			self:StartSpin()
+		else
+			self:RequestUseAbility()
+		end
 	end
 
 	@ExecSpace("Server")
@@ -80,22 +101,128 @@ script PlayerAbility extends Component
 				end
 			end
 			log("[PlayerAbility] CLEAR PROJECTILES: removed=" .. tostring(removed) .. " (left=" .. tostring(self.UsesLeft) .. ")")
+		elseif self.AbilityId == "immovable" then
+			-- 부동심: 보험 창 개시 + 흡수 횟수 충전(1 + 메타). 창 안에서 피격 시 PlayerHit이 TryConsumeImmovable로 소모.
+			self.immovableUntil = _WallClock:ServerNow() + _PlayerConfig.ImmovableWindow
+			self.immovableCharges = 1 + _MetaProgression:GetImmovableBonus()
+			log("[PlayerAbility] IMMOVABLE armed: window=" .. tostring(_PlayerConfig.ImmovableWindow) .. "s charges=" .. tostring(self.immovableCharges) .. " (left=" .. tostring(self.UsesLeft) .. ")")
 		end
 	end
 
 	@ExecSpace("ServerOnly")
+	method boolean TryConsumeImmovable()
+		-- 부동심 흡수: 보험 창 안 + 흡수 횟수 남으면 피격 1회 무효화. PlayerHit.RequestHit이 사망 직전 호출.
+		-- 흡수 성공 시 → 횟수 소모 + 0.5초 무적(abilityInvincibleUntil) + 슬로우 모션 + true 반환.
+		if _WallClock:ServerNow() >= self.immovableUntil then return false end
+		if self.immovableCharges <= 0 then return false end
+		self.immovableCharges -= 1
+		if self.immovableCharges <= 0 then
+			self.immovableUntil = -999.0   -- 마지막 흡수 → 창 종료
+		end
+		self.abilityInvincibleUntil = _WallClock:ServerNow() + _PlayerConfig.ImmovableGraceInvincible
+		_SlowMotion:Activate(self.Entity)
+		log("[PlayerAbility] IMMOVABLE absorbed a hit -> grace " .. tostring(_PlayerConfig.ImmovableGraceInvincible) .. "s, charges left=" .. tostring(self.immovableCharges))
+		return true
+	end
+
+	@ExecSpace("ServerOnly")
 	method boolean IsAbilityInvincible()
-		-- 능력 무적 판정 (PlayerHit이 호출).
+		-- 능력 무적 판정 (PlayerHit이 호출). 임시무적·부동심 흡수·만지·회전 공통.
 		return _WallClock:ServerNow() < self.abilityInvincibleUntil
+	end
+
+	-- ===== 만지 일섬 (커서 방향 대시 + 경로 데미지) =====
+	@ExecSpace("ClientOnly")
+	method void StartManji()
+		-- 클라: 커서 방향 대시 이동(PlayerDash 재사용) → 서버에 i-frame + 경로 데미지 요청.
+		---@type PlayerDash
+		local dash = self.Entity:GetComponent("script.PlayerDash")
+		if dash == nil or dash.IsDashing then return end
+		local started = dash:StartAbilityDash(_InputRouter:CursorWorld(), _PlayerConfig.ManjiDashDistance)
+		if started == false then return end
+		_SoundManager:PlaySFXKey("sfx_ability_manji")
+		local pos = self.Entity.TransformComponent.WorldPosition
+		self:RequestManji(pos.x, pos.y, dash.dashDir.x, dash.dashDir.y, dash.dashLen)
+	end
+
+	@ExecSpace("Server")
+	method void RequestManji(number footX, number footY, number dirX, number dirY, number dashLen)
+		-- 서버: 만지 검증 + 사용횟수 소모 + 돌진시간 무적 + 경로(캡슐) 데미지 ATK×(400% + 메타).
+		if self.AbilityId ~= "manji" or self.UsesLeft <= 0 then return end
+		self.UsesLeft -= 1
+		self.abilityInvincibleUntil = _WallClock:ServerNow() + _PlayerConfig.ManjiDashDuration
+		local damage = _GameStateManager.AttackStat * (_PlayerConfig.ManjiDmgPct + _MetaProgression:GetManjiBonus())
+		local pathStart = Vector2(footX, footY)
+		local pathEnd = Vector2(footX + dirX * dashLen, footY + dirY * dashLen)
+		local hitCount = _CombatPrimitives:DamageEnemiesAlongPath(self.Entity.CurrentMap, pathStart, pathEnd, _PlayerConfig.ManjiPathRadius, damage, "manji")
+		log("[PlayerAbility] MANJI: hit=" .. tostring(hitCount) .. " dmg=" .. tostring(damage) .. " len=" .. string.format("%.2f", dashLen) .. " (left=" .. tostring(self.UsesLeft) .. ")")
+	end
+
+	-- ===== 회전베기 (플레이어 중심 원형 AoE + 패링 + 이동잠금) =====
+	@ExecSpace("ClientOnly")
+	method void StartSpin()
+		-- 클라: 이동잠금(0.2s, OnUpdate가 복원) → 서버에 AoE/패링/무적 요청.
+		local pc = self.Entity.PlayerControllerComponent
+		if isvalid(pc) then
+			self.spinPrevControllerEnable = pc.Enable
+			pc.Enable = false
+		end
+		self.spinLockUntil = _WallClock:Now() + _PlayerConfig.SpinDuration
+		_SoundManager:PlaySFXKey("sfx_ability_spin")
+		local pos = self.Entity.TransformComponent.WorldPosition
+		self:RequestSpin(pos.x, pos.y)
+	end
+
+	@ExecSpace("Server")
+	method void RequestSpin(number cx, number cy)
+		-- 서버: 회전베기 검증 + 사용횟수 소모 + 0.2s 무적 + 원형 AoE ATK×250% + 패링(반지름 근사 박스).
+		if self.AbilityId ~= "spin" or self.UsesLeft <= 0 then return end
+		self.UsesLeft -= 1
+		self.abilityInvincibleUntil = _WallClock:ServerNow() + _PlayerConfig.SpinDuration
+		local map = self.Entity.CurrentMap
+		local center = Vector2(cx, cy + _GameConstants.PlayerCenterYOffset)
+		local radius = _PlayerConfig.SpinRadius + _MetaProgression:GetSpinBonus()
+		local damage = _GameStateManager.AttackStat * _PlayerConfig.SpinDmgPct
+		local hitCount = _CombatPrimitives:DamageEnemiesInCircle(map, center, radius, damage, "spin")
+		-- 회전베기 전용 패링: 원형 범위를 정사각 박스로 근사해 근접 노란공격 취소 + 노란투사체 반사(ability_design §4.2).
+		local reflectDamage = _GameStateManager.AttackStat * _PlayerConfig.DmgReflectPct
+		local parryCount = _CombatPrimitives:TryParry(map, center, radius, radius, reflectDamage)
+		log("[PlayerAbility] SPIN: hit=" .. tostring(hitCount) .. " parry=" .. tostring(parryCount) .. " r=" .. string.format("%.2f", radius) .. " (left=" .. tostring(self.UsesLeft) .. ")")
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnUpdate(number delta)
+		-- 회전베기 이동잠금 만료 시 컨트롤러 복원(논블로킹). 로컬 플레이어만 spinLockUntil이 설정됨.
+		if self.spinLockUntil > 0 and _WallClock:Now() >= self.spinLockUntil then
+			self.spinLockUntil = -999.0
+			local pc = self.Entity.PlayerControllerComponent
+			if isvalid(pc) then pc.Enable = self.spinPrevControllerEnable end
+		end
 	end
 
 	@ExecSpace("Server")
 	method void DebugGrant(string abilityId)
-		-- [치트] 능력 즉시 장착 + 사용횟수 충전 (획득 플로우 전 테스트용; 숫자키 7/8). 서버 가드: CheatMode일 때만.
+		-- [치트] 능력 즉시 장착 + 사용횟수 충전 (획득 플로우 전 테스트용; 숫자키 4/5). 서버 가드: CheatMode일 때만.
 		if _GameConstants.CheatMode == false then return end
 		self.AbilityId = abilityId
 		self.UsesLeft = _PlayerConfig.AbilityUsesNormal
 		log("[PlayerAbility] CHEAT grant: " .. abilityId .. " uses=" .. tostring(self.UsesLeft))
+	end
+
+	@ExecSpace("Server")
+	method void DebugCycleAbility()
+		-- [치트] 숫자키 7 → 5종 능력을 순환 교체 + 사용횟수 넉넉히 충전 (테스트용). 서버 가드: CheatMode일 때만.
+		if _GameConstants.CheatMode == false then return end
+		local order = { "invincible", "clearProjectiles", "immovable", "manji", "spin" }
+		local idx = 0
+		for i, id in ipairs(order) do
+			if self.AbilityId == id then idx = i end
+		end
+		local nextIdx = idx + 1
+		if nextIdx > #order then nextIdx = 1 end
+		self.AbilityId = order[nextIdx]
+		self.UsesLeft = 9
+		log("[PlayerAbility] CHEAT cycle ability -> " .. self.AbilityId .. " uses=" .. tostring(self.UsesLeft))
 	end
 
 	@ExecSpace("ServerOnly")
@@ -107,12 +234,15 @@ script PlayerAbility extends Component
 
 	@ExecSpace("ServerOnly")
 	method void ResetUses(string stageType)
-		-- 스테이지 진입 시 사용 횟수 초기화 (일반 1 / 보스 2).
+		-- 스테이지 진입 시 사용 횟수 초기화 (일반 1 / 보스 2) + 진행 중이던 지속 효과 강제 해제 (stage §2.3.5).
 		if stageType == "boss" then
 			self.UsesLeft = _PlayerConfig.AbilityUsesBoss
 		else
 			self.UsesLeft = _PlayerConfig.AbilityUsesNormal
 		end
+		self.abilityInvincibleUntil = -999.0
+		self.immovableUntil = -999.0
+		self.immovableCharges = 0
 	end
 
 end

@@ -204,12 +204,19 @@ script PlayerDash extends Component
 
 	@ExecSpace("ClientOnly")
 	method number ComputeDashLength(Vector2 p2, Vector2 dir, Vector2 target)
-		-- 대시 거리 = min(커서까지 거리, 최대 사거리). 현재 방(RoomRegion) 경계가 더 가까우면 거기서 멈춤.
+		-- 일반 대시 거리 계산 (최대 사거리 = DashDistance).
+		return self:ComputeDashLengthMax(p2, dir, target, _PlayerConfig.DashDistance)
+	end
+
+	@ExecSpace("ClientOnly")
+	method number ComputeDashLengthMax(Vector2 p2, Vector2 dir, Vector2 target, number maxDist)
+		-- 대시 거리 = min(커서까지 거리, maxDist). 현재 방(RoomRegion) 경계가 더 가까우면 거기서 멈춤.
 		-- 방향/사거리는 중앙(p2) 기준이나, 방 클램프는 실제 이동 라인인 발 기준으로 측정(클리어런스↔이동 라인 일치).
+		-- maxDist를 파라미터로 받아 능력용 대시(만지 일섬 6wu)와 일반 대시(5wu)가 같은 클램프/스텝오버 로직을 공유한다.
 		local dx = target.x - p2.x
 		local dy = target.y - p2.y
 		local L = math.sqrt(dx * dx + dy * dy)
-		if L > _PlayerConfig.DashDistance then L = _PlayerConfig.DashDistance end
+		if L > maxDist then L = maxDist end
 		local pos = self.Entity.TransformComponent.WorldPosition
 		local foot = Vector2(pos.x, pos.y)
 		-- 접지 시 스텝오버: 블록 판정 ray 원점을 올려 낮은 장애물은 넘어가게 함(높은 벽은 그대로 막힘).
@@ -220,6 +227,29 @@ script PlayerDash extends Component
 		local roomDist = _CombatPrimitives:ClampRayToCurrentRoom(self.Entity.CurrentMap, foot, foot, dir, L, stepUp)
 		if roomDist < L then L = roomDist end
 		return L
+	end
+
+	@ExecSpace("ClientOnly")
+	method boolean StartAbilityDash(Vector2 targetWorldPos, number maxDist)
+		-- 능력용 대시 이동(만지 일섬). 대시 횟수 미소모 · i-frame/데미지는 호출측(PlayerAbility)이 서버에서 처리.
+		-- 이동/벽클램프/도착 스냅/컨트롤러 잠금은 일반 대시 파이프라인(OnUpdate 이동 + EndDash)을 그대로 재사용한다.
+		-- 이동 시간은 OnUpdate가 쓰는 DashDuration(0.1s)과 동일 — 만지 돌진 시간도 0.1s라 별도 분기 불필요.
+		if self.Entity ~= _UserService.LocalPlayer then return false end
+		if self.IsDashing then return false end
+		local pos = self.Entity.TransformComponent.WorldPosition
+		local foot = Vector2(pos.x, pos.y)
+		local center = Vector2(pos.x, pos.y + _GameConstants.PlayerCenterYOffset)
+		self.dashDir = self:ComputeAimDir(center, targetWorldPos)
+		self.dashStartPos = foot
+		self.dashLen = self:ComputeDashLengthMax(center, self.dashDir, targetWorldPos, maxDist)
+		self.dashIsSideView = self:IsDashSideView()
+		self.dashStartTime = _WallClock:Now()
+		self.IsDashing = true
+		self:StartDashFx()
+		local pc = self.Entity.PlayerControllerComponent
+		self.prevControllerEnable = pc.Enable
+		pc.Enable = false
+		return true
 	end
 
 	@ExecSpace("ClientOnly")
