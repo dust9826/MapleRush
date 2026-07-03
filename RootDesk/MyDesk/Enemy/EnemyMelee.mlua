@@ -11,6 +11,14 @@ script EnemyMelee extends Component
 
 	property boolean AttackParryable = true
 
+	-- 이동 속도(월드유닛/초). SideView=InputSpeed, MapleTile=MoveVelocity 배율. 인스펙터 튜닝.
+	property number MoveSpeed = 2.0
+
+	-- 공격박스 치수(폴백). 자식 'AtkBox' 앵커가 있으면 앵커의 로컬위치·Scale이 우선(ComputeAttackBox).
+	property number AttackBoxForward = 2.0
+
+	property number AttackBoxHeight = 1.5
+
 	-- idle / windup / cooldown (추격은 idle 상태에서 거리 기반)
 	property string aiState = "idle"
 
@@ -165,12 +173,12 @@ script EnemyMelee extends Component
 				self.stateTimer = self.WindupTime
 				local facingX = 1
 				if dx < 0 then facingX = -1 end
-				local f = _GameConstants.EnemyMeleeBoxForward
-				local boxCenter = Vector2(myCenter.x + facingX * f * 0.5, myCenter.y)
-				self.pendingAttack = _CombatPrimitives:RegisterEnemyAttackBox(boxCenter, f * 0.5, _GameConstants.EnemyMeleeBoxHeight * 0.5, 1, self.AttackParryable, self.WindupTime, self.Entity)
+				local box = self:ComputeAttackBox(facingX, myCenter)
+				local boxCenter = Vector2(box.cx, box.cy)
+				self.pendingAttack = _CombatPrimitives:RegisterEnemyAttackBox(boxCenter, box.hw, box.hh, 1, self.AttackParryable, self.WindupTime, self.Entity)
 				-- 공격 예고: 판정 박스와 동일 좌표/크기의 게이지(보스 Telegraph 모듈 재사용). 채움·색은 렌더러가 자동.
 				if _GameConstants.ShowEnemyTelegraph then
-					self.telegraphId = _TelegraphService:Show(self.Entity, boxCenter, f * 0.5, _GameConstants.EnemyMeleeBoxHeight * 0.5, self.WindupTime, self.AttackParryable, "box", 0, 0)
+					self.telegraphId = _TelegraphService:Show(self.Entity, boxCenter, box.hw, box.hh, self.WindupTime, self.AttackParryable, "box", 0, 0)
 				end
 				self:StopMove()
 				self:PlayClip(self:AnimClip("attack", _GameConstants.MeleeAttackClip))
@@ -193,6 +201,19 @@ script EnemyMelee extends Component
 			if isvalid(self.Entity) then _TelegraphService:Hide(self.Entity.CurrentMap, self.telegraphId) end
 			self.telegraphId = 0
 		end
+	end
+
+	@ExecSpace("ServerOnly")
+	method any ComputeAttackBox(number facingX, Vector2 myCenter)
+		-- 공격박스 {cx,cy,hw,hh}. 자식 'AtkBox' 앵커 있으면 로컬위치·Scale 사용(facing으로 x미러), 없으면 숫자 property 폴백.
+		local anchor = self.Entity:GetChildByName("AtkBox", false)
+		if anchor ~= nil and isvalid(anchor) then
+			local tf = anchor.TransformComponent
+			local lp = tf.Position
+			local ls = tf.Scale
+			return { cx = myCenter.x + facingX * math.abs(lp.x), cy = myCenter.y + lp.y, hw = math.abs(ls.x) * 0.5, hh = math.abs(ls.y) * 0.5 }
+		end
+		return { cx = myCenter.x + facingX * self.AttackBoxForward * 0.5, cy = myCenter.y, hw = self.AttackBoxForward * 0.5, hh = self.AttackBoxHeight * 0.5 }
 	end
 
 	@ExecSpace("ServerOnly")
@@ -240,7 +261,7 @@ script EnemyMelee extends Component
 			if isvalid(svb) == false or svb:IsOnGround() == false then return end
 			local mc = self.Entity.MovementComponent
 			if isvalid(mc) == false then return end
-			mc.InputSpeed = _GameConstants.EnemyChaseSpeed * timeScale
+			mc.InputSpeed = self.MoveSpeed * timeScale
 			mc:MoveToDirection(Vector2(dir, 0), delta)
 		else
 			-- MapleTile (기존 로직 유지)
@@ -255,7 +276,7 @@ script EnemyMelee extends Component
 					return
 				end
 			end
-			rb.MoveVelocity = Vector2(dir * timeScale, 0)
+			rb.MoveVelocity = Vector2(dir * self.MoveSpeed * timeScale, 0)
 		end
 		-- 스프라이트는 좌향 기본 → 우측 이동 시 FlipX
 		local sprite = self.Entity.SpriteRendererComponent
