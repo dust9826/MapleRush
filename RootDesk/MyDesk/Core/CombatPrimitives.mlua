@@ -94,7 +94,7 @@ script CombatPrimitives extends Logic
 				local e = comp.Entity
 				if isvalid(e) and comp.OwnerSide == "enemy" then
 					local p = e.TransformComponent.WorldPosition
-					if self:CircleOverlap(center, radius, Vector2(p.x, p.y), _GameConstants.RadiusProjectile) then
+					if self:CircleOverlap(center, radius, Vector2(p.x, p.y), comp.HitRadius) then
 						return true
 					end
 				end
@@ -145,7 +145,7 @@ script CombatPrimitives extends Logic
 				local e = comp.Entity
 				if isvalid(e) and comp.OwnerSide == "enemy" and comp.Parryable == true then
 					local p = e.TransformComponent.WorldPosition
-					if self:BoxCircleOverlap(boxCenter, hw, hh, Vector2(p.x, p.y), _GameConstants.RadiusProjectile) then
+					if self:BoxCircleOverlap(boxCenter, hw, hh, Vector2(p.x, p.y), comp.HitRadius) then
 						comp:Reflect(reflectDamage)
 						count += 1
 						log("[CombatPrimitives] projectile REFLECTED (dmg=" .. tostring(reflectDamage) .. ")")

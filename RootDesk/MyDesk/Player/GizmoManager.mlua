@@ -13,7 +13,7 @@ script GizmoManager extends Logic
 	-- 고정 슬롯 레이아웃(인덱스→역할; 총 GizmoLinePoolSize=62):
 	--   0 사거리원(cyan, r=DashDistance)         1 플레이어피격박스(green, PlayerHbox)  2 대시레이(green, 단위선분)
 	--   3~5 블록박스(red, 단위정사각)            6 평타플래시박스(cyan, 단위정사각)
-	--   7~14 투사체원(orange, r=RadiusProjectile, ×8)
+	--   7~14 투사체원(orange, 단위원 bake→Scale=투사체 HitRadius, ×8)
 	--   15~20 적공격박스 노랑(unit, ×6)          21~26 적공격박스 빨강(unit, ×6)
 	--   27~34 원거리레인박스 노랑(unit, ×8)      35~46 적피격박스 마젠타(EnemyHbox, ×12)
 	--   [아이템 범위] 47 연막조준(노랑 사각 ±SmokeBoxHalf)  48 연막사용(초록 사각 ±SmokeBoxHalf)
@@ -243,7 +243,7 @@ script GizmoManager extends Logic
 		self:BakeSquare(self.IdxFlash, Color(0.3, 0.8, 1.0, 0.85), cw)
 		local pi = 0
 		while pi < self.ProjCount do
-			self:BakeCircle(self.ProjStart + pi, _GameConstants.RadiusProjectile, Color(1.0, 0.5, 0.1, 0.9), cw)
+			self:BakeCircle(self.ProjStart + pi, 1.0, Color(1.0, 0.5, 0.1, 0.9), cw)
 			pi = pi + 1
 		end
 		local ai = 0
@@ -380,6 +380,22 @@ script GizmoManager extends Logic
 	end
 
 	@ExecSpace("ClientOnly")
+	method void PlaceCircleScaled(integer idx, number x, number y, number radius)
+		-- 단위원 bake 홀더를 반지름 radius로 배치(Scale=(r,r), rot=0). 실반지름 bake와 달리 per-호출 반지름 가변.
+		local e = self:Holder(idx)
+		if e == nil or isvalid(e) == false then return end
+		local lrc = e.LineRendererComponent
+		if lrc == nil or isvalid(lrc) == false then return end
+		local tf = e.TransformComponent
+		if isvalid(tf) then
+			tf.WorldPosition = Vector3(x, y, self.gizmoZ)
+			tf.Scale = Vector3(radius, radius, 1)
+			tf.WorldZRotation = 0
+		end
+		lrc.Enable = true
+	end
+
+	@ExecSpace("ClientOnly")
 	method void PlaceBoxAABB(integer idx, number x, number y, number hw, number hh)
 		-- 단위정사각 홀더를 AABB로 배치(rot=0, Scale=(2hw,2hh)).
 		local e = self:Holder(idx)
@@ -458,15 +474,15 @@ script GizmoManager extends Logic
 	end
 
 	@ExecSpace("ClientOnly")
-	method void Projectile(Vector2 center)
-		-- 적 투사체 원(주황, 투사체 풀 커서).
+	method void Projectile(Vector2 center, number radius)
+		-- 적 투사체 원(주황, 투사체 풀 커서). radius=해당 투사체 실제 HitRadius(단위원 bake를 Scale로) — 판정과 시각 일치.
 		if self.projCursor >= self.ProjCount then
 			self:WarnOverflow("proj")
 			return
 		end
 		local idx = self.ProjStart + self.projCursor
 		self.projCursor = self.projCursor + 1
-		self:PlaceFixed(idx, center.x, center.y)
+		self:PlaceCircleScaled(idx, center.x, center.y, radius)
 	end
 
 	@ExecSpace("ClientOnly")

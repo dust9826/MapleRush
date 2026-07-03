@@ -15,8 +15,6 @@ script GameConstants extends Logic
 
 	property number RadiusRangedDetect = 5.0
 
-	property number RadiusProjectile = 0.2
-
 	property number RadiusSmoke = 3.0
 
 	property number SmokeBoxHalfW = 3.0
