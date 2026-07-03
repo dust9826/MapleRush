@@ -8,6 +8,9 @@ script EnemyChaser extends Component
 	-- 추적 속도(월드유닛/초). 근접(EnemyChaseSpeed=2.0)보다 빠르게 = 따라붙는 압박. 인스펙터 튜닝.
 	property number ChaseSpeed = 2.8
 
+	-- 인지(감지) 거리(월드유닛). 플레이어 중앙이 이 반경 안에 들어와야 추격 시작. 밖이면 idle 대기. 인스펙터 튜닝.
+	property number DetectRange = 4.0
+
 	-- 접촉 데미지 소스 태그(PlayerHit 로그/디버그용).
 	property string HitSource = "chaser"
 
@@ -60,7 +63,7 @@ script EnemyChaser extends Component
 
 	@ExecSpace("ServerOnly")
 	method void OnUpdate(number delta)
-		-- 접촉 데미지 추적 AI: 감지 게이팅 없이 상시 플레이어 추격 → 몸 히트박스가 플레이어와 겹치면 RequestHit.
+		-- 접촉 데미지 추적 AI: DetectRange 안이면 플레이어 추격 → 몸 히트박스가 플레이어와 겹치면 RequestHit.
 		---@type EnemyHealth
 		local hp = self.Entity:GetComponent("script.EnemyHealth")
 		if hp ~= nil and hp.IsDead == true then self:PlayClip(self:AnimClip("die", self.standClip)) return end
@@ -99,6 +102,15 @@ script EnemyChaser extends Component
 		local pp = player.TransformComponent.WorldPosition
 		local playerCenter = Vector2(pp.x, pp.y + _GameConstants.PlayerCenterYOffset)
 		local myCenter = Vector2(myPos.x, myPos.y + 0.5)
+
+		-- 인지 거리 게이팅: 플레이어 중앙이 DetectRange 밖이면 추격 안 함(idle 대기). 안이면 상시 추격.
+		local ddx = playerCenter.x - myCenter.x
+		local ddy = playerCenter.y - myCenter.y
+		if ddx * ddx + ddy * ddy > self.DetectRange * self.DetectRange then
+			self:StopMove()
+			self:PlayClip(self.standClip)
+			return
+		end
 
 		-- 접촉 판정: 내 몸 hurtbox vs 플레이어 hurtbox 겹치면 피격 요청. RequestHit이 i-frame/중복(0.2s)/사망 처리.
 		local myHb = _CombatPrimitives:HurtboxOf(self.Entity, _GameConstants.EnemyHboxHW, _GameConstants.EnemyHboxHH, 0)
