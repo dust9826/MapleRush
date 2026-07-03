@@ -154,6 +154,9 @@ script GameConstants extends Logic
 	-- 스테이지 종료 공통 텀(초). 사망 부활 / 클리어(보상 팝업) / 실패(게임오버) 모두 이 시간 뒤에 처리 — 그 사이 전투 정지(적 프리즈). 인스펙터 튜닝.
 	property number StageEndDelay = 1.2
 
+	-- 사망 연출: 검게 하기 전, 죽은 것을 보여주는 정지 텀(초). 이 뒤에 ToBlack 시작. 인스펙터 튜닝.
+	property number DeathFadeHold = 1.0
+
 	-- 사망→부활 풀스크린 검정 페이드 속도(초). 검게/밝게 각각 이 시간. 인스펙터 튜닝.
 	property number ScreenFadeDuration = 0.3
 

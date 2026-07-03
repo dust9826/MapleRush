@@ -623,17 +623,24 @@ script StageManager extends Logic
 		if deadPc ~= nil then self:ClientFreezePlayer(deadPc.UserId) end
 		if _GameStateManager.CurrentLives > 0 then
 			_GameStateManager.CurrentLives -= 1
-			log("[StageManager] player died -> lives=" .. tostring(_GameStateManager.CurrentLives) .. ", reviving in " .. tostring(_GameConstants.StageEndDelay) .. "s")
-			-- 부활 텀: 즉시 재시작하지 않고 StageEndDelay 후 ResetStage. 그 사이 전투 정지(StageActive=false로 재피격 차단)
-			-- + grace 연장으로 적 프리즈 → 잠깐의 사망 여운 후 스폰포인트에서 재개.
+			local hold = _GameConstants.DeathFadeHold
+			local fade = _GameConstants.ScreenFadeDuration
+			log("[StageManager] player died -> lives=" .. tostring(_GameStateManager.CurrentLives) .. ", revive seq (hold " .. tostring(hold) .. "s → fade)")
+			-- 사망 연출 순서: (0) 죽은 걸 보여주는 정지 텀(hold, 이동정지·화면 그대로)
+			--   → (1) 화면 검게(ToBlack) → (2) 검은 화면에서 리스폰(텔레포트) → ClientStageReset이 밝게(FromBlack).
+			-- grace는 전체 시퀀스(hold+fade) 동안 적 프리즈 유지.
 			self.StageActive = false
-			self.combatGraceUntil = _UtilLogic.ServerElapsedSeconds + _GameConstants.StageEndDelay + 1.5
-			-- 화면 검게(부활 전환): 재개 시 ClientStageReset이 다시 밝게(FromBlack).
-			if deadPc ~= nil then self:ClientFadeToBlack(deadPc.UserId) end
+			self.combatGraceUntil = _UtilLogic.ServerElapsedSeconds + hold + fade + 1.5
+			local uid = ""
+			if deadPc ~= nil then uid = deadPc.UserId end
+			-- (1) hold 후 화면 검게
 			_TimerService:SetTimerOnce(function()
-				-- 텀 동안 게임오버/런 종료 등으로 상태가 바뀌지 않았을 때만 재시작.
+				if uid ~= "" then self:ClientFadeToBlack(uid) end
+			end, hold)
+			-- (2) 완전히 검어진 뒤 리스폰 → ClientStageReset이 FromBlack (게임오버/런 종료 시 스킵).
+			_TimerService:SetTimerOnce(function()
 				if _GameStateManager.RunActive then self:ResetStage() end
-			end, _GameConstants.StageEndDelay)
+			end, hold + fade)
 		else
 			-- 실패(목숨 0) 텀: 같은 텀 뒤에 게임오버 처리. 그 사이 전투 정지 + 적 프리즈.
 			self.StageActive = false
