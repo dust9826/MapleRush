@@ -19,11 +19,14 @@ script FloorManager extends Logic
 
 	-- 서버: 현재 테마의 스테이지 덱(셔플된 미방문 스테이지 이름 배열). 노드마다 상단 최대 3장을 후보로 제시,
 	-- 선택(방문)된 스테이지는 덱에서 제거. 덱이 완전히 비면(0장) 원상복구(전체)하고 다시 셔플. 테마(층) 단위.
-	-- (2장 남으면 후보 2개, 1장 남으면 후보 1개로 그대로 노출 — 덱을 끝까지 소진.)
+	-- ★ UI는 항상 3개 문 → 덱에 2·1장만 남아도 후보 배열은 3개로 패딩(남은 카드 중복 노출). 1장이면 세 문 모두 그 스테이지.
 	property any deck = nil
 
-	-- 서버: 직전에 방문한 스테이지 이름. 덱 리셔플 직후 상단 3장에서 밀어내 연속 동일 스테이지를 방지.
+	-- 서버: 직전에 방문(클리어)한 스테이지 이름. 덱 리셔플 직후 상단 3장에서 밀어내 연속 동일 스테이지를 방지.
 	property string lastPlayedStage = ""
+
+	-- 서버: 현재 진행 중(선택된) 일반 스테이지 이름. ★덱 제거는 "클리어" 시에만 → 사망·재시작은 덱 유지.
+	property string currentStageName = ""
 
 	@Sync
 	property string CurrentTheme = ""
@@ -164,15 +167,22 @@ script FloorManager extends Logic
 			self.deck = self:BuildShuffledDeck(all)
 			log("[FloorManager] 덱 소진 -> 원상복구+셔플 (cards=" .. tostring(#self.deck) .. " last=" .. tostring(self.lastPlayedStage) .. ")")
 		end
-		-- 상단 최대 3장을 후보로 peek (제거는 방문 시 RequestSelectNode에서).
+		-- 상단 최대 3장의 서로 다른 스테이지를 peek. (실제 제거는 방문 시 RequestSelectNode에서 덱 1장만)
+		-- ★ UI는 항상 3개 문 → 후보 배열은 3개로 고정. 덱에 2·1장만 남으면 남은 카드로 순환 패딩(중복 노출).
+		local uniq = #self.deck
+		if uniq > 3 then uniq = 3 end
 		local chosen = {}
-		local k = #self.deck
-		if k > 3 then k = 3 end
-		for i = 1, k do
+		for i = 1, uniq do
 			table.insert(chosen, self.deck[i])
 		end
+		-- 3개 미만이면 남은(uniq개) 카드를 순환하며 채워 항상 3개로. 1장이면 [A,A,A].
+		local pad = 0
+		while #chosen < 3 and uniq > 0 do
+			chosen[#chosen + 1] = self.deck[(pad % uniq) + 1]
+			pad += 1
+		end
 		self.nodeSpawnChoices = chosen
-		log("[FloorManager] node stages: " .. tostring(#chosen) .. " (first=" .. tostring(chosen[1]) .. ") deck=" .. tostring(#self.deck))
+		log("[FloorManager] node choices: 3 (uniq=" .. tostring(uniq) .. " first=" .. tostring(chosen[1]) .. ") deck=" .. tostring(#self.deck))
 	end
 
 	@ExecSpace("ServerOnly")
@@ -220,16 +230,8 @@ script FloorManager extends Logic
 			if idx < 1 or idx > #self.nodeSpawnChoices then idx = 1 end
 			stageName = self.nodeSpawnChoices[idx]
 		end
-		-- ★ 방문 처리: 선택된 스테이지를 덱에서 제거(다음 노드부터 후보 제외) + 직전 방문 기록.
-		if self.deck ~= nil then
-			for i = #self.deck, 1, -1 do
-				if self.deck[i] == stageName then
-					table.remove(self.deck, i)
-					break
-				end
-			end
-		end
-		self.lastPlayedStage = stageName
+		-- ★ 진행 중 스테이지만 기록. 덱 제거는 "클리어" 시점(OnStageRewardDone)에만 — 사망·재시작은 덱 유지.
+		self.currentStageName = stageName
 		log("[FloorManager] node branch " .. tostring(branchIdx) .. " -> stage " .. tostring(stageName))
 		_StageManager:StartStageAt(stageName)
 	end
@@ -286,9 +288,33 @@ script FloorManager extends Logic
 			end
 		else
 			self.NormalsClearedThisFloor += 1
-			log("[FloorManager] normal stage done (" .. tostring(self.NormalsClearedThisFloor) .. "/" .. tostring(_GameConstants:NormalStagesForFloor(_GameStateManager.CurrentFloor)) .. ")")
+			-- ★ 방문 처리(클리어 기준): 클리어한 스테이지를 덱에서 제거. 사망 재시작은 이 경로로 안 옴 → 덱 유지.
+			self:MarkStageCleared(self.currentStageName)
+			log("[FloorManager] normal stage done (" .. tostring(self.NormalsClearedThisFloor) .. "/" .. tostring(_GameConstants:NormalStagesForFloor(_GameStateManager.CurrentFloor)) .. ") cleared=" .. tostring(self.currentStageName) .. " deck=" .. tostring(self:DeckCount()))
 			self:NextNode()
 		end
+	end
+
+	@ExecSpace("ServerOnly")
+	method void MarkStageCleared(string stageName)
+		-- 클리어한 일반 스테이지를 덱에서 1장 제거(방문=클리어) + 직전 방문 기록(리셔플 가드용).
+		if stageName == nil or stageName == "" then return end
+		if self.deck ~= nil then
+			for i = #self.deck, 1, -1 do
+				if self.deck[i] == stageName then
+					table.remove(self.deck, i)
+					break
+				end
+			end
+		end
+		self.lastPlayedStage = stageName
+	end
+
+	@ExecSpace("ServerOnly")
+	method integer DeckCount()
+		-- 로그용: 현재 덱 장수(nil 안전).
+		if self.deck == nil then return 0 end
+		return #self.deck
 	end
 
 	@ExecSpace("ServerOnly")
