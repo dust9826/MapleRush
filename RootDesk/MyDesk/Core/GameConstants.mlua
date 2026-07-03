@@ -151,6 +151,12 @@ script GameConstants extends Logic
 	-- 이 리프트로 항상 발판 위에서 스폰→중력이 올바른 발판에 안착. 모든 테마맵/미래 authoring 공통 적용.
 	property number SpawnYLift = 0.15
 
+	-- 사망 후 부활까지 텀(초). 목숨 감소 → 이 시간 동안 전투 정지(적 프리즈) → 스폰포인트에서 재시작. 인스펙터 튜닝.
+	property number ReviveDelay = 1.2
+
+	-- 낙사 감지 y 임계값(월드유닛). 활성 전투 중 플레이어 y가 이보다 아래로 떨어지면 맵 밖 낙하로 간주 → 스폰포인트 복귀(목숨 유지).
+	property number FallYThreshold = -8.0
+
 	property number BossHP = 500.0
 
 	property number GroggyGaugeRatio = 0.2

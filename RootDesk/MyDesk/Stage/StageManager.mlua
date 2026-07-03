@@ -22,6 +22,9 @@ script StageManager extends Logic
 	-- 진입 유예: 이 시각(ServerElapsedSeconds)까지 적 행동 정지 (스폰 캠핑 방지)
 	property number combatGraceUntil = -999.0
 
+	-- 낙사 복구 디바운스: 직전 복귀 처리 시각. 텔레포트 반영 지연 동안 매 프레임 재트리거 방지.
+	property number lastFallRecover = -999.0
+
 	-- 클라: 보상 UI 컨트롤러 참조 (RewardController가 등록)
 	property any rewardUI = nil
 
@@ -317,6 +320,8 @@ script StageManager extends Logic
 	method void OnUpdate(number delta)
 		-- 서버: 맵 전환 완료를 폴링 → 도착 시 적 스폰 (전투 스테이지).
 		if self:IsServer() == false then return end
+		-- 낙사 복구: 활성 전투 중 플레이어가 맵 밖으로 떨어지면 스폰포인트로 복귀 (매 프레임, 맵 대기와 무관).
+		self:CheckFallOut()
 		if self.awaitingMap == false then return end
 		local player = self:GetPlayer()
 		if player == nil then return end
@@ -332,6 +337,33 @@ script StageManager extends Logic
 				if self.StageType == "boss" then self:PrepareBossMap(cm) end
 				self:ResetStage()
 			end
+		end
+	end
+
+	@ExecSpace("ServerOnly")
+	method void CheckFallOut()
+		-- 활성 전투 중 플레이어가 맵 밖(y < FallYThreshold)으로 떨어지면 현재 스테이지 스폰좌표로 복귀 (목숨 유지).
+		-- 상점/부활 텀 등 비활성 구간엔 개입 안 함. 텔레포트 반영 지연 동안 재트리거 방지(디바운스 1s).
+		if self.StageActive == false then return end
+		local player = self:GetPlayer()
+		if player == nil or isvalid(player) == false then return end
+		local tf = player.TransformComponent
+		if isvalid(tf) == false then return end
+		if tf.WorldPosition.y >= _GameConstants.FallYThreshold then return end
+		local now = _UtilLogic.ServerElapsedSeconds
+		if now - self.lastFallRecover < 1.0 then return end
+		self.lastFallRecover = now
+		local pc = player.PlayerComponent
+		if pc ~= nil then self:ClientRepositionTo(self.curSpawnX, self.curSpawnY, pc.UserId) end
+		log("[StageManager] player fell out of map -> repositioned to spawn (" .. string.format("%.1f", self.curSpawnX) .. "," .. string.format("%.1f", self.curSpawnY) .. ")")
+	end
+
+	@ExecSpace("Client")
+	method void ClientRepositionTo(number sx, number sy)
+		-- 클라: 낙사 복구 텔레포트만 (스테이지 리셋과 달리 대시/컨텍스트는 건드리지 않음).
+		local player = _UserService.LocalPlayer
+		if player ~= nil and isvalid(player) then
+			player.MovementComponent:SetWorldPosition(Vector2(sx, sy))
 		end
 	end
 
@@ -579,8 +611,15 @@ script StageManager extends Logic
 		if deadPc ~= nil then self:ClientPlayerDeathSfx(deadPc.UserId) end
 		if _GameStateManager.CurrentLives > 0 then
 			_GameStateManager.CurrentLives -= 1
-			log("[StageManager] player died -> lives=" .. tostring(_GameStateManager.CurrentLives) .. ", restarting stage")
-			self:ResetStage()
+			log("[StageManager] player died -> lives=" .. tostring(_GameStateManager.CurrentLives) .. ", reviving in " .. tostring(_GameConstants.ReviveDelay) .. "s")
+			-- 부활 텀: 즉시 재시작하지 않고 ReviveDelay 후 ResetStage. 그 사이 전투 정지(StageActive=false로 재피격 차단)
+			-- + grace 연장으로 적 프리즈 → 잠깐의 사망 여운 후 스폰포인트에서 재개.
+			self.StageActive = false
+			self.combatGraceUntil = _UtilLogic.ServerElapsedSeconds + _GameConstants.ReviveDelay + 1.5
+			_TimerService:SetTimerOnce(function()
+				-- 텀 동안 게임오버/런 종료 등으로 상태가 바뀌지 않았을 때만 재시작.
+				if _GameStateManager.RunActive then self:ResetStage() end
+			end, _GameConstants.ReviveDelay)
 		else
 			self:GameOver()
 		end
