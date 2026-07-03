@@ -71,9 +71,9 @@ script LobbyController extends Component
 
 	@ExecSpace("ClientOnly")
 	method void OnTutorialClick(ButtonClickEvent event)
-		-- "튜토리얼": 로비 숨김 → 타이틀 BGM 정지 → 서버에 튜토리얼 시작 요청(맵 이동 + 무적 연습장).
+		-- "튜토리얼": 로비 숨김 → 서버에 튜토리얼 시작 요청(맵 이동 + 무적 연습장).
+		--   BGM은 타이틀곡(bgm_title)을 정지하지 않고 그대로 이어간다 → 튜토리얼 배경음 = 타이틀 배경음.
 		self.lobbyRoot.Enable = false
-		_SoundManager:StopBGM()
 		_TutorialManager:RequestStartTutorial()
 		log("[LobbyController] tutorial requested")
 	end
