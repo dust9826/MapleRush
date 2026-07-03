@@ -15,6 +15,11 @@ script BossController extends Component
 	-- 현재 발동 중 패턴 config.
 	property any curPat = nil
 
+	-- 현재 박스 패턴의 임팩트 이펙트 key(EffectTable) + 각 박스 중심 목록(발동 순간 이펙트 재생용).
+	property string curFx = ""
+
+	property any attackCenters = nil
+
 	-- 패턴별 개별 쿨다운: patId → 다음 사용 가능 ServerElapsedSeconds. 거리밴드 선택과 함께 패턴 다양성 보장 (§1.6).
 	property any patReadyAt = nil
 
@@ -52,6 +57,7 @@ script BossController extends Component
 		self.patterns = self:BuildPatterns(self.BossKind)
 		self.pendingAttacks = {}
 		self.telegraphIds = {}
+		self.attackCenters = {}
 		self.patReadyAt = {}
 		log("[BossController] OnBeginPlay kind='" .. tostring(self.BossKind) .. "' patterns=" .. tostring(#self.patterns) .. " stand=" .. tostring(self.standClip))
 	end
@@ -64,23 +70,23 @@ script BossController extends Component
 		if kind == "elija" then
 			-- 오르비스 엘리쟈: 근접 없음. 원거리1 + 광역2 회피형.
 			return {
-				{ id = "P-O1", cls = "ranged", mode = "fan",    windup = C.BossO1Windup, cd = C.BossO1Cd, parryable = true },
-				{ id = "P-O2", cls = "box",    mode = "player", hw = C.BossO2BoxHW, hh = C.BossO2BoxHH, windup = C.BossO2Windup, cd = C.BossO2Cd, parryable = false },
-				{ id = "P-O3", cls = "box",    mode = "sides",  hw = C.BossO3BoxHW, hh = C.BossO3BoxHH, windup = C.BossO3Windup, cd = C.BossO3Cd, parryable = false },
+				{ id = "P-O1", cls = "ranged", mode = "fan",    windup = C.BossO1Windup, cd = C.BossO1Cd, parryable = true, projfx = "boss_elija_orb" },
+				{ id = "P-O2", cls = "box",    mode = "player", hw = C.BossO2BoxHW, hh = C.BossO2BoxHH, windup = C.BossO2Windup, cd = C.BossO2Cd, parryable = false, fx = "boss_elija_descent" },
+				{ id = "P-O3", cls = "box",    mode = "sides",  hw = C.BossO3BoxHW, hh = C.BossO3BoxHH, windup = C.BossO3Windup, cd = C.BossO3Cd, parryable = false, fx = "boss_elija_wedge" },
 			}
 		elseif kind == "snowman" then
 			-- 엘나스 스노우맨: 묵직·느림·넓은 범위.
 			return {
-				{ id = "P-E1", cls = "box",    mode = "forward", hw = C.BossE1BoxHW, hh = C.BossE1BoxHH, windup = C.BossE1Windup, cd = C.BossE1Cd, parryable = true },
-				{ id = "P-E2", cls = "ranged", mode = "single",  windup = C.BossE2Windup, cd = C.BossE2Cd, parryable = true },
-				{ id = "P-E3", cls = "box",    mode = "player",  hw = C.BossE3BoxHW, hh = C.BossE3BoxHH, windup = C.BossE3Windup, cd = C.BossE3Cd, parryable = false },
+				{ id = "P-E1", cls = "box",    mode = "forward", hw = C.BossE1BoxHW, hh = C.BossE1BoxHH, windup = C.BossE1Windup, cd = C.BossE1Cd, parryable = true, fx = "boss_snowman_fist" },
+				{ id = "P-E2", cls = "ranged", mode = "single",  windup = C.BossE2Windup, cd = C.BossE2Cd, parryable = true, projfx = "boss_snowman_icicle" },
+				{ id = "P-E3", cls = "box",    mode = "player",  hw = C.BossE3BoxHW, hh = C.BossE3BoxHH, windup = C.BossE3Windup, cd = C.BossE3Cd, parryable = false, fx = "boss_snowman_blizzard" },
 			}
 		elseif kind == "zakum" then
 			-- 폐광 자쿰: 변칙. 좌/우 근접(택1=전방) + 수평 박수탄 + 다지점 용암.
 			return {
-				{ id = "P-Z1", cls = "box",    mode = "forward",    hw = C.BossZ1BoxHW, hh = C.BossZ1BoxHH, windup = C.BossZ1Windup, cd = C.BossZ1Cd, parryable = true },
+				{ id = "P-Z1", cls = "box",    mode = "forward",    hw = C.BossZ1BoxHW, hh = C.BossZ1BoxHH, windup = C.BossZ1Windup, cd = C.BossZ1Cd, parryable = true, fx = "boss_zakum_arm" },
 				{ id = "P-Z2", cls = "ranged", mode = "horizontal", windup = C.BossZ2Windup, cd = C.BossZ2Cd, parryable = true },
-				{ id = "P-Z3", cls = "box",    mode = "multi", count = C.BossZ3Points, hw = C.BossZ3BoxHW, hh = C.BossZ3BoxHH, windup = C.BossZ3Windup, cd = C.BossZ3Cd, parryable = false },
+				{ id = "P-Z3", cls = "box",    mode = "multi", count = C.BossZ3Points, hw = C.BossZ3BoxHW, hh = C.BossZ3BoxHH, windup = C.BossZ3Windup, cd = C.BossZ3Cd, parryable = false, fx = "boss_zakum_lava" },
 			}
 		end
 		-- 기본(더미 bossenemy): 기존 slam/tripleShot/redSmash 골격.
@@ -175,6 +181,7 @@ script BossController extends Component
 		local rec = _CombatPrimitives:RegisterEnemyAttackBox(center, hw, hh, 1, parryable, windup, self.Entity)
 		rec.bossEntityId = self.Entity.Name
 		table.insert(self.pendingAttacks, rec)
+		table.insert(self.attackCenters, center)
 		local id = _TelegraphService:Show(self.Entity, center, hw, hh, windup, parryable, "box", 0, 0)
 		table.insert(self.telegraphIds, id)
 	end
@@ -243,6 +250,8 @@ script BossController extends Component
 		self.phaseTimer = pat.windup
 		self.pendingAttacks = {}
 		self.telegraphIds = {}
+		self.attackCenters = {}
+		self.curFx = pat.fx or ""
 		self.TelegraphTriple = false
 		self:StopMove()
 		local facing = 1
@@ -321,29 +330,37 @@ script BossController extends Component
 				local hitComp = player:GetComponent("script.PlayerHit")
 				if hitComp ~= nil then hitComp:RequestHit("boss:" .. pat.id) end
 			end
+			-- 박스 임팩트 이펙트: 발동 순간 각 히트박스 중심에 1회(전 클라). curFx="" 이면 스킵.
+			if self.curFx ~= "" and self.attackCenters ~= nil then
+				for _, c in ipairs(self.attackCenters) do
+					self:PlayImpactFx(self.curFx, c.x, c.y)
+				end
+			end
 			self.pendingAttacks = {}
+			self.attackCenters = {}
 		else
 			local map = self.Entity.CurrentMap
 			local myPos = self.Entity.TransformComponent.WorldPosition
 			local myCenter = Vector2(myPos.x, myPos.y + 0.5)
 			if isvalid(map) then
+				local projfx = pat.projfx or ""
 				if pat.mode == "fan" then
 					for i = -1, 1 do
 						self.shotIndex += 1
 						local dir = _CombatPrimitives:DirectionTo(myCenter, Vector2(self.AimTargetX, self.AimTargetY + i * _GameConstants.BossTripleSpread))
-						self:SpawnProj(map, myCenter, dir)
+						self:SpawnProj(map, myCenter, dir, projfx)
 					end
 				elseif pat.mode == "horizontal" then
 					self.shotIndex += 1
 					local sgn = 1.0
 					if self.AimTargetX < myCenter.x then sgn = -1.0 end
-					self:SpawnProj(map, myCenter, Vector2(sgn, 0))
+					self:SpawnProj(map, myCenter, Vector2(sgn, 0), projfx)
 					-- 박수 레이저 빔 플래시(연출 전용). 발사 행을 따라 수평 빔, 판정은 위 투사체가 담당.
 					self:ShowZakumBeam(myCenter.x, myCenter.y, sgn)
 				else
 					self.shotIndex += 1
 					local dir = _CombatPrimitives:DirectionTo(myCenter, Vector2(self.AimTargetX, self.AimTargetY))
-					self:SpawnProj(map, myCenter, dir)
+					self:SpawnProj(map, myCenter, dir, projfx)
 				end
 				log("[BossController] " .. pat.id .. " fired (" .. pat.mode .. ")")
 			end
@@ -359,8 +376,8 @@ script BossController extends Component
 	end
 
 	@ExecSpace("ServerOnly")
-	method void SpawnProj(Entity map, Vector2 from, Vector2 dir)
-		-- 적 투사체 1발 발사 (보스 원거리 공용).
+	method void SpawnProj(Entity map, Vector2 from, Vector2 dir, string fxKey)
+		-- 적 투사체 1발 발사 (보스 원거리 공용). fxKey!="" 이면 투사체 비주얼 이펙트 지정(클라가 부착 재생).
 		local spawnPos = Vector3(from.x + dir.x * 0.5, from.y + dir.y * 0.5, 0)
 		local proj = _SpawnService:SpawnByModelId("enemyprojectile", "bossproj_" .. tostring(self.shotIndex), spawnPos, map)
 		if proj ~= nil then
@@ -368,21 +385,37 @@ script BossController extends Component
 			local comp = proj:GetComponent("script.Projectile")
 			if comp ~= nil then
 				comp:Launch(dir.x, dir.y, _GameConstants.ProjectileSpeed, 1, true)
+				if fxKey ~= "" then comp.FxKey = fxKey end
 			end
 		end
+	end
+
+	@ExecSpace("Multicast")
+	method void PlayImpactFx(string key, number cx, number cy)
+		-- 박스형 보스 패턴 임팩트 이펙트: 히트박스 중심(cx,cy)에 1회(전 클라). RUID는 EffectTable(key).
+		if key == "" then return end
+		local map = self.Entity.CurrentMap
+		if isvalid(map) == false then return end
+		local clip = _EffectTable:Clip(key)
+		if clip == "" then return end
+		local sc = _EffectTable:Scale(key)
+		local fo = _EffectTable:Offset(key)
+		_EffectService:PlayEffect(clip, map, Vector3(cx + fo.x, cy + fo.y, 0), _EffectTable:Rot(key), Vector3(sc.x, sc.y, 1), false, _EffectTable:Options(key))
 	end
 
 	@ExecSpace("Client")
 	method void ShowZakumBeam(number cx, number cy, number sgn)
 		-- 자쿰 P-Z2 박수 레이저: 발사 순간 보스 발사 행을 따라 수평 레이저 빔 플래시(비주얼 전용; 판정은 투사체).
-		local clip = _GameConstants.BossZakumBeamClip
+		local clip = _EffectTable:Clip("boss_zakum_beam")
 		if clip == "" then return end
 		local map = self.Entity.CurrentMap
 		if isvalid(map) == false then return end
-		local sx = _GameConstants.BossZakumBeamScaleX
-		local sy = _GameConstants.BossZakumBeamScaleY
-		local pos = Vector3(cx + sgn * _GameConstants.BossZakumBeamOffsetX, cy, 0)
-		_EffectService:PlayEffect(clip, map, pos, 0, Vector3(sx, sy, 1), false, { FlipX = sgn < 0 })
+		local sc = _EffectTable:Scale("boss_zakum_beam")
+		local fo = _EffectTable:Offset("boss_zakum_beam")
+		local pos = Vector3(cx + sgn * _GameConstants.BossZakumBeamOffsetX + fo.x, cy + fo.y, 0)
+		local options = _EffectTable:Options("boss_zakum_beam")
+		options["FlipX"] = sgn < 0
+		_EffectService:PlayEffect(clip, map, pos, _EffectTable:Rot("boss_zakum_beam"), Vector3(sc.x, sc.y, 1), false, options)
 		log("[BossController] zakum beam fx (sgn=" .. tostring(sgn) .. ")")
 	end
 

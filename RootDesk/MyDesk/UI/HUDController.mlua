@@ -202,11 +202,6 @@ script HUDController extends Component
 		elseif id ~= "" then
 			label = id
 		end
-		-- 사용 감지: 사용횟수가 줄면(=발동) 중앙 플래시 트리거.
-		if self.prevAbilityUses >= 0 and uses < self.prevAbilityUses and id ~= "" then
-			self.abilityFlashUntil = _UtilLogic.ElapsedSeconds + 1.2
-			self.abilityFlashName = label
-		end
 		self.prevAbilityUses = uses
 		-- 우측 버튼 라벨.
 		if isvalid(self.abilityBtnText) then
@@ -216,13 +211,9 @@ script HUDController extends Component
 				self.abilityBtnText.Text = label .. " (" .. tostring(uses) .. ")"
 			end
 		end
-		-- 중앙 플래시 텍스트 (발동 직후 1.2s).
+		-- 능력 사용 중앙 "⚡ 능력명 사용!" 플래시 제거(사용자 요청) — 항상 빈 텍스트 유지.
 		if isvalid(self.abilityCenterText) then
-			if _UtilLogic.ElapsedSeconds < self.abilityFlashUntil then
-				self.abilityCenterText.Text = "⚡ " .. self.abilityFlashName .. " 사용!"
-			else
-				self.abilityCenterText.Text = ""
-			end
+			self.abilityCenterText.Text = ""
 		end
 	end
 

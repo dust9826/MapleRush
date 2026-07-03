@@ -1,0 +1,72 @@
+@Component
+script ClearOverlay extends Component
+
+	-- 참공(전 투사체 제거) 풀스크린 UI 연출. ClearGroup의 풀스크린 스프라이트 엔티티에 부착 →
+	--   self.Entity.SpriteGUIRendererComponent 에 EffectTable(ability_clear) 클립을 1회 재생.
+	-- UI라 카메라/플레이어 위치 무관하게 항상 화면 중앙 풀스크린 1개만 재생(월드 이펙트의 좌하단·중복 문제 없음).
+	-- 트리거: 서버 RequestUseAbility(clearProjectiles) → @ExecSpace(Multicast) PlayerAbility.FxClear → _BattlefieldFx.clearOverlay:Play().
+
+	property any endHandler = nil
+
+	-- 안전장치 타이머(종료 이벤트 미발화 대비 강제 숨김).
+	property number safetyTimer = 0
+
+	@ExecSpace("ClientOnly")
+	method void OnBeginPlay()
+		-- 레지스트리 등록 + 초기 숨김 + 애니 종료 이벤트 구독(1회 재생 끝나면 자동 숨김).
+		_BattlefieldFx.clearOverlay = self
+		self:Hide()
+		self.endHandler = self.Entity:ConnectEvent(SpriteGUIAnimPlayerEndEvent, self.OnAnimEnd)
+		log("[ClearOverlay] registered")
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnEndPlay()
+		-- 이벤트/타이머 해제.
+		if self.endHandler ~= nil then
+			self.Entity:DisconnectEvent(SpriteGUIAnimPlayerEndEvent, self.endHandler)
+		end
+		if self.safetyTimer ~= 0 then
+			_TimerService:ClearTimer(self.safetyTimer)
+		end
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnAnimEnd(SpriteGUIAnimPlayerEndEvent event)
+		-- 애니 1회 재생 종료 → 숨김.
+		self:Hide()
+	end
+
+	@ExecSpace("ClientOnly")
+	method void Play()
+		-- 참공 발동: EffectTable(ability_clear) 클립을 풀스크린으로 1회 재생. RUID·재생옵션 전부 데이터테이블에서.
+		local sr = self.Entity.SpriteGUIRendererComponent
+		if isvalid(sr) == false then return end
+		local clip = _EffectTable:Clip("ability_clear")
+		if clip == "" then return end
+		-- 재생옵션(PlayRate/StartFrameIndex/EndFrameIndex) 반영 후 ImageRUID 세팅(=프레임0부터 재생).
+		local opt = _EffectTable:Options("ability_clear")
+		if opt["PlayRate"] ~= nil then sr.PlayRate = opt["PlayRate"] end
+		if opt["StartFrameIndex"] ~= nil then sr.StartFrameIndex = opt["StartFrameIndex"] end
+		if opt["EndFrameIndex"] ~= nil then sr.EndFrameIndex = opt["EndFrameIndex"] end
+		sr.ImageRUID = clip
+		sr.Color = Color(1, 1, 1, 1)
+		-- 안전장치: 종료 이벤트가 안 오거나 클립이 무한 루프여도 3초 뒤 강제 숨김.
+		if self.safetyTimer ~= 0 then _TimerService:ClearTimer(self.safetyTimer) end
+		self.safetyTimer = _TimerService:SetTimerOnce(function()
+			self.safetyTimer = 0
+			self:Hide()
+		end, 3.0)
+		log("[ClearOverlay] play (clip=" .. clip .. ")")
+	end
+
+	@ExecSpace("ClientOnly")
+	method void Hide()
+		-- 숨김: ImageRUID 비워 애니 정지 + 알파 0.
+		local sr = self.Entity.SpriteGUIRendererComponent
+		if isvalid(sr) == false then return end
+		sr.ImageRUID = ""
+		sr.Color = Color(1, 1, 1, 0)
+	end
+
+end

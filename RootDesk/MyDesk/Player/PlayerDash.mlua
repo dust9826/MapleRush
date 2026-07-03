@@ -245,7 +245,7 @@ script PlayerDash extends Component
 		self.dashIsSideView = self:IsDashSideView()
 		self.dashStartTime = _WallClock:Now()
 		self.IsDashing = true
-		self:StartDashFx()
+		self:StartDashFx(false)
 		local pc = self.Entity.PlayerControllerComponent
 		self.prevControllerEnable = pc.Enable
 		pc.Enable = false
@@ -327,7 +327,7 @@ script PlayerDash extends Component
 		self.dashStartTime = _WallClock:Now()
 		self.IsDashing = true
 		self:StopAimPreview()
-		self:StartDashFx()
+		self:StartDashFx(empowered)
 		-- 대시 효과음: 강화/일반 구분 (sound.csv #8/#9)
 		if empowered then
 			_SoundManager:PlaySFXKey("sfx_dash_empowered")
@@ -400,16 +400,17 @@ script PlayerDash extends Component
 
 	-- ========== 연출(FX) ==========
 	@ExecSpace("ClientOnly")
-	method void StartDashFx()
-		-- 대시 연출 시작: 아바타 반투명 고스트(모션블러 느낌) + 대시 이펙트(쉐도우 어썰트) 1회.
+	method void StartDashFx(boolean empowered)
+		-- 대시 연출 시작: 아바타 반투명 고스트(모션블러 느낌) + 대시 이펙트(강화 여부로 클립 분기) 1회.
 		-- (MotionBlur 셰이더는 AvatarRenderer 비호환 LWA-3009 → SetAlpha 고스트로 대체)
+		-- 대시 잔상 이펙트(dash_ghost)는 제거됨(사용자 요청).
 		local av = self.Entity.AvatarRendererComponent
 		if isvalid(av) then
 			av:SetAlpha(_GameConstants.DashGhostAlpha)
 		else
 			log("[PlayerDash] no AvatarRendererComponent on player (ghost skipped)")
 		end
-		self:PlayDashEffect()
+		self:PlayDashEffect(empowered)
 	end
 
 	@ExecSpace("ClientOnly")
@@ -422,12 +423,18 @@ script PlayerDash extends Component
 	end
 
 	@ExecSpace("ClientOnly")
-	method void PlayDashEffect()
-		-- 대시 이펙트(쉐도우 어썰트) 1회: 대시 시작 위치(중심 높이)에 진행 방향으로 회전 재생(맵 앵커, 자동 소멸).
+	method void PlayDashEffect(boolean empowered)
+		-- 대시 이펙트 1회: 대시 시작 위치(중심 높이)에 진행 방향으로 회전 재생(맵 앵커, 자동 소멸).
+		-- 강화 대시면 강화 클립(dash_empowered), 아니면 일반(dash). RUID는 EffectTable 데이터셋.
 		-- 에셋은 기본 좌향 + 상하 구분 → 좌우는 FlipX로, 회전은 ±90°로 제한해 상하 뒤집힘 방지.
+		local key = "dash"
+		if empowered then key = "dash_empowered" end
+		local clip = _EffectTable:Clip(key)
+		if clip == "" then return end
 		local pos = self.Entity.TransformComponent.WorldPosition
-		local center = Vector3(pos.x, pos.y + _GameConstants.PlayerCenterYOffset, pos.z)
-		local s = _GameConstants.DashEffectScale
+		local fo = _EffectTable:Offset(key)
+		local center = Vector3(pos.x + fo.x, pos.y + _GameConstants.PlayerCenterYOffset + fo.y, pos.z)
+		local sc = _EffectTable:Scale(key)
 		local dir = self.dashDir
 		local flipX = dir.x > 0
 		local rot = 0.0
@@ -438,10 +445,10 @@ script PlayerDash extends Component
 			-- 왼쪽 반구: -X 기준 각도 (-90~90)
 			rot = math.deg(math.atan(-dir.y, -dir.x))
 		end
-		local options = {}
+		local options = _EffectTable:Options(key)
 		options["Alpha"] = _GameConstants.DashEffectAlpha
 		options["FlipX"] = flipX
-		_EffectService:PlayEffect(_GameConstants.DashEffectClip, self.Entity, center, rot, Vector3(s, s, 1), false, options)
+		_EffectService:PlayEffect(clip, self.Entity, center, rot + _EffectTable:Rot(key), Vector3(sc.x, sc.y, 1), false, options)
 	end
 
 	-- ========== 서버 권위: 무적 / 경로 데미지 / 슬로우 트리거 ==========

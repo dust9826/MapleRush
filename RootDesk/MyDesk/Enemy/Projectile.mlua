@@ -16,6 +16,15 @@ script Projectile extends Component
 
 	property boolean Launched = false
 
+	-- 투사체 비주얼 이펙트 key(EffectTable). 서버가 스폰 직후 설정 → 클라가 부착 루프로 재생 + 기본 스프라이트 숨김.
+	-- "" 이면 기본 스프라이트 그대로(더미 보스/미지정). effect_list #9(암흑구체)·#13(고드름).
+	@Sync property string FxKey = ""
+
+	-- 클라 전용: 비주얼 이펙트 중복 부착 방지 + 제거용 serial.
+	@HideFromInspector property boolean fxApplied = false
+
+	@HideFromInspector property any fxSerial = nil
+
 	-- 발사 후 누적 이동거리. 이 값이 TerrainGrace 넘기 전까진 지형 충돌 무시(발사 지점 주변 벽 통과 → 투사체가 안 보이고 즉시 사라지는 문제 방지).
 	property number traveled = 0.0
 
@@ -28,6 +37,45 @@ script Projectile extends Component
 	property number HitRadius = 0.2
 
 	property number age = 0.0
+
+	@ExecSpace("ClientOnly")
+	method void OnBeginPlay()
+		-- 클라: FxKey가 이미 동기화됐으면 즉시 비주얼 적용(OnSyncProperty가 먼저/나중일 수 있어 양쪽 처리).
+		self:ApplyFx()
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnSyncProperty(string name, any value)
+		-- FxKey 동기화 도착 시 비주얼 적용.
+		if name == "FxKey" then
+			self:ApplyFx()
+		end
+	end
+
+	@ExecSpace("ClientOnly")
+	method void ApplyFx()
+		-- 투사체 비주얼: EffectTable(FxKey) 클립을 투사체에 부착 루프 + 기본 스프라이트 숨김(이펙트가 곧 겉모습).
+		if self.fxApplied then return end
+		local key = self.FxKey
+		if key == nil or key == "" then return end
+		local clip = _EffectTable:Clip(key)
+		if clip == "" then return end
+		self.fxApplied = true
+		local sc = _EffectTable:Scale(key)
+		local fo = _EffectTable:Offset(key)
+		self.fxSerial = _EffectService:PlayEffectAttached(clip, self.Entity, Vector3(fo.x, fo.y, 0), _EffectTable:Rot(key), Vector3(sc.x, sc.y, 1), true, _EffectTable:Options(key))
+		local sr = self.Entity.SpriteRendererComponent
+		if isvalid(sr) then sr.Enable = false end
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnEndPlay()
+		-- 소멸 시 부착 루프 이펙트 정리(엔티티와 함께 자동 정리되지 않는 경우 대비).
+		if self.fxSerial ~= nil then
+			_EffectService:RemoveEffect(self.fxSerial)
+			self.fxSerial = nil
+		end
+	end
 
 	@ExecSpace("ServerOnly")
 	method void Launch(number dirX, number dirY, number speed, number damage, boolean parryable)

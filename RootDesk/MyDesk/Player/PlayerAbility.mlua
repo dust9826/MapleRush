@@ -85,6 +85,7 @@ script PlayerAbility extends Component
 		if self.AbilityId == "invincible" then
 			local invDur = _PlayerConfig.InvincibleAbilityDuration + _MetaProgression:GetInvincibleBonus()
 			self.abilityInvincibleUntil = _WallClock:ServerNow() + invDur
+			self:FxInvincible(invDur)
 			log("[PlayerAbility] INVINCIBLE for " .. tostring(invDur) .. "s (base+금강불괴 meta, left=" .. tostring(self.UsesLeft) .. ")")
 		elseif self.AbilityId == "clearProjectiles" then
 			local map = self.Entity.CurrentMap
@@ -100,11 +101,13 @@ script PlayerAbility extends Component
 					end
 				end
 			end
+			self:FxClear()
 			log("[PlayerAbility] CLEAR PROJECTILES: removed=" .. tostring(removed) .. " (left=" .. tostring(self.UsesLeft) .. ")")
 		elseif self.AbilityId == "immovable" then
 			-- 부동심: 보험 창 개시 + 흡수 횟수 충전(1 + 메타). 창 안에서 피격 시 PlayerHit이 TryConsumeImmovable로 소모.
 			self.immovableUntil = _WallClock:ServerNow() + _PlayerConfig.ImmovableWindow
 			self.immovableCharges = 1 + _MetaProgression:GetImmovableBonus()
+			self:FxImmovable(_PlayerConfig.ImmovableWindow)
 			log("[PlayerAbility] IMMOVABLE armed: window=" .. tostring(_PlayerConfig.ImmovableWindow) .. "s charges=" .. tostring(self.immovableCharges) .. " (left=" .. tostring(self.UsesLeft) .. ")")
 		end
 	end
@@ -141,6 +144,7 @@ script PlayerAbility extends Component
 		local started = dash:StartAbilityDash(_InputRouter:CursorWorld(), _PlayerConfig.ManjiDashDistance)
 		if started == false then return end
 		_SoundManager:PlaySFXKey("sfx_ability_manji")
+		self:PlayManjiFx(dash.dashDir.x, dash.dashDir.y)
 		local pos = self.Entity.TransformComponent.WorldPosition
 		self:RequestManji(pos.x, pos.y, dash.dashDir.x, dash.dashDir.y, dash.dashLen)
 	end
@@ -169,6 +173,7 @@ script PlayerAbility extends Component
 		end
 		self.spinLockUntil = _WallClock:Now() + _PlayerConfig.SpinDuration
 		_SoundManager:PlaySFXKey("sfx_ability_spin")
+		self:PlaySpinFx()
 		local pos = self.Entity.TransformComponent.WorldPosition
 		self:RequestSpin(pos.x, pos.y)
 	end
@@ -243,6 +248,86 @@ script PlayerAbility extends Component
 		self.abilityInvincibleUntil = -999.0
 		self.immovableUntil = -999.0
 		self.immovableCharges = 0
+	end
+
+	-- ===== 능력 이펙트 (RUID는 EffectTable 데이터셋 ability_* 참조) =====
+	-- invincible/clear/immovable는 서버 즉발이라 Multicast로 전 클라 재생. manji/spin은 클라 이동 기반이라 로컬 재생(대시와 동일 정책).
+
+	@ExecSpace("Multicast")
+	method void FxInvincible(number duration)
+		-- 금강불괴: 발동 버스트(effect) 1회 + 무적 지속 동안 플레이어 부착 루프(repeat). effect_list #3.
+		local burst = _EffectTable:Clip("ability_invincible_effect")
+		if burst ~= "" then
+			local bo = _EffectTable:Offset("ability_invincible_effect")
+			local bs = _EffectTable:Scale("ability_invincible_effect")
+			_EffectService:PlayEffectAttached(burst, self.Entity, Vector3(bo.x, bo.y, 0), _EffectTable:Rot("ability_invincible_effect"), Vector3(bs.x, bs.y, 1), false, _EffectTable:Options("ability_invincible_effect"))
+		end
+		local loop = _EffectTable:Clip("ability_invincible_repeat")
+		if loop ~= "" then
+			local lo = _EffectTable:Offset("ability_invincible_repeat")
+			local ls = _EffectTable:Scale("ability_invincible_repeat")
+			local serial = _EffectService:PlayEffectAttached(loop, self.Entity, Vector3(lo.x, lo.y, 0), _EffectTable:Rot("ability_invincible_repeat"), Vector3(ls.x, ls.y, 1), true, _EffectTable:Options("ability_invincible_repeat"))
+			_TimerService:SetTimerOnce(function()
+				_EffectService:RemoveEffect(serial)
+			end, duration)
+		end
+	end
+
+	@ExecSpace("Multicast")
+	method void FxClear()
+		-- 참공: 화면 전체 투사체 제거 → 풀스크린 UI 오버레이로 연출(ClearOverlay). UI라 카메라/플레이어 위치 무관,
+		-- 항상 화면 중앙에 딱 1개만 재생(월드 스프라이트의 좌하단·중복 문제 없음). RUID·재생옵션은 EffectTable(ability_clear). effect_list #4.
+		if _BattlefieldFx.clearOverlay ~= nil and isvalid(_BattlefieldFx.clearOverlay) then
+			_BattlefieldFx.clearOverlay:Play()
+		else
+			log_warning("[PlayerAbility] FxClear: clearOverlay not registered")
+		end
+	end
+
+	@ExecSpace("Multicast")
+	method void FxImmovable(number duration)
+		-- 부동심: 보험 창 동안 플레이어에 보호막 부착 루프. effect_list #5.
+		local clip = _EffectTable:Clip("ability_immovable")
+		if clip == "" then return end
+		local sc = _EffectTable:Scale("ability_immovable")
+		local fo = _EffectTable:Offset("ability_immovable")
+		local serial = _EffectService:PlayEffectAttached(clip, self.Entity, Vector3(fo.x, fo.y, 0), _EffectTable:Rot("ability_immovable"), Vector3(sc.x, sc.y, 1), true, _EffectTable:Options("ability_immovable"))
+		_TimerService:SetTimerOnce(function()
+			_EffectService:RemoveEffect(serial)
+		end, duration)
+	end
+
+	@ExecSpace("ClientOnly")
+	method void PlayManjiFx(number dirX, number dirY)
+		-- 만지 일섬: 대시 경로 방향으로 플레이어 중심에 1회(에셋 좌향 기준 FlipX·±90° 회전). effect_list #6.
+		local clip = _EffectTable:Clip("ability_manji")
+		if clip == "" then return end
+		local pos = self.Entity.TransformComponent.WorldPosition
+		local fo = _EffectTable:Offset("ability_manji")
+		local center = Vector3(pos.x + fo.x, pos.y + _GameConstants.PlayerCenterYOffset + fo.y, pos.z)
+		local flipX = dirX < 0
+		local rot = 0.0
+		if dirX > 0 then
+			rot = math.deg(math.atan(dirY, dirX))
+		else
+			rot = math.deg(math.atan(-dirY, -dirX))
+		end
+		local sc = _EffectTable:Scale("ability_manji")
+		local options = _EffectTable:Options("ability_manji")
+		options["FlipX"] = flipX
+		_EffectService:PlayEffect(clip, self.Entity, center, rot + _EffectTable:Rot("ability_manji"), Vector3(sc.x, sc.y, 1), false, options)
+	end
+
+	@ExecSpace("ClientOnly")
+	method void PlaySpinFx()
+		-- 회전베기: 플레이어 중심에 1회. effect_list #7.
+		local clip = _EffectTable:Clip("ability_spin")
+		if clip == "" then return end
+		local pos = self.Entity.TransformComponent.WorldPosition
+		local fo = _EffectTable:Offset("ability_spin")
+		local center = Vector3(pos.x + fo.x, pos.y + _GameConstants.PlayerCenterYOffset + fo.y, pos.z)
+		local sc = _EffectTable:Scale("ability_spin")
+		_EffectService:PlayEffect(clip, self.Entity, center, _EffectTable:Rot("ability_spin"), Vector3(sc.x, sc.y, 1), false, _EffectTable:Options("ability_spin"))
 	end
 
 end
