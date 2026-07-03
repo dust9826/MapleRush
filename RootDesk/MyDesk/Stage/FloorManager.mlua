@@ -17,8 +17,9 @@ script FloorManager extends Logic
 	-- 서버: 이번 노드 선택의 분기별 스폰포인트 이름 [branch1, branch2, branch3] (테마맵에서 3개 추출)
 	property any nodeSpawnChoices = nil
 
-	-- 서버: 현재 테마의 스테이지 덱(셔플된 미방문 스테이지 이름 배열). 노드마다 상단 3장을 후보로 제시,
-	-- 선택(방문)된 스테이지는 덱에서 제거. 남은 장수 < 3 이면 덱을 원상복구(전체)하고 다시 셔플. 테마(층) 단위.
+	-- 서버: 현재 테마의 스테이지 덱(셔플된 미방문 스테이지 이름 배열). 노드마다 상단 최대 3장을 후보로 제시,
+	-- 선택(방문)된 스테이지는 덱에서 제거. 덱이 완전히 비면(0장) 원상복구(전체)하고 다시 셔플. 테마(층) 단위.
+	-- (2장 남으면 후보 2개, 1장 남으면 후보 1개로 그대로 노출 — 덱을 끝까지 소진.)
 	property any deck = nil
 
 	-- 서버: 직전에 방문한 스테이지 이름. 덱 리셔플 직후 상단 3장에서 밀어내 연속 동일 스테이지를 방지.
@@ -158,10 +159,10 @@ script FloorManager extends Logic
 			for _, n in ipairs(order) do table.insert(all, n) end
 		end
 		if #all == 0 then table.insert(all, "Stage1") end
-		-- 덱이 없거나 3장 미만 → 원상복구 후 셔플.
-		if self.deck == nil or #self.deck < 3 then
+		-- 덱이 없거나 완전히 소진(0장) → 원상복구 후 셔플. (2·1장 남은 상태는 그대로 두어 후보 2·1개로 노출)
+		if self.deck == nil or #self.deck == 0 then
 			self.deck = self:BuildShuffledDeck(all)
-			log("[FloorManager] 덱 원상복구+셔플 (cards=" .. tostring(#self.deck) .. " last=" .. tostring(self.lastPlayedStage) .. ")")
+			log("[FloorManager] 덱 소진 -> 원상복구+셔플 (cards=" .. tostring(#self.deck) .. " last=" .. tostring(self.lastPlayedStage) .. ")")
 		end
 		-- 상단 최대 3장을 후보로 peek (제거는 방문 시 RequestSelectNode에서).
 		local chosen = {}
