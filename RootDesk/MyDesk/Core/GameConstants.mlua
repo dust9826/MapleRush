@@ -116,6 +116,13 @@ script GameConstants extends Logic
 
 	property string SmokeEffectBurstClip = "e1fa6fbb8ba646169ca1e06efb389100"
 
+	-- 섬광탄 기절 시각: 기절한 일반 적 머리 위에 붙는 루프 이펙트(FlashStunDuration 동안만 유지). 인스펙터 튜닝.
+	property string StunEffectClip = "798781ce1301446bada194bf3f109174"
+
+	property number StunEffectScale = 1.0
+
+	property number StunEffectYOffset = 1.1
+
 	property number GroggyDuration = 3.0
 
 	property number RangedAimTime = 1.0
@@ -143,6 +150,21 @@ script GameConstants extends Logic
 	-- authoring 마커가 의도한 발판보다 미세하게(관측상 ~0.08) 아래로 박혀 있으면 통과→낙하한다.
 	-- 이 리프트로 항상 발판 위에서 스폰→중력이 올바른 발판에 안착. 모든 테마맵/미래 authoring 공통 적용.
 	property number SpawnYLift = 0.15
+
+	-- 스테이지 종료 공통 텀(초). 사망 부활 / 클리어(보상 팝업) / 실패(게임오버) 모두 이 시간 뒤에 처리 — 그 사이 전투 정지(적 프리즈). 인스펙터 튜닝.
+	property number StageEndDelay = 1.2
+
+	-- 사망 연출: 검게 하기 전, 죽은 것을 보여주는 정지 텀(초). 이 뒤에 ToBlack 시작. 인스펙터 튜닝.
+	property number DeathFadeHold = 1.0
+
+	-- 사망→부활 풀스크린 검정 페이드 속도(초). 검게/밝게 각각 이 시간. 인스펙터 튜닝.
+	property number ScreenFadeDuration = 0.3
+
+	-- 클리어/실패 팝업 등장 fade-in 속도(초). CanvasGroup 알파 0→1. 인스펙터 튜닝.
+	property number PopupFadeDuration = 0.25
+
+	-- 낙사 리스폰 대기(초). 엔진 내장 낙사 리스폰(PlayerComponent.RespawnDuration)을 이 값으로 낮춰 빠르게 복귀. 스테이지마다 스폰포인트를 RespawnPosition에 주입해 원점(0,0,0) 대신 그 자리로 복귀시킴.
+	property number FallRespawnDuration = 0.5
 
 	property number BossHP = 500.0
 

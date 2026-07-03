@@ -1,0 +1,60 @@
+@Component
+script FadeOverlay extends Component
+
+	-- 풀스크린 검정 페이드(사망→부활 화면 전환용). FlashGroup의 풀스크린 검정 스프라이트 엔티티에 부착 →
+	--   self.Entity.SpriteGUIRendererComponent 가 그 검정 패널. StageManager(Logic, 클라)가 :ToBlack()/:FromBlack() 호출.
+	-- 트리거: 사망(부활) 시 ClientFadeToBlack → ToBlack, 재개 시 ClientStageReset → FromBlack.
+
+	-- 진행 방향: 0=정지 / 1=검게(0→1) / -1=밝게(1→0).
+	@HideFromInspector property number dir = 0
+
+	-- 현재 알파(0=투명 ~ 1=완전 검정).
+	@HideFromInspector property number alpha = 0.0
+
+	@ExecSpace("ClientOnly")
+	method void OnBeginPlay()
+		-- 레지스트리 등록 + 초기 완전 투명.
+		_StageManager.fadeOverlay = self
+		self.alpha = 0
+		self:SetAlpha(0)
+		log("[FadeOverlay] registered (alpha=0)")
+	end
+
+	@ExecSpace("ClientOnly")
+	method void SetAlpha(number a)
+		-- 검정 고정, 알파만 변경.
+		local sr = self.Entity.SpriteGUIRendererComponent
+		if isvalid(sr) then sr.Color = Color(0, 0, 0, a) end
+	end
+
+	@ExecSpace("ClientOnly")
+	method void ToBlack()
+		-- 화면을 검게 (알파 → 1).
+		self.dir = 1
+	end
+
+	@ExecSpace("ClientOnly")
+	method void FromBlack()
+		-- 화면을 밝게 (알파 → 0). 이미 투명하면 즉시 정지.
+		if self.alpha <= 0 then self.dir = 0 return end
+		self.dir = -1
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnUpdate(number delta)
+		-- 페이드 진행: dir 방향으로 ScreenFadeDuration 동안 선형 이동.
+		if self.dir == 0 then return end
+		local dur = _GameConstants.ScreenFadeDuration
+		if dur <= 0 then dur = 0.01 end
+		self.alpha += self.dir * (delta / dur)
+		if self.alpha >= 1 then
+			self.alpha = 1
+			self.dir = 0
+		elseif self.alpha <= 0 then
+			self.alpha = 0
+			self.dir = 0
+		end
+		self:SetAlpha(self.alpha)
+	end
+
+end

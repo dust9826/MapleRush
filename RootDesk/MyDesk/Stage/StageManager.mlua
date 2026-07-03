@@ -28,6 +28,9 @@ script StageManager extends Logic
 	-- 클라: 게임오버 UI 컨트롤러 참조
 	property any gameOverUI = nil
 
+	-- 클라: 풀스크린 검정 페이드 오버레이 참조(FadeOverlay가 OnBeginPlay에서 등록). 사망→부활 화면 전환.
+	@HideFromInspector property any fadeOverlay = nil
+
 	-- 서버: 추적 중인 플레이어 엔티티 (1인 1런 전제, 멀티맵 조회용)
 	property any trackedPlayer = nil
 
@@ -413,6 +416,10 @@ script StageManager extends Logic
 				local pc = u.PlayerComponent
 				if pc ~= nil then
 					self:ClientStageReset(self.curSpawnX, self.curSpawnY, pc.UserId)
+					-- 낙사 복귀: 엔진 내장 낙사 리스폰 목적지를 이번 스테이지 스폰포인트로 지정(미지정 시 원점 0,0,0으로 떨어짐).
+					-- 맵마다 지면높이가 달라도 스테이지 스폰좌표를 그대로 쓰므로 정확. RespawnDuration을 낮춰 빠르게 복귀.
+					pc.RespawnPosition = Vector3(self.curSpawnX, self.curSpawnY, 0)
+					pc.RespawnDuration = _GameConstants.FallRespawnDuration
 				end
 				---@type PlayerAbility
 				local ability = u:GetComponent("script.PlayerAbility")
@@ -504,13 +511,40 @@ script StageManager extends Logic
 		local player = _UserService.LocalPlayer
 		if player ~= nil then
 			player.MovementComponent:SetWorldPosition(Vector2(sx, sy))
+			-- 종료 텀 동안 잠갔던 이동 컨트롤러 복원 (스테이지 재개 시점).
+			local pcc = player.PlayerControllerComponent
+			if isvalid(pcc) then pcc.Enable = true end
 			-- 대시 충전 만충 리셋 (DashCount는 클라 전용 → 서버 ResetStage가 직접 못 씀, 여기서 처리).
 			---@type PlayerDash
 			local dash = player:GetComponent("script.PlayerDash")
 			if dash ~= nil then dash:ResetForStage() end
 		end
+		-- 사망 부활 시 검게 했던 화면을 다시 밝게 (신규 진입이면 이미 투명이라 무해).
+		if self.fadeOverlay ~= nil and isvalid(self.fadeOverlay) then
+			self.fadeOverlay:FromBlack()
+		end
 		_UtilLogic:SetClientTimeScale(1.0)
 		_InputRouter:SetContext("Combat")
+	end
+
+	@ExecSpace("Client")
+	method void ClientFreezePlayer()
+		-- 스테이지 종료 텀 동안 로컬 플레이어 이동/액션 정지: 이동 컨트롤러 비활성 + 라우터 비전투 컨텍스트(대시·공격 차단).
+		-- 복원은 재개 시 ClientStageReset(이동 컨트롤러) / 각 UI 컨텍스트 전환이 담당.
+		local player = _UserService.LocalPlayer
+		if player ~= nil and isvalid(player) then
+			local pcc = player.PlayerControllerComponent
+			if isvalid(pcc) then pcc.Enable = false end
+		end
+		_InputRouter:SetContext("Frozen")
+	end
+
+	@ExecSpace("Client")
+	method void ClientFadeToBlack()
+		-- 사망(부활) 화면 전환: 풀스크린 검정 오버레이를 검게. 복원(FromBlack)은 ClientStageReset이 담당.
+		if self.fadeOverlay ~= nil and isvalid(self.fadeOverlay) then
+			self.fadeOverlay:ToBlack()
+		end
 	end
 
 	@ExecSpace("ServerOnly")
@@ -521,7 +555,15 @@ script StageManager extends Logic
 		_GameStateManager.RunKills += 1
 		log("[StageManager] kill " .. tostring(self.KilledCount) .. "/" .. tostring(self.SpawnedCount) .. " (" .. enemyKind .. ")")
 		if self.KilledCount >= self.SpawnedCount then
-			self:StageClear()
+			-- 클리어 텀: 마지막 적 처치 후 곧바로 보상 팝업을 띄우지 않고 같은 텀을 둔 뒤 StageClear.
+			-- 즉시 StageActive=false로 중복 클리어/피격 차단 + grace 연장(적 프리즈) + 플레이어 이동 정지.
+			self.StageActive = false
+			self.combatGraceUntil = _UtilLogic.ServerElapsedSeconds + _GameConstants.StageEndDelay + 1.5
+			local cp = self:GetPlayer()
+			if cp ~= nil and cp.PlayerComponent ~= nil then self:ClientFreezePlayer(cp.PlayerComponent.UserId) end
+			_TimerService:SetTimerOnce(function()
+				if _GameStateManager.RunActive then self:StageClear() end
+			end, _GameConstants.StageEndDelay)
 		end
 	end
 
@@ -577,12 +619,35 @@ script StageManager extends Logic
 		-- 사망(회귀) 효과음 — 죽은 플레이어 클라에서 1회 재생 (목숨 잔여 무관).
 		local deadPc = player.PlayerComponent
 		if deadPc ~= nil then self:ClientPlayerDeathSfx(deadPc.UserId) end
+		-- 종료 텀 동안 이동 정지 (부활/게임오버 공통). 재개는 ClientStageReset이 복원.
+		if deadPc ~= nil then self:ClientFreezePlayer(deadPc.UserId) end
 		if _GameStateManager.CurrentLives > 0 then
 			_GameStateManager.CurrentLives -= 1
-			log("[StageManager] player died -> lives=" .. tostring(_GameStateManager.CurrentLives) .. ", restarting stage")
-			self:ResetStage()
+			local hold = _GameConstants.DeathFadeHold
+			local fade = _GameConstants.ScreenFadeDuration
+			log("[StageManager] player died -> lives=" .. tostring(_GameStateManager.CurrentLives) .. ", revive seq (hold " .. tostring(hold) .. "s → fade)")
+			-- 사망 연출 순서: (0) 죽은 걸 보여주는 정지 텀(hold, 이동정지·화면 그대로)
+			--   → (1) 화면 검게(ToBlack) → (2) 검은 화면에서 리스폰(텔레포트) → ClientStageReset이 밝게(FromBlack).
+			-- grace는 전체 시퀀스(hold+fade) 동안 적 프리즈 유지.
+			self.StageActive = false
+			self.combatGraceUntil = _UtilLogic.ServerElapsedSeconds + hold + fade + 1.5
+			local uid = ""
+			if deadPc ~= nil then uid = deadPc.UserId end
+			-- (1) hold 후 화면 검게
+			_TimerService:SetTimerOnce(function()
+				if uid ~= "" then self:ClientFadeToBlack(uid) end
+			end, hold)
+			-- (2) 완전히 검어진 뒤 리스폰 → ClientStageReset이 FromBlack (게임오버/런 종료 시 스킵).
+			_TimerService:SetTimerOnce(function()
+				if _GameStateManager.RunActive then self:ResetStage() end
+			end, hold + fade)
 		else
-			self:GameOver()
+			-- 실패(목숨 0) 텀: 같은 텀 뒤에 게임오버 처리. 그 사이 전투 정지 + 적 프리즈.
+			self.StageActive = false
+			self.combatGraceUntil = _UtilLogic.ServerElapsedSeconds + _GameConstants.StageEndDelay + 1.5
+			_TimerService:SetTimerOnce(function()
+				if _GameStateManager.RunActive then self:GameOver() end
+			end, _GameConstants.StageEndDelay)
 		end
 	end
 
