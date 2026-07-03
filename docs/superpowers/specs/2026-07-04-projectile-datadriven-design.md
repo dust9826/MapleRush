@@ -1,97 +1,68 @@
-# 투사체 데이터 드리븐 + 예고 자동계산 — 설계 문서
+# 투사체 모델화 + 예고 자동계산 — 설계 문서
 
 - **날짜**: 2026-07-04
-- **배경**: 원거리 적/보스가 쓰는 투사체를 **데이터로 authoring**해, 적이 "어떤 투사체를 쏠지" 고르게 하고, **투사체 정보로 공격 예고(예상 레인)를 자동 계산**한다.
-- **선행 의존**: `feat/enemy-tuning-components`(PR #41)의 EnemyRanged 3단계 조준. 이 브랜치는 그 위에 쌓임 → #41 병합 후 진행.
-- **best-judgment로 정한 기본 스코프(사용자 검토 시 조정)**:
-  - 다양성 = **수치·외형만**(직선 비행 공통, 타입별 속도/크기/수명/스프라이트). 거동(유도/확산/관통)은 후속.
-  - 스펙 저장 = **카탈로그 데이터셋**(`.userdataset` + `.csv`, SoundTable 선례). 투사체 모델은 1개(제네릭), 스프라이트는 행에서 주입 → **타입 추가 = CSV 행 추가**(새 모델 불필요).
+- **배경**: 원거리 적이 쓰는 투사체를 **모델로 authoring**(적 추가하듯)하고, 적이 `ProjectileModelId`로 어떤 투사체를 쏠지 고르며, **투사체 모델 정보로 공격 예고(예상 레인)를 자동 계산**한다.
+- **선행 의존**: `feat/enemy-tuning-components`(PR #41)의 EnemyRanged 3단계 조준. #41 병합 후 구현(이 브랜치를 master에 rebase).
 
----
+## 결정 사항 (사용자 지시 반영)
+1. **CSV 데이터셋 ❌ → 모델 방식 ⭕**: 투사체 타입마다 `.model`, 스펙은 그 모델의 `Projectile` 컴포넌트 값(Speed/Lifetime/HitRadius) + SpriteRenderer(스프라이트). 적 추가와 동일한 워크플로.
+2. **런타임 모델-읽기 조사 결과**: 스폰 없이 modelId로 모델 defaults를 읽는 API는 **없음**(`EditorService:GetModelProperty`는 에디터 스크립트 전용 → play/배포 불가). → 예고를 실제 모델값으로 그리려면 **한 번은 스폰해서 읽어야** 한다.
+3. **예고 방식 = 시작 시 프로브 캐싱**(best-judgment; 검토 시 조정): `ProjectileRegistry`가 타입당 1회 프로브 스폰→값 읽기→캐시→파괴. 이후 예고·발사는 캐시값(=모델값) 사용. 정확·즉시·매샷 스폰 없음.
 
 ## 1. 현재 상태
-
-- `Projectile.mlua`(@Component, enemyprojectile 모델): `DirX/Y`, `Speed=10`, `Damage=10`, `Parryable`, `Lifetime=2.0`, `TerrainGrace`, 히트 판정은 **전역 `_GameConstants.RadiusProjectile`** 사용.
+- `Projectile.mlua`(@Component, `enemyprojectile` 모델): `Speed`, `Lifetime`, `Damage`, `Parryable`, 히트 판정은 **전역 `_GameConstants.RadiusProjectile`**.
 - `EnemyRanged.Fire`: `SpawnByModelId("enemyprojectile")` → `Launch(dir, 전역 ProjectileSpeed, 1, parryable)`.
-- 예고 레인: 전역 `GizmoRangedLaneLength/Width`(고정) — **실제 투사체 사거리와 무관**.
-- 즉, 투사체는 사실상 1종, 예고는 실제와 별개.
+- 예고 레인: 전역 `GizmoRangedLaneLength/Width`(고정) — 실제 투사체와 무관.
 
 ## 2. 목표 / 비목표
-
-**목표**
-- 투사체 타입을 데이터로 정의(속도/수명/히트반경/예고폭/스프라이트).
-- 적이 타입을 **키로 선택**(`EnemyRanged.ProjectileType`).
-- 예고 레인을 **타입 스펙에서 계산**(사거리 = 속도×수명, 폭 = 예고폭) → 예고=실제 일치.
-
-**비목표**
-- 거동 다양성(유도/확산/관통/포물선) — 후속 스펙.
-- 투사체 데미지 가변화 — 현행 1피격 고정 유지(카탈로그에 열은 두되 기본 1).
-- 보스 패턴 전면 이관 — 이번엔 EnemyRanged 우선, 보스는 동일 카탈로그 재사용만(후속에서 배선).
+**목표**: 투사체 타입을 모델로 정의·선택, 예고를 투사체 모델값(속도×수명=사거리, 히트반경)에서 계산 → 예고=실제 일치.
+**비목표**: 거동 다양성(유도/확산/관통/포물선) 후속. 투사체 데미지 가변 후속(현행 1피격). 보스 패턴 전면 이관 후속(동일 시스템 재사용만).
 
 ## 3. 설계
 
-### 3.1 카탈로그 데이터셋 — `Enemy/ProjectileTable`
-`RootDesk/MyDesk/Enemy/ProjectileTable.csv` + `.userdataset`(SoundTable 패턴). 열:
+### 3.1 투사체 타입 = 모델
+- 각 타입을 `RootDesk/MyDesk/Models/Projectiles/{Name}.model`로 authoring. 구성: `TransformComponent` + `SpriteRendererComponent`(스프라이트) + Body(현 enemyprojectile 따름) + `script.Projectile`(스펙 값).
+- 기존 `enemyprojectile`이 첫 타입(basic). 새 타입 = 모델 복제 후 값·스프라이트 변경(적 변종 추가와 동일).
 
-| 열 | 타입 | 의미 |
-|---|---|---|
-| `Key` | string | 타입 키(예: `basic`, `fast`, `heavy`) |
-| `Speed` | number | 비행 속도(월드유닛/초) |
-| `Lifetime` | number | 수명(초) → 사거리 = Speed×Lifetime |
-| `HitRadius` | number | 피격 판정 반경(← 전역 RadiusProjectile 대체) |
-| `TelegraphWidth` | number | 예고 레인 폭 |
-| `SpriteRUID` | string | 투사체 스프라이트 |
-| `Damage` | number | 피격 수(기본 1) |
+### 3.2 `Projectile.mlua` 확장
+- `property number HitRadius = 0.2` 추가 → 히트 판정을 전역 `RadiusProjectile` 대신 `self.HitRadius` 사용.
+- 발사: 방향만 받고 **속도/수명/반경은 모델 자기값 사용**(전역 덮어쓰기 제거).
+  - 하위호환: 기존 `Launch(dir, speed, damage, parryable)`는 보스·플레이어 rock도 호출 → **유지**. 신규 `LaunchDir(dirX, dirY, parryable)`(모델 자기 Speed/Lifetime/HitRadius 사용) 추가. EnemyRanged는 `LaunchDir` 사용.
 
-### 3.2 `ProjectileCatalog` (@Logic)
-- OnBeginPlay에 데이터셋 로드 → 딕셔너리 캐시.
-- `method any Get(string key)` → `{ speed, lifetime, hitRadius, telegraphWidth, spriteRUID, damage }`. 미존재 키는 `basic` 폴백 + 경고 로그.
-- (SoundManager가 SoundTable 로드하는 방식 그대로 참고.)
-
-### 3.3 제네릭 투사체 — `Projectile.mlua` 확장
-- `HitRadius` property 추가 → 히트 판정을 `_GameConstants.RadiusProjectile` 대신 `self.HitRadius` 사용.
-- `Launch` 시그니처 확장: 방향 + 스펙 주입.
-  ```
-  Launch(dirX, dirY, spec)   -- spec = catalog row
-    self.Speed = spec.speed
-    self.Lifetime = spec.lifetime
-    self.HitRadius = spec.hitRadius
-    self.Damage = spec.damage
-    self.Entity.SpriteRendererComponent.SpriteRUID = spec.spriteRUID  -- 외형 주입
-  ```
-  (기존 `Launch(dir, speed, damage, parryable)` 호출부 — 보스/플레이어 아이템(rock)도 있음 → 하위호환 위해 **오버로드 or 기존 시그니처 유지 + 신규 `LaunchSpec` 추가**. 구현 시 확정.)
+### 3.3 `ProjectileRegistry` (@Logic)
+- `method any Get(string modelId, Entity mapCtx)` → `{ speed, lifetime, hitRadius, spriteRUID }`.
+- **지연 캐싱**: 캐시에 없으면 `mapCtx.CurrentMap` 아래 `SpawnByModelId(modelId)`로 **미발사 프로브** 1회 스폰(Launched=false라 OnUpdate 무동작) → `Projectile` 컴포넌트 값 읽기 → 캐시 → `Destroy()`. 이후는 캐시 반환.
+- 미존재/실패 시 폴백(basic) + 경고.
 
 ### 3.4 `EnemyRanged` 연동
-- property 추가: `property string ProjectileType = "basic"`. (기존 `ProjectileSpeed`는 카탈로그로 대체되므로 제거 검토 — 구현 시.)
-- **Fire**: `local spec = _ProjectileCatalog:Get(self.ProjectileType)` → `SpawnByModelId("enemyprojectile")` → `Launch(dir, spec)`.
-- **예고(3단계 lock 시점)**: `local spec = _ProjectileCatalog:Get(self.ProjectileType)`; 레인 길이 = `min(spec.speed * spec.lifetime, 표시상한)`, 폭 = `spec.telegraphWidth`. `TelegraphService:Show(...)` 인자에 반영. → 예고가 실제 투사체 사거리·폭과 일치.
-- CombatGizmo의 원거리 레인도 동일 스펙을 읽게(현재 전역 상수) — 구현 시 EnemyRanged에서 스펙 노출 or 기즈모가 catalog 조회.
+- property: `property string ProjectileModelId = "enemyprojectile"`. (기존 `ProjectileSpeed`는 모델값으로 대체 → 제거 검토.)
+- **Fire**: `SpawnByModelId(self.ProjectileModelId)` → `comp:LaunchDir(dir.x, dir.y, self.ProjectileParryable)`.
+- **예고(3단계 lock 시점)**: `local spec = _ProjectileRegistry:Get(self.ProjectileModelId, self.Entity)`; 레인 길이 = `min(spec.speed * spec.lifetime, 표시상한)`, 폭 = `spec.hitRadius * k`(시각 배수). `TelegraphService:Show(...)`에 반영 → 예고=실제 사거리·크기.
+- CombatGizmo의 원거리 예상 레인도 동일 spec 사용(현재 전역 상수 대체).
 
 ### 3.5 데이터 흐름
 ```
-[기획자] ProjectileTable.csv (행=타입)
-        │
-   _ProjectileCatalog:Get(key)
-        ├─ EnemyRanged 예고(lock): 레인 = speed×lifetime × telegraphWidth
-        └─ EnemyRanged 발사: 제네릭 투사체 스폰 + Launch(spec) (속도/수명/반경/스프라이트 주입)
-                              → Projectile: self.HitRadius로 판정
+[기획자] 투사체 .model (Projectile 값 + 스프라이트)  ← 적 추가와 동일
+        │  ProjectileRegistry:Get(modelId) (첫 조회 시 프로브 스폰·읽기·파괴, 캐시)
+        ├─ EnemyRanged 예고(lock): 레인 = speed×lifetime × hitRadius
+        └─ EnemyRanged 발사: SpawnByModelId(modelId) + LaunchDir → 모델 자기 스펙으로 비행/판정
 ```
 
 ## 4. 리스크 / 완화
 | 리스크 | 완화 |
 |---|---|
-| `Launch` 시그니처 변경이 보스/플레이어 rock 호출부 깨뜨림 | 기존 `Launch` 유지 + 신규 `LaunchSpec(dir, spec)` 추가(오버로드), 점진 이관 |
-| 데이터셋 로드 타이밍(적 스폰이 카탈로그보다 이를 수 있음) | `@Logic` OnBeginPlay는 컴포넌트보다 먼저(스크립팅 규칙) — 안전. 미로드 시 basic 폴백 |
-| 예고 레인 상한 없으면 원거리 큰 사거리 투사체가 화면 밖까지 예고 | 표시 상한(예: DetectRadius 또는 고정 cap)으로 클램프 |
-| 전역 `RadiusProjectile` 제거 시 다른 소비처 | 제거 전 grep 확인(플레이어 rock/보스도 Projectile 재사용) — 공유면 유지 or 이관 |
+| 프로브 스폰이 순간적으로 보이거나 부작용 | Launched=false → 무동작·무이동, 즉시 Destroy. Projectile엔 OnBeginPlay 없음(무해). 필요시 화면밖/Visible=false |
+| `Launch` 시그니처 변경이 보스/rock 깨뜨림 | 기존 `Launch` 유지 + 신규 `LaunchDir` 추가(점진) |
+| 예고 레인이 화면 밖까지 길어짐(큰 사거리) | 표시 상한(DetectRadius or cap)으로 클램프 |
+| 전역 `RadiusProjectile` 제거 시 타 소비처(rock/보스) | 제거 전 grep; 공유면 Projectile.HitRadius 기본값 유지로 흡수 |
 
 ## 5. 검증
-1. `refresh` 빌드 에러 0. 데이터셋 로드 로그 확인.
-2. play: 원거리 적 발사 시 스폰 투사체의 Speed/Lifetime/HitRadius/Sprite가 카탈로그 값과 일치(로그).
-3. play: **예고 레인 길이/폭이 실제 투사체 사거리·크기와 일치**(기즈모 육안 + 로그).
-4. 카탈로그에 `fast`/`heavy` 행 추가 → 적 `ProjectileType` 변경 시 반영(스팟체크).
+1. refresh 빌드 에러 0. Registry 캐싱 로그(프로브 1회) 확인.
+2. play: 원거리 발사 시 투사체 Speed/Lifetime/HitRadius/Sprite가 모델값과 일치(로그).
+3. play: **예고 레인 길이·폭이 실제 투사체와 일치**(기즈모 육안 + 로그).
+4. `enemyprojectile` 복제로 `fast`/`heavy` 모델 추가 → 적 `ProjectileModelId` 변경 시 예고·비행 반영(스팟체크).
 
 ## 6. 후속 (스코프 밖)
-- 거동 다양성(유도/확산 N발/관통/포물선) — Behavior 열 + 타입별 이동·판정 로직.
-- 보스 패턴을 카탈로그로 배선.
-- 투사체 데미지 per-type 활성화.
+- 거동 다양성(유도/확산 N발/관통/포물선) — Behavior 값 + 타입별 이동·판정.
+- 보스 패턴을 동일 시스템으로 배선.
+- 투사체 데미지 per-type.
