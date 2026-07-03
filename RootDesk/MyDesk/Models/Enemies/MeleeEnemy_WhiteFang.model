@@ -423,6 +423,71 @@
             "EventLinks": [],
             "Children": []
           }
+        },
+        {
+          "Id": "2954d8c1-0464-4ad7-89b4-575af138f47e",
+          "ParentId": "653e238d-bfe5-401f-bd1a-7f68ac9e326a",
+          "Name": "AtkBox",
+          "Model": {
+            "Version": 1,
+            "Name": "AtkBox",
+            "BaseModelId": null,
+            "Id": "2954d8c1-0464-4ad7-89b4-575af138f47e",
+            "Components": [
+              "MOD.Core.TransformComponent"
+            ],
+            "Properties": [],
+            "Values": [
+              {
+                "TargetType": "MOD.Core.MODEntity",
+                "Name": "Enable",
+                "ValueType": {
+                  "$type": "MODNativeType",
+                  "type": "System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
+                },
+                "Value": true
+              },
+              {
+                "TargetType": "MOD.Core.MODEntity",
+                "Name": "Visible",
+                "ValueType": {
+                  "$type": "MODNativeType",
+                  "type": "System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
+                },
+                "Value": true
+              },
+              {
+                "TargetType": "MOD.Core.TransformComponent",
+                "Name": "Position",
+                "ValueType": {
+                  "$type": "MODNativeType",
+                  "type": "MOD.Core.MODVector3, MOD.Core, Version=26.5.0.0, Culture=neutral, PublicKeyToken=null"
+                },
+                "Value": {
+                  "$type": "MOD.Core.MODVector3, MOD.Core",
+                  "x": 1,
+                  "y": 0,
+                  "z": 0
+                }
+              },
+              {
+                "TargetType": "MOD.Core.TransformComponent",
+                "Name": "Scale",
+                "ValueType": {
+                  "$type": "MODNativeType",
+                  "type": "MOD.Core.MODVector3, MOD.Core, Version=26.5.0.0, Culture=neutral, PublicKeyToken=null"
+                },
+                "Value": {
+                  "$type": "MOD.Core.MODVector3, MOD.Core",
+                  "x": 2,
+                  "y": 1.5,
+                  "z": 1
+                }
+              }
+            ],
+            "EventLinks": [],
+            "Children": []
+          }
         }
       ]
     }
