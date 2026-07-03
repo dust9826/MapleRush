@@ -148,13 +148,19 @@ script BossController extends Component
 		local dx = playerCenter.x - myCenter.x
 		local dist = math.abs(dx)
 
-		-- 추격 (패턴 윈드업 중에는 정지). 윈드업 중에는 StartPattern이 설정한 공격 모션 유지.
-		if self.phase ~= "windup" and dist > 1.8 then
-			self:ChaseToward(playerCenter.x, myCenter.x, timeScale)
-			self:PlayClip(self:AnimClip("run", _GameConstants.BossMoveClip))
-		elseif self.phase ~= "windup" then
-			self:StopMove()
-			self:PlayClip(self.standClip)
+		-- 추격 (패턴 윈드업 중에는 정지). 고정형 보스(자쿰)는 추격 없이 제자리 유지 — 대신 플레이어를 바라봄.
+		if self.phase ~= "windup" then
+			if self:IsStationary() then
+				self:StopMove()
+				self:FacePlayer(playerCenter.x, myCenter.x)
+				self:PlayClip(self.standClip)
+			elseif dist > 1.8 then
+				self:ChaseToward(playerCenter.x, myCenter.x, timeScale)
+				self:PlayClip(self:AnimClip("run", _GameConstants.BossMoveClip))
+			else
+				self:StopMove()
+				self:PlayClip(self.standClip)
+			end
 		end
 
 		self.phaseTimer -= scaledDelta
@@ -427,6 +433,18 @@ script BossController extends Component
 			if isvalid(u) then return u end
 		end
 		return nil
+	end
+
+	method boolean IsStationary()
+		-- 고정형 보스(추격 없음, 제자리): 현재 자쿰. 원거리/광역/근접으로 제자리에서 상대.
+		return self.BossKind == "zakum"
+	end
+
+	@ExecSpace("ServerOnly")
+	method void FacePlayer(number targetX, number myX)
+		-- 제자리 보스가 플레이어를 바라보도록 FlipX만 갱신(이동 없음). 스프라이트 좌향 기본 → 우측 대상 시 Flip.
+		local sprite = self.Entity.SpriteRendererComponent
+		if isvalid(sprite) then sprite.FlipX = targetX > myX end
 	end
 
 	@ExecSpace("ServerOnly")
