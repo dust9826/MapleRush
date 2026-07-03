@@ -314,6 +314,11 @@ script PlayerDash extends Component
 
 	@ExecSpace("ClientOnly")
 	method void OnUpdate(number delta)
+		-- (0-a) 조준 취소 안전장치: 전투 컨텍스트가 아니면(사망/부활 텀·보상·게임오버·로비·일시정지 등) 조준 상태를 강제 해제.
+		--   조준은 우클릭 해제(dashExec)로만 풀리는데 그 입력이 비전투 컨텍스트에서 막혀, 피격·사망 시 조준이 남아 커서를 계속 따라가던 버그 방지.
+		if self.isAiming and _InputRouter:IsCombat() == false then
+			self:StopAimPreview()
+		end
 		-- (0) 조준 중이면 미리보기를 커서 방향으로 갱신 (대시 사거리/착지 지점 표시)
 		if self.isAiming then
 			self:UpdateAimPreview()
