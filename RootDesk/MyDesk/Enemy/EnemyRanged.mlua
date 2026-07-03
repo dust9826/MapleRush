@@ -22,6 +22,9 @@ script EnemyRanged extends Component
 	@Sync property number AimDirY = 0
 	property boolean aimLocked = false
 
+	-- 공격 예고 게이지 id(TelegraphService). aim 방향 잠금 시 발급, 발사/취소/사망/그레이스/기절에서 Hide. 0=없음.
+	@HideFromInspector property integer telegraphId = 0
+
 	property integer shotIndex = 0
 
 	-- 모션 구동: 모델 기본 SpriteRUID(stand) 캡처 후 상태별 교체.
@@ -73,8 +76,9 @@ script EnemyRanged extends Component
 		-- 원거리 적 AI: 감지(5) 내 플레이어를 향해 이동하며 조준 1s → 발사 1발 → 쿨 1s 반복. 감지 이탈 시 조준 취소.
 		---@type EnemyHealth
 		local hp = self.Entity:GetComponent("script.EnemyHealth")
-		if hp ~= nil and hp.IsDead == true then self.IsAiming = false self.aimLocked = false self:PlayClip(self:AnimClip("die", self.standClip)) return end
+		if hp ~= nil and hp.IsDead == true then self:ClearTelegraph() self.IsAiming = false self.aimLocked = false self:PlayClip(self:AnimClip("die", self.standClip)) return end
 		if _StageManager:IsGraceActive() then
+			self:ClearTelegraph()
 			self.IsAiming = false
 			self.aimLocked = false
 			self:StopMove()
@@ -83,6 +87,7 @@ script EnemyRanged extends Component
 		end
 		-- 섬광탄 기절: 이동·조준·발사 정지
 		if _BattlefieldFx:IsStunActive() then
+			self:ClearTelegraph()
 			self.IsAiming = false
 			self.aimLocked = false
 			self:StopMove()
@@ -91,6 +96,7 @@ script EnemyRanged extends Component
 		end
 		-- 피격(HIT): 조준 취소(발사 안 함) → 공격이 멈춘다. hit 모션(없으면 idle). 윈도우 후 조준 새로 시작.
 		if hp ~= nil and _UtilLogic.ServerElapsedSeconds < hp.hitClipUntil then
+			self:ClearTelegraph()
 			self.IsAiming = false
 			self.aimLocked = false
 			self.cyclePhase = "aim"
@@ -106,6 +112,7 @@ script EnemyRanged extends Component
 		if player ~= nil then
 			local spp = player.TransformComponent.WorldPosition
 			if _BattlefieldFx:IsSmokeHiding(Vector2(spp.x, spp.y + _GameConstants.PlayerCenterYOffset)) then
+				self:ClearTelegraph()
 				self.IsAiming = false
 				self.aimLocked = false
 				self.cyclePhase = "aim"
@@ -116,6 +123,7 @@ script EnemyRanged extends Component
 			end
 		end
 		if player == nil then
+			self:ClearTelegraph()
 			self.IsAiming = false
 			self.aimLocked = false
 			self:StopMove()
@@ -135,6 +143,7 @@ script EnemyRanged extends Component
 			if self.cyclePhase == "aim" and self.cycleTimer < self.AimTime then
 				log("[EnemyRanged] aim canceled (player out of range)")
 			end
+			self:ClearTelegraph()
 			self.IsAiming = false
 			self.aimLocked = false
 			self.cyclePhase = "aim"
@@ -155,6 +164,7 @@ script EnemyRanged extends Component
 		self.cycleTimer -= scaledDelta
 		if self.cycleTimer <= 0 then
 			if self.cyclePhase == "aim" then
+				self:ClearTelegraph()
 				self:Fire(playerCenter, myCenter)
 				-- 종족 공격음(sfx_atk_<species>) — 발사 순간. hp에 종족 태그가 있으면 Multicast로 전 클라 재생.
 				if hp ~= nil then hp:PlaySpeciesSfx("atk") end
@@ -174,6 +184,10 @@ script EnemyRanged extends Component
 				self.AimDirX = d.x
 				self.AimDirY = d.y
 				self.aimLocked = true
+				-- 공격 예고: 발사축을 따라가는 레인 게이지(보스 Telegraph 재사용). 방향은 잠긴 AimDir(추적 안 함). 채움=aim 진행도.
+				if _GameConstants.ShowEnemyTelegraph then
+					self.telegraphId = _TelegraphService:Show(self.Entity, myCenter, _GameConstants.GizmoRangedLaneLength * 0.5, _GameConstants.GizmoRangedLaneWidth * 0.5, self.AimTime, self.ProjectileParryable, "ranged", self.AimDirX, self.AimDirY)
+				end
 				log("[EnemyRanged] aim LOCKED dir=(" .. string.format("%.2f", d.x) .. "," .. string.format("%.2f", d.y) .. ")")
 			end
 		else
@@ -211,6 +225,15 @@ script EnemyRanged extends Component
 		if comp ~= nil then
 			comp:Launch(dir.x, dir.y, _GameConstants.ProjectileSpeed, 1, self.ProjectileParryable)
 			log("[EnemyRanged] " .. self.Entity.Name .. " fired projectile dir=(" .. string.format("%.2f", dir.x) .. "," .. string.format("%.2f", dir.y) .. ")")
+		end
+	end
+
+	@ExecSpace("ServerOnly")
+	method void ClearTelegraph()
+		-- 공격 예고 게이지 제거(있을 때만 1회). 발사/취소/사망/그레이스/기절 공통. 파괴 가드.
+		if self.telegraphId > 0 then
+			if isvalid(self.Entity) then _TelegraphService:Hide(self.Entity.CurrentMap, self.telegraphId) end
+			self.telegraphId = 0
 		end
 	end
 
