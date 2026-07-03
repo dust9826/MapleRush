@@ -1,0 +1,42 @@
+@Logic
+script PlayerConfig extends Logic
+
+	-- 플레이어 전용 튜닝 설정 캡슐. GameConstants에서 플레이어 관련 수치를 분리해 가독성·수정 편의를 높인다.
+	-- 접근은 전역 _PlayerConfig.<name> (GameConstants와 동일 패턴). 인스펙터에서 값 편집 가능.
+
+	-- ===== 생존 =====
+	property integer BaseMaxLives = 5
+
+	-- ===== 공격 =====
+	property number BaseAttack = 10.0
+	property number AttackCooldown = 0.5
+	property number PlayerAttackBoxForward = 2.5
+	property number PlayerAttackBoxHeight = 2.0
+
+	-- ===== 대시 =====
+	property integer BaseMaxDash = 2
+	property number BaseDashRecoverTime = 2.5
+	property number DashDistance = 5.0
+	property number DashDuration = 0.1
+
+	-- ===== 데미지 배율 (플레이어 공격 스탯에 곱해지는 계수) =====
+	property number DmgAttackPct = 1.0
+	property number DmgDashPct = 0.5
+	property number DmgEmpoweredDashPct = 1.5
+	property number DmgReflectPct = 2.0
+	property number DmgRockPct = 3.0
+
+	-- ===== 아이템 / 능력 =====
+	property integer BaseMaxItems = 3          -- (현재 코드 미사용 — 정의만 이관. 사용 시 여기서 조절)
+	property integer AbilityUsesNormal = 1
+	property integer AbilityUsesBoss = 2
+	property number InvincibleAbilityDuration = 1.0
+
+	-- ===== 컨트롤 =====
+	property boolean EnableDownJump = false     -- 아래점프 허용 여부 (false = 삭제). PlayerInputSetup이 반영.
+	property string KeyLeft = "A"
+	property string KeyRight = "D"
+	property string KeyUp = "W"
+	property string KeyDown = "S"
+
+end

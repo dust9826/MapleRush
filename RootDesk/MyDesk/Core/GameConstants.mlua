@@ -5,16 +5,6 @@ script GameConstants extends Logic
 
 	property number PlayerHeight = 2.0
 
-	property number BaseAttack = 10.0
-
-	property integer BaseMaxLives = 5
-
-	property integer BaseMaxDash = 2
-
-	property number BaseDashRecoverTime = 2.5
-
-	property integer BaseMaxItems = 3
-
 	property number RadiusAttack = 2.0
 
 	property number RadiusSlowTrigger = 2.5
@@ -47,25 +37,11 @@ script GameConstants extends Logic
 
 	property number BossRedSmashBoxHalfH = 1.2
 
-	property number PlayerAttackBoxForward = 2.5
-
-	property number PlayerAttackBoxHeight = 2.0
-
 	property number BossTripleSpread = 0.6
 
 	property number GizmoRangedLaneLength = 6.0
 
 	property number GizmoRangedLaneWidth = 0.4
-
-	property number DmgAttackPct = 1.0
-
-	property number DmgDashPct = 0.5
-
-	property number DmgEmpoweredDashPct = 1.5
-
-	property number DmgReflectPct = 2.0
-
-	property number DmgRockPct = 3.0
 
 	property number GroggyParryMult = 2.0
 
@@ -73,12 +49,6 @@ script GameConstants extends Logic
 	property number ParryWindowLead = 0.15
 
 	property number ParryWindowTrail = 0.05
-
-	property number AttackCooldown = 0.5
-
-	property number DashDuration = 0.1
-
-	property number DashDistance = 5.0
 
 	property number DashWallMargin = 0.35
 
@@ -97,8 +67,6 @@ script GameConstants extends Logic
 	property number SlowDuration = 1.0
 
 	property number SlowScale = 0.25
-
-	property number InvincibleAbilityDuration = 1.0
 
 	property number SmokeDuration = 5.0
 
@@ -209,10 +177,6 @@ script GameConstants extends Logic
 	property string NormalMapChoice = "map02"
 
 	property number EnemyChaseSpeed = 2.0
-
-	property integer AbilityUsesNormal = 1
-
-	property integer AbilityUsesBoss = 2
 
 	property string MatGrayScale = "GrayScale"
 

@@ -36,10 +36,10 @@ script CombatGizmo extends Component
 				local pp = self.Entity.TransformComponent.WorldPosition
 				-- 평타 박스: 마지막 평타의 커서 좌/우 방향으로 전방 오프셋 + 플레이어 중심 보정.
 				local facingX = pc.lastAttackFacingX
-				local f = _GameConstants.PlayerAttackBoxForward
+				local f = _PlayerConfig.PlayerAttackBoxForward
 				local bcx = pp.x + facingX * f * 0.5
 				local bcy = pp.y + _GameConstants.PlayerCenterYOffset
-				_GizmoManager:AttackFlash(Vector2(bcx, bcy), f * 0.5, _GameConstants.PlayerAttackBoxHeight * 0.5)
+				_GizmoManager:AttackFlash(Vector2(bcx, bcy), f * 0.5, _PlayerConfig.PlayerAttackBoxHeight * 0.5)
 			end
 		end
 

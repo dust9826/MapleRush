@@ -44,7 +44,7 @@ script PlayerCombat extends Component
 	@ExecSpace("ClientOnly")
 	method void TryAttack(Vector2 targetWorldPos)
 		-- 평타: 쿨타임 0.5s(실제 시간), 대시 이동 중 불가. 판정은 서버에 요청.
-		if not _WallClock:IsExpired(self.lastAttackTime, _GameConstants.AttackCooldown) then return end
+		if not _WallClock:IsExpired(self.lastAttackTime, _PlayerConfig.AttackCooldown) then return end
 		---@type PlayerDash
 		local dash = self.Entity:GetComponent("script.PlayerDash")
 		if dash ~= nil and dash.IsDashing == true then return end
@@ -89,13 +89,13 @@ script PlayerCombat extends Component
 		local pos = self.Entity.TransformComponent.WorldPosition
 		local facingX = 1
 		if dirX < 0 then facingX = -1 end
-		local f = _GameConstants.PlayerAttackBoxForward
+		local f = _PlayerConfig.PlayerAttackBoxForward
 		local boxCenter = Vector2(pos.x + facingX * f * 0.5, pos.y + _GameConstants.PlayerCenterYOffset)
 		local hw = f * 0.5
-		local hh = _GameConstants.PlayerAttackBoxHeight * 0.5
-		local damage = _GameStateManager.AttackStat * _GameConstants.DmgAttackPct
+		local hh = _PlayerConfig.PlayerAttackBoxHeight * 0.5
+		local damage = _GameStateManager.AttackStat * _PlayerConfig.DmgAttackPct
 		local hitCount = _CombatPrimitives:DamageEnemiesInBox(self.Entity.CurrentMap, boxCenter, hw, hh, damage, "attack")
-		local reflectDamage = _GameStateManager.AttackStat * _GameConstants.DmgReflectPct
+		local reflectDamage = _GameStateManager.AttackStat * _PlayerConfig.DmgReflectPct
 		local parried = _CombatPrimitives:TryParry(self.Entity.CurrentMap, boxCenter, hw, hh, reflectDamage)
 		log("[PlayerCombat] server attack resolved: hit=" .. tostring(hitCount) .. " parried=" .. tostring(parried) .. " dmg=" .. tostring(damage))
 	end
