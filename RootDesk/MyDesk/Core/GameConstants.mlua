@@ -361,7 +361,11 @@ script GameConstants extends Logic
 	property number BossZ1BoxHH = 1.0
 	property number BossZ2Windup = 0.8
 	property number BossZ2Cd = 1.0
-	-- P-Z2 박수 레이저 빔 비주얼(연출 전용 — 실제 판정은 발사되는 투사체). Clip=fieldskill 가로 레이저.
+	-- P-Z2 박수 레이저 = 즉발 히트스캔 판정(투사체 아님). 보스 발사방향으로 가로 박스: 반길이(보스→바깥) / 반두께.
+	-- 예고(빨간 가로바)가 이 영역 = 실제 판정. 그 라인에 있으면 발동 순간 피격. windup 동안 라인 밖으로 회피.
+	property number BossZ2LaserHalfLen = 5.0
+	property number BossZ2LaserHalfH = 0.5
+	-- P-Z2 박수 레이저 빔 비주얼(연출 전용 — 실제 판정은 위 히트스캔 박스). Clip=fieldskill 가로 레이저.
 	-- ScaleX=빔 길이 / ScaleY=빔 두께 / OffsetX=보스 발사방향 중심 이동(월드유닛). 전부 눈 튜닝용.
 	property string BossZakumBeamClip = "3a2ea8cf59ad4372b6982266be675704"
 	property number BossZakumBeamScaleX = 0.7
