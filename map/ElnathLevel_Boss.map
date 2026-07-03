@@ -7471,6 +7471,234 @@
           ],
           "@version": 1
         }
+      },
+      {
+        "id": "5fdb33ad-7711-4760-83cf-5ae643cb4d87",
+        "path": "/maps/ElnathLevel_Boss/DashBlockRegions",
+        "componentNames": "MOD.Core.TransformComponent",
+        "jsonString": {
+          "name": "DashBlockRegions",
+          "path": "/maps/ElnathLevel_Boss/DashBlockRegions",
+          "nameEditable": true,
+          "enable": true,
+          "visible": true,
+          "localize": false,
+          "displayOrder": 4,
+          "pathConstraints": "///",
+          "revision": 1,
+          "origin": {
+            "type": "Model",
+            "entry_id": "mapempty",
+            "sub_entity_id": null,
+            "root_entity_id": "5fdb33ad-7711-4760-83cf-5ae643cb4d87",
+            "replaced_model_id": null
+          },
+          "modelId": "mapempty",
+          "@components": [
+            {
+              "@type": "MOD.Core.TransformComponent",
+              "Position": {
+                "x": 0.94767,
+                "y": -1.56815815,
+                "z": 999.999
+              },
+              "QuaternionRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+              },
+              "Enable": true
+            }
+          ],
+          "@version": 1
+        }
+      },
+      {
+        "id": "78b38f1b-1d31-4748-8339-b32106ea217b",
+        "path": "/maps/ElnathLevel_Boss/DashBlockRegions/DashBlockRegion",
+        "componentNames": "MOD.Core.TransformComponent,MOD.Core.TriggerComponent",
+        "jsonString": {
+          "name": "DashBlockRegion",
+          "path": "/maps/ElnathLevel_Boss/DashBlockRegions/DashBlockRegion",
+          "nameEditable": true,
+          "enable": true,
+          "visible": true,
+          "localize": false,
+          "displayOrder": 0,
+          "pathConstraints": "////",
+          "revision": 1,
+          "origin": {
+            "type": "Model",
+            "entry_id": "dashblockregion",
+            "sub_entity_id": null,
+            "root_entity_id": "78b38f1b-1d31-4748-8339-b32106ea217b",
+            "replaced_model_id": null
+          },
+          "modelId": "dashblockregion",
+          "@components": [
+            {
+              "@type": "MOD.Core.TransformComponent",
+              "Rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+              },
+              "Position": {
+                "x": -0.9296,
+                "y": -2.7708,
+                "z": 0.0
+              },
+              "QuaternionRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": -1.0
+              },
+              "Scale": {
+                "x": 52.7174721,
+                "y": 3.111524,
+                "z": 1.0
+              },
+              "ZRotation": 0.0,
+              "Enable": true
+            },
+            {
+              "@type": "MOD.Core.TriggerComponent",
+              "BoxSize": {
+                "x": 0.5,
+                "y": 0.5
+              },
+              "ColliderOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "IsLegacy": false,
+              "Enable": true
+            }
+          ],
+          "@version": 1
+        }
+      },
+      {
+        "id": "9511128e-539d-4572-bb52-20746936e9a5",
+        "path": "/maps/ElnathLevel_Boss/DashBlockRegions/DashBlockRegion_1",
+        "componentNames": "MOD.Core.TransformComponent,MOD.Core.TriggerComponent",
+        "jsonString": {
+          "name": "DashBlockRegion_1",
+          "path": "/maps/ElnathLevel_Boss/DashBlockRegions/DashBlockRegion_1",
+          "nameEditable": true,
+          "enable": true,
+          "visible": true,
+          "localize": false,
+          "displayOrder": 1,
+          "pathConstraints": "////",
+          "revision": 1,
+          "origin": {
+            "type": "Model",
+            "entry_id": "dashblockregion",
+            "sub_entity_id": null,
+            "root_entity_id": "78b38f1b-1d31-4748-8339-b32106ea217b",
+            "replaced_model_id": null
+          },
+          "modelId": "dashblockregion",
+          "@components": [
+            {
+              "@type": "MOD.Core.TransformComponent",
+              "Position": {
+                "x": -13.0693,
+                "y": 2.2873,
+                "z": 0.0
+              },
+              "QuaternionRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+              },
+              "Scale": {
+                "x": 5.371747,
+                "y": 21.6691456,
+                "z": 1.0
+              },
+              "Enable": true
+            },
+            {
+              "@type": "MOD.Core.TriggerComponent",
+              "BoxSize": {
+                "x": 0.5,
+                "y": 0.5
+              },
+              "ColliderOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "IsLegacy": false,
+              "Enable": true
+            }
+          ],
+          "@version": 1
+        }
+      },
+      {
+        "id": "61aac51a-9348-44e2-8fbc-17577608391d",
+        "path": "/maps/ElnathLevel_Boss/DashBlockRegions/DashBlockRegion_2",
+        "componentNames": "MOD.Core.TransformComponent,MOD.Core.TriggerComponent",
+        "jsonString": {
+          "name": "DashBlockRegion_2",
+          "path": "/maps/ElnathLevel_Boss/DashBlockRegions/DashBlockRegion_2",
+          "nameEditable": true,
+          "enable": true,
+          "visible": true,
+          "localize": false,
+          "displayOrder": 2,
+          "pathConstraints": "////",
+          "revision": 1,
+          "origin": {
+            "type": "Model",
+            "entry_id": "dashblockregion",
+            "sub_entity_id": null,
+            "root_entity_id": "78b38f1b-1d31-4748-8339-b32106ea217b",
+            "replaced_model_id": null
+          },
+          "modelId": "dashblockregion",
+          "@components": [
+            {
+              "@type": "MOD.Core.TransformComponent",
+              "Position": {
+                "x": 11.2051,
+                "y": 2.2587,
+                "z": 0.0
+              },
+              "QuaternionRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+              },
+              "Scale": {
+                "x": 5.371747,
+                "y": 21.6691456,
+                "z": 1.0
+              },
+              "Enable": true
+            },
+            {
+              "@type": "MOD.Core.TriggerComponent",
+              "BoxSize": {
+                "x": 0.5,
+                "y": 0.5
+              },
+              "ColliderOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "IsLegacy": false,
+              "Enable": true
+            }
+          ],
+          "@version": 1
+        }
       }
     ]
   }
