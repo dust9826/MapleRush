@@ -54,6 +54,8 @@ script Projectile extends Component
 		if self.Launched == false then return end
 		local e = self.Entity
 		if isvalid(e) == false then return end
+		-- 일시정지: 위치/수명/충돌 전부 프리즈 (재개 시 이어서 비행). 재개 후 튀거나 정지 중 명중하는 문제 방지.
+		if _StageManager:IsCombatPaused() then return end
 		local timeScale = 1.0
 		if self.OwnerSide == "enemy" then
 			timeScale = _SlowMotion:Scale()

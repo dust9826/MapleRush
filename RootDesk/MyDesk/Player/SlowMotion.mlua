@@ -24,7 +24,7 @@ script SlowMotion extends Logic
 	method void OnUpdate(number delta)
 		-- 서버: 슬로우 만료 처리 / 클라: 타임스케일 복귀 (실제 시간 스냅샷 차분).
 		if self:IsServer() then
-			if self.ServerSlowActive and _UtilLogic.ServerElapsedSeconds >= self.serverSlowEnd then
+			if self.ServerSlowActive and _WallClock:ServerNow() >= self.serverSlowEnd then
 				self:DeactivateServer()
 			end
 		else
@@ -38,7 +38,7 @@ script SlowMotion extends Logic
 	method void Activate(Entity playerEntity)
 		-- 슬로우 발동/갱신 (중첩 시 지속시간 초기화 — player_design §3.2.5). 적 PlayRate 감속 + 클라 통지.
 		self.ServerSlowActive = true
-		self.serverSlowEnd = _UtilLogic.ServerElapsedSeconds + _GameConstants.SlowDuration
+		self.serverSlowEnd = _WallClock:ServerNow() + _GameConstants.SlowDuration
 		self.slowedMapRef = playerEntity.CurrentMap
 		self:ApplyEnemyPlayRate(_GameConstants.SlowScale)
 		log("[SlowMotion] SERVER slow ACTIVE (0.25x) for " .. tostring(_GameConstants.SlowDuration) .. "s")

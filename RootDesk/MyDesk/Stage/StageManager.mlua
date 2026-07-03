@@ -444,22 +444,28 @@ script StageManager extends Logic
 		-- 진입 처리 완료 → 이후 ResetStage(사망 재시작)는 복구 경로.
 		self.freshStage = false
 		self.StageActive = true
-		self.combatGraceUntil = _UtilLogic.ServerElapsedSeconds + 1.5
+		self.combatGraceUntil = _WallClock:ServerNow() + 1.5
 		log("[StageManager] ResetStage done: spawned=" .. tostring(self.SpawnedCount))
 	end
 
 	@ExecSpace("ServerOnly")
 	method boolean IsGraceActive()
-		-- 진입 유예 중인지 (적 AI가 폴링). 일시정지 중이면 항상 정지.
-		if self.combatPaused then return true end
-		return _UtilLogic.ServerElapsedSeconds < self.combatGraceUntil
+		-- 진입 유예 중인지 (적 AI가 폴링). grace는 "리셋"(윈드업 취소·조준 해제)을 유발하므로 일시정지와 분리 — pause는 IsCombatPaused로 별도 프리즈.
+		return _WallClock:ServerNow() < self.combatGraceUntil
+	end
+
+	@ExecSpace("ServerOnly")
+	method boolean IsCombatPaused()
+		-- 일시정지 중인지 (적 AI/투사체가 폴링). grace와 달리 상태를 리셋하지 않고 '프리즈'만 — 재개 시 진행 중 공격 그대로 이어감.
+		return self.combatPaused
 	end
 
 	@ExecSpace("Server")
 	method void RequestSetPaused(boolean paused)
-		-- 클라 일시정지 메뉴 → 서버 적 AI 정지/재개 토글 (IsGraceActive 경유). 런 진행 중에만 유효.
+		-- 클라 일시정지 메뉴 → (1) 동작 정지(combatPaused: 적 AI/투사체 프리즈) + (2) 게임 시계 정지(WallClock: 모든 서버 타이머 프리즈).
 		if _GameStateManager.RunActive == false then return end
 		self.combatPaused = paused
+		_WallClock:SetServerPaused(paused)
 		log("[StageManager] combatPaused = " .. tostring(paused))
 	end
 
@@ -467,6 +473,7 @@ script StageManager extends Logic
 	method void RequestAbandonToLobby()
 		-- 일시정지 메뉴 "타이틀로 돌아가기" → 진행 런 포기: 런/스테이지 종료 + 잔존 적/투사체 정리.
 		self.combatPaused = false
+		_WallClock:SetServerPaused(false)
 		self.StageActive = false
 		_GameStateManager.RunActive = false
 		local map = self:GetMap()
@@ -594,7 +601,7 @@ script StageManager extends Logic
 			-- 클리어 텀: 마지막 적 처치 후 곧바로 보상 팝업을 띄우지 않고 같은 텀을 둔 뒤 StageClear.
 			-- 즉시 StageActive=false로 중복 클리어/피격 차단 + grace 연장(적 프리즈) + 플레이어 이동 정지.
 			self.StageActive = false
-			self.combatGraceUntil = _UtilLogic.ServerElapsedSeconds + _GameConstants.StageEndDelay + 1.5
+			self.combatGraceUntil = _WallClock:ServerNow() + _GameConstants.StageEndDelay + 1.5
 			local cp = self:GetPlayer()
 			if cp ~= nil and cp.PlayerComponent ~= nil then self:ClientFreezePlayer(cp.PlayerComponent.UserId) end
 			_TimerService:SetTimerOnce(function()
@@ -666,7 +673,7 @@ script StageManager extends Logic
 			--   → (1) 화면 검게(ToBlack) → (2) 검은 화면에서 리스폰(텔레포트) → ClientStageReset이 밝게(FromBlack).
 			-- grace는 전체 시퀀스(hold+fade) 동안 적 프리즈 유지.
 			self.StageActive = false
-			self.combatGraceUntil = _UtilLogic.ServerElapsedSeconds + hold + fade + 1.5
+			self.combatGraceUntil = _WallClock:ServerNow() + hold + fade + 1.5
 			local uid = ""
 			if deadPc ~= nil then uid = deadPc.UserId end
 			-- (1) hold 후 화면 검게
@@ -680,7 +687,7 @@ script StageManager extends Logic
 		else
 			-- 실패(목숨 0) 텀: 같은 텀 뒤에 게임오버 처리. 그 사이 전투 정지 + 적 프리즈.
 			self.StageActive = false
-			self.combatGraceUntil = _UtilLogic.ServerElapsedSeconds + _GameConstants.StageEndDelay + 1.5
+			self.combatGraceUntil = _WallClock:ServerNow() + _GameConstants.StageEndDelay + 1.5
 			_TimerService:SetTimerOnce(function()
 				if _GameStateManager.RunActive then self:GameOver() end
 			end, _GameConstants.StageEndDelay)
