@@ -151,8 +151,8 @@ script GameConstants extends Logic
 	-- 이 리프트로 항상 발판 위에서 스폰→중력이 올바른 발판에 안착. 모든 테마맵/미래 authoring 공통 적용.
 	property number SpawnYLift = 0.15
 
-	-- 사망 후 부활까지 텀(초). 목숨 감소 → 이 시간 동안 전투 정지(적 프리즈) → 스폰포인트에서 재시작. 인스펙터 튜닝.
-	property number ReviveDelay = 1.2
+	-- 스테이지 종료 공통 텀(초). 사망 부활 / 클리어(보상 팝업) / 실패(게임오버) 모두 이 시간 뒤에 처리 — 그 사이 전투 정지(적 프리즈). 인스펙터 튜닝.
+	property number StageEndDelay = 1.2
 
 	-- 낙사 리스폰 대기(초). 엔진 내장 낙사 리스폰(PlayerComponent.RespawnDuration)을 이 값으로 낮춰 빠르게 복귀. 스테이지마다 스폰포인트를 RespawnPosition에 주입해 원점(0,0,0) 대신 그 자리로 복귀시킴.
 	property number FallRespawnDuration = 0.5

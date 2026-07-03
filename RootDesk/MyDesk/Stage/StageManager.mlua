@@ -525,7 +525,13 @@ script StageManager extends Logic
 		_GameStateManager.RunKills += 1
 		log("[StageManager] kill " .. tostring(self.KilledCount) .. "/" .. tostring(self.SpawnedCount) .. " (" .. enemyKind .. ")")
 		if self.KilledCount >= self.SpawnedCount then
-			self:StageClear()
+			-- 클리어 텀: 마지막 적 처치 후 곧바로 보상 팝업을 띄우지 않고 같은 텀을 둔 뒤 StageClear.
+			-- 즉시 StageActive=false로 중복 클리어/피격 차단 + grace 연장(적 프리즈).
+			self.StageActive = false
+			self.combatGraceUntil = _UtilLogic.ServerElapsedSeconds + _GameConstants.StageEndDelay + 1.5
+			_TimerService:SetTimerOnce(function()
+				if _GameStateManager.RunActive then self:StageClear() end
+			end, _GameConstants.StageEndDelay)
 		end
 	end
 
@@ -583,17 +589,22 @@ script StageManager extends Logic
 		if deadPc ~= nil then self:ClientPlayerDeathSfx(deadPc.UserId) end
 		if _GameStateManager.CurrentLives > 0 then
 			_GameStateManager.CurrentLives -= 1
-			log("[StageManager] player died -> lives=" .. tostring(_GameStateManager.CurrentLives) .. ", reviving in " .. tostring(_GameConstants.ReviveDelay) .. "s")
-			-- 부활 텀: 즉시 재시작하지 않고 ReviveDelay 후 ResetStage. 그 사이 전투 정지(StageActive=false로 재피격 차단)
+			log("[StageManager] player died -> lives=" .. tostring(_GameStateManager.CurrentLives) .. ", reviving in " .. tostring(_GameConstants.StageEndDelay) .. "s")
+			-- 부활 텀: 즉시 재시작하지 않고 StageEndDelay 후 ResetStage. 그 사이 전투 정지(StageActive=false로 재피격 차단)
 			-- + grace 연장으로 적 프리즈 → 잠깐의 사망 여운 후 스폰포인트에서 재개.
 			self.StageActive = false
-			self.combatGraceUntil = _UtilLogic.ServerElapsedSeconds + _GameConstants.ReviveDelay + 1.5
+			self.combatGraceUntil = _UtilLogic.ServerElapsedSeconds + _GameConstants.StageEndDelay + 1.5
 			_TimerService:SetTimerOnce(function()
 				-- 텀 동안 게임오버/런 종료 등으로 상태가 바뀌지 않았을 때만 재시작.
 				if _GameStateManager.RunActive then self:ResetStage() end
-			end, _GameConstants.ReviveDelay)
+			end, _GameConstants.StageEndDelay)
 		else
-			self:GameOver()
+			-- 실패(목숨 0) 텀: 같은 텀 뒤에 게임오버 처리. 그 사이 전투 정지 + 적 프리즈.
+			self.StageActive = false
+			self.combatGraceUntil = _UtilLogic.ServerElapsedSeconds + _GameConstants.StageEndDelay + 1.5
+			_TimerService:SetTimerOnce(function()
+				if _GameStateManager.RunActive then self:GameOver() end
+			end, _GameConstants.StageEndDelay)
 		end
 	end
 
