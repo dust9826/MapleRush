@@ -32,6 +32,14 @@ script PlayerConfig extends Logic
 	property integer AbilityUsesBoss = 2
 	property number InvincibleAbilityDuration = 1.0
 
+	-- ===== 이동 (MapleTile Rigidbody 물리 — PlayerInputSetup이 spawn/맵진입 시 적용) =====
+	property number MoveSpeed = 1.4             -- 최대 이동속도(WalkSpeed). 조절용.
+	property number MoveAcceleration = 1000.0   -- 지상 가속(WalkAcceleration). 클수록 즉시 최대속도 도달. (기본 1)
+	property number MoveDrag = 2.0              -- 지상 정지 마찰(WalkDrag, 유효 0.5~2). 클수록 즉시 정지. (기본 1)
+	property number MoveMass = 1.0              -- 질량(Mass). 낮을수록 가감속 반응 빠름. ★기본 100이 "천천히 오르고 느리게 멈추는" 주범.
+	property number AirAcceleration = 1000.0    -- 공중 가속(AirAccelerationX). (기본 1)
+	property number AirDeceleration = 1000.0    -- 공중 감속(AirDecelerationX). 점프 중 관성 즉시 제거가 부담되면 낮춰서 튜닝.
+
 	-- ===== 컨트롤 =====
 	property boolean EnableDownJump = false     -- 아래점프 허용 여부 (false = 삭제). PlayerInputSetup이 반영.
 	property string KeyLeft = "A"

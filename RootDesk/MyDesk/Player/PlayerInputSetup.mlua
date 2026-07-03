@@ -5,6 +5,8 @@ script PlayerInputSetup extends Component
 	method void OnBeginPlay()
 		-- 이동 키를 _PlayerConfig 설정값으로 매핑(기존 화살표 액션 재사용) + 아래점프 삭제(EnableDownJump=false).
 		if self.Entity ~= _UserService.LocalPlayer then return end
+		-- 이동 물리(속도/즉시 가감속)도 여기서 적용. 키 매핑과 독립(pc 없어도 이동은 적용).
+		self:ApplyMovementConfig()
 		local pc = self.Entity.PlayerControllerComponent
 		if pc == nil then return end
 		-- 화살표에 매핑된 엔진 기본 액션 이름을 그대로 가져와 설정 키에 재부여.
@@ -24,6 +26,28 @@ script PlayerInputSetup extends Component
 			log("[PlayerInputSetup] down-jump DISABLED (MoveDown removed; S=" .. tostring(pc:GetActionName(KeyboardKey.S)) .. ")")
 		end
 		log("[PlayerInputSetup] keys mapped (L=" .. _PlayerConfig.KeyLeft .. " R=" .. _PlayerConfig.KeyRight .. " U=" .. _PlayerConfig.KeyUp .. " D=" .. _PlayerConfig.KeyDown .. " downJump=" .. tostring(_PlayerConfig.EnableDownJump) .. ")")
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnMapEnter(Entity map)
+		-- 맵 전환 시 이동 물리 재적용(엔진이 전환 중 body 값을 리셋해도 유지). 로컬 플레이어만.
+		if self.Entity ~= _UserService.LocalPlayer then return end
+		self:ApplyMovementConfig()
+	end
+
+	@ExecSpace("ClientOnly")
+	method void ApplyMovementConfig()
+		-- _PlayerConfig 이동값을 로컬 플레이어 RigidbodyComponent에 적용 (MapleTile 물리).
+		--  속도=WalkSpeed / 즉시 최대속도=WalkAcceleration↑ / 즉시 정지=WalkDrag↑ + Mass↓(가감속 반응) / 공중=Air Accel·Decel.
+		local rb = self.Entity.RigidbodyComponent
+		if isvalid(rb) == false then return end
+		rb.WalkSpeed = _PlayerConfig.MoveSpeed
+		rb.WalkAcceleration = _PlayerConfig.MoveAcceleration
+		rb.WalkDrag = _PlayerConfig.MoveDrag
+		rb.Mass = _PlayerConfig.MoveMass
+		rb.AirAccelerationX = _PlayerConfig.AirAcceleration
+		rb.AirDecelerationX = _PlayerConfig.AirDeceleration
+		log("[PlayerInputSetup] movement applied (speed=" .. tostring(_PlayerConfig.MoveSpeed) .. " accel=" .. tostring(_PlayerConfig.MoveAcceleration) .. " drag=" .. tostring(_PlayerConfig.MoveDrag) .. " mass=" .. tostring(_PlayerConfig.MoveMass) .. ")")
 	end
 
 	@ExecSpace("ClientOnly")
