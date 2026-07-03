@@ -26,9 +26,6 @@ script BossController extends Component
 
 	property integer shotIndex = 0
 
-	-- P-Z2 레이저 발사 방향(±1, windup 시 고정). resolve의 빔 비주얼이 판정 박스와 같은 방향 되도록.
-	property number laserSgn = 1
-
 	-- 클라 디버그 기즈모용: 부채꼴(fan) 원거리 windup 동안만 true. 3갈래 예상 레인 표시 트리거.
 	@Sync property boolean TelegraphTriple = false
 
@@ -82,8 +79,7 @@ script BossController extends Component
 			-- 폐광 자쿰: 변칙. 좌/우 근접(택1=전방) + 수평 박수탄 + 다지점 용암.
 			return {
 				{ id = "P-Z1", cls = "box",    mode = "forward",    hw = C.BossZ1BoxHW, hh = C.BossZ1BoxHH, windup = C.BossZ1Windup, cd = C.BossZ1Cd, parryable = true },
-				-- P-Z2 박수 레이저: 투사체 아닌 즉발 히트스캔 가로 박스(보스→플레이어 방향). 예고=실제 판정, 회피 전용.
-				{ id = "P-Z2", cls = "box",    mode = "laser",      hw = C.BossZ2LaserHalfLen, hh = C.BossZ2LaserHalfH, windup = C.BossZ2Windup, cd = C.BossZ2Cd, parryable = false },
+				{ id = "P-Z2", cls = "ranged", mode = "horizontal", windup = C.BossZ2Windup, cd = C.BossZ2Cd, parryable = true },
 				{ id = "P-Z3", cls = "box",    mode = "multi", count = C.BossZ3Points, hw = C.BossZ3BoxHW, hh = C.BossZ3BoxHH, windup = C.BossZ3Windup, cd = C.BossZ3Cd, parryable = false },
 			}
 		end
@@ -197,8 +193,6 @@ script BossController extends Component
 
 	method string PatCat(table pat)
 		-- 패턴 카테고리: ranged=원거리 / aoe=광역(빨강 box, parryable=false) / melee=근접(노랑 box). 거리밴드 우선순위용.
-		-- 레이저(자쿰 P-Z2)는 box지만 원거리 존잉 역할 → ranged 취급(멀어도 발동).
-		if pat.mode == "laser" then return "ranged" end
 		if pat.cls == "ranged" then return "ranged" end
 		if pat.parryable == false then return "aoe" end
 		return "melee"
@@ -273,10 +267,6 @@ script BossController extends Component
 				local off = _GameConstants.BossSidesSafeHalf + pat.hw
 				self:AddBox(Vector2(myCenter.x - off, myCenter.y), pat.hw, pat.hh, pat.parryable, pat.windup)
 				self:AddBox(Vector2(myCenter.x + off, myCenter.y), pat.hw, pat.hh, pat.parryable, pat.windup)
-			elseif pat.mode == "laser" then
-				-- 박수 레이저(즉발 히트스캔): 보스 발사방향으로 가로 박스 1개(보스→바깥, 길이 pat.hw*2). 방향 고정.
-				self.laserSgn = facing
-				self:AddBox(Vector2(myCenter.x + facing * pat.hw, myCenter.y), pat.hw, pat.hh, pat.parryable, pat.windup)
 			elseif pat.mode == "multi" then
 				-- 플레이어 위치 1 + 랜덤 (count-1). 모두 바닥(myCenter.y) 정렬, 보스중심 ±BossMultiSpreadX 분포.
 				self:AddBox(Vector2(playerCenter.x, myCenter.y), pat.hw, pat.hh, pat.parryable, pat.windup)
@@ -320,11 +310,6 @@ script BossController extends Component
 			return
 		end
 		if pat.cls == "box" then
-			-- 레이저(P-Z2): 발동 순간 빔 비주얼 번쩍(판정 박스와 같은 방향). 판정은 아래 박스 오버랩.
-			if pat.mode == "laser" and isvalid(self.Entity) then
-				local bp = self.Entity.TransformComponent.WorldPosition
-				self:ShowZakumBeam(bp.x, bp.y + 0.5, self.laserSgn)
-			end
 			local hit = false
 			local phb = _CombatPrimitives:HurtboxOf(player, _GameConstants.PlayerHboxHW, _GameConstants.PlayerHboxHH, _GameConstants.PlayerCenterYOffset)
 			if self.pendingAttacks ~= nil then
