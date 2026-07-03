@@ -38,6 +38,27 @@ script PlayerItems extends Component
 	end
 
 	@ExecSpace("ClientOnly")
+	method void OnUpdate(number delta)
+		-- 로컬 플레이어 짱돌 조준 예고: rock 슬롯 활성 & 전투 중 & 비대시일 때 커서 방향 레인(적 예고 렌더러 재사용, 게이지 없음). 아니면 숨김.
+		if self.Entity ~= _UserService.LocalPlayer then return end
+		local show = false
+		if _InputRouter:IsCombat() and self.ActiveSlot > 0 and self:GetSlot(self.ActiveSlot) == "rock" then
+			---@type PlayerDash
+			local dash = self.Entity:GetComponent("script.PlayerDash")
+			if dash == nil or dash.IsDashing == false then show = true end
+		end
+		if show then
+			local pos = self.Entity.TransformComponent.WorldPosition
+			local center = Vector2(pos.x, pos.y + _GameConstants.PlayerCenterYOffset)
+			local cursor = _InputRouter:CursorWorld()
+			local dir = _CombatPrimitives:DirectionTo(center, cursor)
+			_TelegraphRenderer:DrawAimLane(center, _GameConstants.GizmoRangedLaneLength, _GameConstants.GizmoRangedLaneWidth, dir.x, dir.y)
+		else
+			_TelegraphRenderer:HideAimLane()
+		end
+	end
+
+	@ExecSpace("ClientOnly")
 	method string GetSlot(integer idx)
 		-- 슬롯 내용 조회.
 		if idx == 1 then return self.Slot1 end
