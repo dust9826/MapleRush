@@ -9,6 +9,9 @@ script BossController extends Component
 	-- 보스 종류: "elija"/"snowman"/"zakum" (모델에서 주입). 빈값=기본 더미 패턴.
 	@Sync property string BossKind = ""
 
+	-- 고정형 보스 여부(모델 주입). true면 플레이어 추격 없이 제자리에서 패턴만 발동. 자쿰=원작 고정 보스.
+	property boolean Stationary = false
+
 	-- 현재 보스의 패턴 세트(서버, OnBeginPlay에서 BuildPatterns). 항목 = 패턴 config 테이블.
 	property any patterns = nil
 
@@ -151,7 +154,8 @@ script BossController extends Component
 		local dist = math.abs(dx)
 
 		-- 추격 (패턴 윈드업 중에는 정지). 윈드업 중에는 StartPattern이 설정한 공격 모션 유지.
-		if self.phase ~= "windup" and dist > 1.8 then
+		-- Stationary 보스(자쿰)는 추격하지 않고 제자리에서 stand 유지 — 패턴 발동은 아래 phase 로직에서 그대로.
+		if self.phase ~= "windup" and dist > 1.8 and self.Stationary == false then
 			self:ChaseToward(playerCenter.x, myCenter.x, timeScale)
 			self:PlayClip(self:AnimClip("run", _GameConstants.BossMoveClip))
 		elseif self.phase ~= "windup" then
