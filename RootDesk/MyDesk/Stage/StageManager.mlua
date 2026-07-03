@@ -22,9 +22,6 @@ script StageManager extends Logic
 	-- 진입 유예: 이 시각(ServerElapsedSeconds)까지 적 행동 정지 (스폰 캠핑 방지)
 	property number combatGraceUntil = -999.0
 
-	-- 낙사 복구 디바운스: 직전 복귀 처리 시각. 텔레포트 반영 지연 동안 매 프레임 재트리거 방지.
-	property number lastFallRecover = -999.0
-
 	-- 클라: 보상 UI 컨트롤러 참조 (RewardController가 등록)
 	property any rewardUI = nil
 
@@ -320,8 +317,6 @@ script StageManager extends Logic
 	method void OnUpdate(number delta)
 		-- 서버: 맵 전환 완료를 폴링 → 도착 시 적 스폰 (전투 스테이지).
 		if self:IsServer() == false then return end
-		-- 낙사 복구: 활성 전투 중 플레이어가 맵 밖으로 떨어지면 스폰포인트로 복귀 (매 프레임, 맵 대기와 무관).
-		self:CheckFallOut()
 		if self.awaitingMap == false then return end
 		local player = self:GetPlayer()
 		if player == nil then return end
@@ -337,33 +332,6 @@ script StageManager extends Logic
 				if self.StageType == "boss" then self:PrepareBossMap(cm) end
 				self:ResetStage()
 			end
-		end
-	end
-
-	@ExecSpace("ServerOnly")
-	method void CheckFallOut()
-		-- 활성 전투 중 플레이어가 맵 밖(y < FallYThreshold)으로 떨어지면 현재 스테이지 스폰좌표로 복귀 (목숨 유지).
-		-- 상점/부활 텀 등 비활성 구간엔 개입 안 함. 텔레포트 반영 지연 동안 재트리거 방지(디바운스 1s).
-		if self.StageActive == false then return end
-		local player = self:GetPlayer()
-		if player == nil or isvalid(player) == false then return end
-		local tf = player.TransformComponent
-		if isvalid(tf) == false then return end
-		if tf.WorldPosition.y >= _GameConstants.FallYThreshold then return end
-		local now = _UtilLogic.ServerElapsedSeconds
-		if now - self.lastFallRecover < 1.0 then return end
-		self.lastFallRecover = now
-		local pc = player.PlayerComponent
-		if pc ~= nil then self:ClientRepositionTo(self.curSpawnX, self.curSpawnY, pc.UserId) end
-		log("[StageManager] player fell out of map -> repositioned to spawn (" .. string.format("%.1f", self.curSpawnX) .. "," .. string.format("%.1f", self.curSpawnY) .. ")")
-	end
-
-	@ExecSpace("Client")
-	method void ClientRepositionTo(number sx, number sy)
-		-- 클라: 낙사 복구 텔레포트만 (스테이지 리셋과 달리 대시/컨텍스트는 건드리지 않음).
-		local player = _UserService.LocalPlayer
-		if player ~= nil and isvalid(player) then
-			player.MovementComponent:SetWorldPosition(Vector2(sx, sy))
 		end
 	end
 
@@ -445,6 +413,10 @@ script StageManager extends Logic
 				local pc = u.PlayerComponent
 				if pc ~= nil then
 					self:ClientStageReset(self.curSpawnX, self.curSpawnY, pc.UserId)
+					-- 낙사 복귀: 엔진 내장 낙사 리스폰 목적지를 이번 스테이지 스폰포인트로 지정(미지정 시 원점 0,0,0으로 떨어짐).
+					-- 맵마다 지면높이가 달라도 스테이지 스폰좌표를 그대로 쓰므로 정확. RespawnDuration을 낮춰 빠르게 복귀.
+					pc.RespawnPosition = Vector3(self.curSpawnX, self.curSpawnY, 0)
+					pc.RespawnDuration = _GameConstants.FallRespawnDuration
 				end
 				---@type PlayerAbility
 				local ability = u:GetComponent("script.PlayerAbility")
