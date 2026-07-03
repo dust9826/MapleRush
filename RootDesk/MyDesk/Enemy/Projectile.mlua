@@ -24,6 +24,9 @@ script Projectile extends Component
 	-- 수명(초). 이 시간 지나면 소멸. ★맵 크기 무관(기존 하드코딩 좌표경계 -12~14는 넓은 레벨맵에서 투사체를 즉시 소멸시켜 "안 보이는" 버그였음).
 	property number Lifetime = 2.0
 
+	-- 피격 판정 반경(타입별; 전역 RadiusProjectile 대체). 예고 레인 폭 계산에도 사용. 모델마다 인스펙터 조절.
+	property number HitRadius = 0.2
+
 	property number age = 0.0
 
 	@ExecSpace("ServerOnly")
@@ -33,6 +36,16 @@ script Projectile extends Component
 		self.DirY = dirY
 		self.Speed = speed
 		self.Damage = damage
+		self.Parryable = parryable
+		self.OwnerSide = "enemy"
+		self.Launched = true
+	end
+
+	@ExecSpace("ServerOnly")
+	method void LaunchDir(number dirX, number dirY, boolean parryable)
+		-- 방향/패링만 설정. 속도·수명·반경은 이 투사체 모델 자기값(Speed/Lifetime/HitRadius) 사용.
+		self.DirX = dirX
+		self.DirY = dirY
 		self.Parryable = parryable
 		self.OwnerSide = "enemy"
 		self.Launched = true
@@ -96,7 +109,7 @@ script Projectile extends Component
 					for _, u in ipairs(users) do
 						if isvalid(u) then
 							local phb = _CombatPrimitives:HurtboxOf(u, _GameConstants.PlayerHboxHW, _GameConstants.PlayerHboxHH, _GameConstants.PlayerCenterYOffset)
-							if _CombatPrimitives:BoxCircleOverlap(Vector2(phb.cx, phb.cy), phb.hw, phb.hh, myPos, _GameConstants.RadiusProjectile) then
+							if _CombatPrimitives:BoxCircleOverlap(Vector2(phb.cx, phb.cy), phb.hw, phb.hh, myPos, self.HitRadius) then
 								---@type PlayerHit
 								local hitComp = u:GetComponent("script.PlayerHit")
 								if hitComp ~= nil then
@@ -111,7 +124,7 @@ script Projectile extends Component
 			end
 		else
 			-- (3b) 반사 투사체 → 적 명중
-			local hitCount = _CombatPrimitives:DamageEnemiesInCircle(map, myPos, _GameConstants.RadiusProjectile, self.Damage, "reflect")
+			local hitCount = _CombatPrimitives:DamageEnemiesInCircle(map, myPos, self.HitRadius, self.Damage, "reflect")
 			if hitCount > 0 then
 				e:Destroy()
 				return

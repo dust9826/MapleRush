@@ -1,0 +1,51 @@
+@Logic
+script ProjectileRegistry extends Logic
+
+	-- 투사체 모델 스펙 캐시(modelId -> {speed, lifetime, hitRadius}).
+	-- 런타임엔 스폰 없이 모델 defaults를 못 읽으므로(GetModelProperty=에디터 전용),
+	-- 타입당 1회 '미발사 프로브'를 스폰해 Projectile 컴포넌트 값을 읽고 파괴 후 캐시한다.
+	@HideFromInspector property any cache = nil
+
+	method void OnBeginPlay()
+		-- 캐시 초기화.
+		self.cache = {}
+	end
+
+	@ExecSpace("ServerOnly")
+	method any Get(string modelId, Entity mapCtx)
+		-- 투사체 모델 스펙 조회. 캐시에 없으면 프로브 스폰→읽기→파괴.
+		if self.cache == nil then self.cache = {} end
+		local cached = self.cache[modelId]
+		if cached ~= nil then return cached end
+
+		local fallback = { speed = 10.0, lifetime = 2.0, hitRadius = 0.2 }
+		local map = nil
+		if isvalid(mapCtx) then map = mapCtx.CurrentMap end
+		if isvalid(map) == false then
+			-- 맵 없으면 캐시하지 않고 폴백(다음 호출 때 재시도).
+			return fallback
+		end
+
+		local probe = _SpawnService:SpawnByModelId(modelId, "ProjProbe", Vector3(0, -999, 0), map)
+		if probe == nil then
+			log_warning("[ProjectileRegistry] probe spawn FAILED '" .. modelId .. "' -> fallback")
+			self.cache[modelId] = fallback
+			return fallback
+		end
+		---@type Projectile
+		local pc = probe:GetComponent("script.Projectile")
+		local spec = { speed = 10.0, lifetime = 2.0, hitRadius = 0.2 }
+		if pc ~= nil then
+			spec.speed = pc.Speed
+			spec.lifetime = pc.Lifetime
+			spec.hitRadius = pc.HitRadius
+		else
+			log_warning("[ProjectileRegistry] '" .. modelId .. "' has no script.Projectile -> fallback")
+		end
+		probe:Destroy()
+		self.cache[modelId] = spec
+		log("[ProjectileRegistry] cached '" .. modelId .. "' speed=" .. tostring(spec.speed) .. " life=" .. tostring(spec.lifetime) .. " r=" .. tostring(spec.hitRadius))
+		return spec
+	end
+
+end
