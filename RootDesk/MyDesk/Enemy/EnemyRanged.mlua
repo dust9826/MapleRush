@@ -202,13 +202,12 @@ script EnemyRanged extends Component
 				self.AimDirX = d.x
 				self.AimDirY = d.y
 				self.aimLocked = true
-				-- 공격 예고: 길이=gizmo 레인 길이, 반폭(hh)=투사체 히트반경. 방향은 잠긴 AimDir.
-					-- ⚠ laneLen은 '전체' 길이라 Show에 *0.5(반길이)로 넘기지만, laneW=hitRadius는 이미 '반폭'이라 그대로 넘긴다. 여기 *0.5를 또 붙이면 예고가 실제 피격폭의 절반으로 그려짐(Projectile.OnUpdate는 반경 HitRadius로 판정).
+				-- 공격 예고: 길이=gizmo 레인 길이, 폭=투사체 히트반경. 방향은 잠긴 AimDir.
 				if _GameConstants.ShowEnemyTelegraph then
 					local spec = _ProjectileRegistry:Get(self.ProjectileModelId, self.Entity)
 					local laneLen = _GameConstants.GizmoRangedLaneLength
 					local laneW = spec.hitRadius
-					self.telegraphId = _TelegraphService:Show(self.Entity, myCenter, laneLen * 0.5, laneW, self.LockedTime, self.ProjectileParryable, "ranged", self.AimDirX, self.AimDirY)
+					self.telegraphId = _TelegraphService:Show(self.Entity, myCenter, laneLen * 0.5, laneW * 0.5, self.LockedTime, self.ProjectileParryable, "ranged", self.AimDirX, self.AimDirY)
 					log("[EnemyRanged] telegraph model=" .. self.ProjectileModelId .. " len=" .. string.format("%.2f", laneLen) .. " width=" .. string.format("%.2f", laneW) .. " hitRadius=" .. tostring(spec.hitRadius) .. " gizmoLen=" .. tostring(_GameConstants.GizmoRangedLaneLength))
 				end
 				log("[EnemyRanged] aim LOCKED dir=(" .. string.format("%.2f", d.x) .. "," .. string.format("%.2f", d.y) .. ")")
