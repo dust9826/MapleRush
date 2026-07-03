@@ -14,6 +14,9 @@ script GroggyGauge extends Component
 	-- 그로기 종료 시각 (ServerElapsedSeconds)
 	property number groggyEndAt = -999.0
 
+	-- 클라 전용: 그로기 표시 이펙트(보스 머리 위 루프) serial. IsGroggy 동기화에 맞춰 부착/제거.
+	@HideFromInspector property any groggyFxSerial = nil
+
 	@ExecSpace("ServerOnly")
 	method void OnBeginPlay()
 		-- 게이지 최대치 = MaxHP × 1/5.
@@ -63,6 +66,45 @@ script GroggyGauge extends Component
 	method void PlayGroggySfx()
 		-- 전 클라: 보스 그로기 발생음 (sfx_boss_groggy).
 		_SoundManager:PlaySFXKey("sfx_boss_groggy")
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnSyncProperty(string name, any value)
+		-- 그로기 상태 동기화에 맞춰 표시 이펙트 부착(true)/제거(false). effect_list #19(boss_groggy).
+		if name == "IsGroggy" then
+			if self.IsGroggy then
+				self:ShowGroggyFx()
+			else
+				self:HideGroggyFx()
+			end
+		end
+	end
+
+	@ExecSpace("ClientOnly")
+	method void ShowGroggyFx()
+		-- 그로기 표시: 보스 머리 위에 부착 루프. 재발동 대비 이전 것 먼저 제거.
+		self:HideGroggyFx()
+		local clip = _EffectTable:Clip("boss_groggy")
+		if clip == "" then return end
+		local sc = _EffectTable:Scale("boss_groggy")
+		local fo = _EffectTable:Offset("boss_groggy")
+		self.groggyFxSerial = _EffectService:PlayEffectAttached(clip, self.Entity, Vector3(fo.x, fo.y, 0), _EffectTable:Rot("boss_groggy"), Vector3(sc.x, sc.y, 1), true, _EffectTable:Options("boss_groggy"))
+		log("[GroggyGauge] groggy FX shown")
+	end
+
+	@ExecSpace("ClientOnly")
+	method void HideGroggyFx()
+		-- 그로기 표시 이펙트 제거(그로기 종료/보스 소멸).
+		if self.groggyFxSerial ~= nil then
+			_EffectService:RemoveEffect(self.groggyFxSerial)
+			self.groggyFxSerial = nil
+		end
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnEndPlay()
+		-- 보스 소멸 시 표시 이펙트 정리.
+		self:HideGroggyFx()
 	end
 
 end

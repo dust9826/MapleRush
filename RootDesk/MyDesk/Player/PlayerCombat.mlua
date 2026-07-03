@@ -75,12 +75,15 @@ script PlayerCombat extends Component
 		-- 중심을 바라보는 방향으로 전방 오프셋만큼 이동 + 아래로 약간 하강 (칼이 몸 앞 아래에서 나가는 느낌)
 		local off = _GameConstants.AttackEffectForwardOffset
 		local cy = pos.y + _GameConstants.PlayerCenterYOffset - _GameConstants.AttackEffectDownOffset
-		local center = Vector3(pos.x + dir.x * off, cy + dir.y * off, pos.z)
-		local s = _GameConstants.AttackEffectScale
-		local options = {}
+		local fo = _EffectTable:Offset("attack")
+		local center = Vector3(pos.x + dir.x * off + fo.x, cy + dir.y * off + fo.y, pos.z)
+		local clip = _EffectTable:Clip("attack")
+		if clip == "" then return end
+		local sc = _EffectTable:Scale("attack")
+		local options = _EffectTable:Options("attack")
 		options["Alpha"] = _GameConstants.AttackEffectAlpha
 		options["FlipX"] = flipX
-		_EffectService:PlayEffect(_GameConstants.AttackEffectClip, self.Entity, center, rot, Vector3(s, s, 1), false, options)
+		_EffectService:PlayEffect(clip, self.Entity, center, rot + _EffectTable:Rot("attack"), Vector3(sc.x, sc.y, 1), false, options)
 	end
 
 	@ExecSpace("Server")

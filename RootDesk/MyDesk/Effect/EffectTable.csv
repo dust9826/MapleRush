@@ -1,0 +1,21 @@
+﻿key,ruid,playrate,startframe,endframe,rot,offx,offy,scalex,scaley,#name,final
+dash,429e8db08f1e486d8f783e7e51d05178,1,0,-1,0,0,0,1,,대시 이펙트,TRUE
+dash_empowered,af919bf13ce04e3981cada2251a0c87f,1,0,-1,0,0,0,1,,강화 대시 이펙트,TRUE
+attack,e87714e7b6d74841a677b25fd5d40c37,1,0,-1,180,0,0,1,1.2,기본 공격 이펙트,TRUE
+ability_invincible_effect,a95a6b448de941a79c89611929a161d4,1,0,-1,0,0,0,1,,금강불괴 - effect(발동 버스트),TRUE
+ability_invincible_affected,51ecdf202d4d4c1f89704665df7be67d,1,0,-1,0,0,0,1,,금강불괴 - affected(피격 오버레이),TRUE
+ability_invincible_repeat,5fc73ad528a8460c8ad527b9e187e10d,1,0,-1,0,0,0,1,,금강불괴 - repeat(지속 루프),TRUE
+ability_clear,979ddd63cbcf419f9056cb653b0014af,1,0,-1,0,0,0,1,,참공(전 투사체 제거·카메라중심 대형),TRUE
+ability_immovable,cc89658b5e734441b2b209a70cb96767,1,0,-1,0,0,0,1,,부동심(보호막),TRUE
+ability_manji,b84c3c28e8284104b68d16b5cf0524b2,1,0,-1,0,0,0,1,,만지 일섬,TRUE
+ability_spin,0ccf46e988084f9480546814d0e3b8f1,1,0,-1,0,0,-1,1,,회전베기,TRUE
+boss_elija_orb,4c1188b428cc4db88744bc3893fa9f95,1,0,-1,0,-0.25,-3,3.6,,엘리쟈 - 암흑 구체(투사체),
+boss_elija_descent,73d5e7af2b0646c981baa02179a225c6,1,0,-1,0,0,0,1.5,,엘리쟈 - 암흑 강림,TRUE
+boss_elija_wedge,b14b3dbca0504af28e8d085c12b22000,1,0,-1,0,0,-1,6,4,엘리쟈 - 그림자 쐐기,TRUE
+boss_snowman_fist,554e611c8b7246749c9aa28d0ba52417,1,0,-1,0,0,-0.5,2.5,2,스노우맨 - 눈주먹 강타,TRUE
+boss_snowman_icicle,db94dacc4a58427eb2cc8d8889371947,1,0,-1,0,0,0,1,,스노우맨 - 고드름 발사(투사체),
+boss_snowman_blizzard,ec115dcc1b9540b6b74c9626b71e1d52,1,0,-1,0,0,-2,1.8,,스노우맨 - 블리자드,TRUE
+boss_zakum_arm,3c541f98fcbb485987cb92c92fd820a6,1,0,-1,0,0,-1,2.5,,자쿰 - 팔 후려치기,TRUE
+boss_zakum_beam,d592e1106aeb4b14b3ee63d22667eeb1,1,0,-1,0,0,0,0.7,0.7,자쿰 - 박수 레이저(scalex=길이/scaley=두께),
+boss_zakum_lava,5c7725d187354c1f989d4cf69c6f2ad3,1,0,-1,0,0,-1,1,,자쿰 - 용암 분출,TRUE
+boss_groggy,9d249b2b40c143269a88ecf31358c6eb,1,0,-1,0,0,1.6,1,,보스 그로기 상태 표시,TRUE

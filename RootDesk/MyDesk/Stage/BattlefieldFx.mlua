@@ -15,6 +15,9 @@ script BattlefieldFx extends Logic
 	-- 클라 레지스트리: 풀스크린 백색 플래시 컨트롤러(FlashOverlay가 OnBeginPlay에서 등록). 클라 전용.
 	@HideFromInspector property any flashOverlay = nil
 
+	-- 클라 레지스트리: 참공(전 투사체 제거) 풀스크린 UI 연출 컨트롤러(ClearOverlay가 등록). 클라 전용.
+	@HideFromInspector property any clearOverlay = nil
+
 	-- ===== 클라 기즈모 사용-상태 (디버그 범위 잔상용; 클라 전용, WallClock 기준) =====
 	-- 연막 사용 시 ClientSmokeFx에서 설정 → PlayerItemGizmo가 폴링해 초록 원(반경3) 잔상 표시.
 	@HideFromInspector property number clientSmokeGizmoUntil = -999.0

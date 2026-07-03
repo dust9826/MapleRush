@@ -39,7 +39,6 @@ script GameConstants extends Logic
 
 	property number GroggyParryMult = 2.0
 
-	-- 근접 패링 윈도우(boss_design §1.4): 명중시점(hitAt) 기준 선행 Lead·후행 Trail 안에서만 근접 패링 성립. 투사체 반사는 윈도우 무관.
 	property number ParryWindowLead = 0.15
 
 	property number ParryWindowTrail = 0.05
@@ -78,7 +77,6 @@ script GameConstants extends Logic
 
 	property string SmokeEffectBurstClip = "e1fa6fbb8ba646169ca1e06efb389100"
 
-	-- 섬광탄 기절 시각: 기절한 일반 적 머리 위에 붙는 루프 이펙트(FlashStunDuration 동안만 유지). 인스펙터 튜닝.
 	property string StunEffectClip = "798781ce1301446bada194bf3f109174"
 
 	property number StunEffectScale = 1.0
@@ -91,31 +89,24 @@ script GameConstants extends Logic
 
 	property number RadiusEnemyHitbox = 0.5
 
-	-- 엔티티 피격(hurtbox) 박스 반폭/반높이 (원→박스 통일). 캐릭터형(세로로 김). 기즈모도 동일 치수 사용.
-	-- 플레이어 박스 중심 = pos.y + 0.5(PlayerCenterYOffset과 동일). 적 박스 중심 = transform raw 좌표.
 	property number PlayerHboxHW = 0.35
+
 	property number PlayerHboxHH = 0.6
+
 	property number EnemyHboxHW = 0.45
+
 	property number EnemyHboxHH = 0.55
 
-	-- 스폰 시 몬스터 Y를 이만큼 살짝 들어올려 스폰(방어적 보정). MapleTile foothold는 위에서만 잡으므로,
-	-- authoring 마커가 의도한 발판보다 미세하게(관측상 ~0.08) 아래로 박혀 있으면 통과→낙하한다.
-	-- 이 리프트로 항상 발판 위에서 스폰→중력이 올바른 발판에 안착. 모든 테마맵/미래 authoring 공통 적용.
 	property number SpawnYLift = 0.15
 
-	-- 스테이지 종료 공통 텀(초). 사망 부활 / 클리어(보상 팝업) / 실패(게임오버) 모두 이 시간 뒤에 처리 — 그 사이 전투 정지(적 프리즈). 인스펙터 튜닝.
 	property number StageEndDelay = 1.2
 
-	-- 사망 연출: 검게 하기 전, 죽은 것을 보여주는 정지 텀(초). 이 뒤에 ToBlack 시작. 인스펙터 튜닝.
 	property number DeathFadeHold = 1.0
 
-	-- 사망→부활 풀스크린 검정 페이드 속도(초). 검게/밝게 각각 이 시간. 인스펙터 튜닝.
 	property number ScreenFadeDuration = 0.3
 
-	-- 클리어/실패 팝업 등장 fade-in 속도(초). CanvasGroup 알파 0→1. 인스펙터 튜닝.
 	property number PopupFadeDuration = 0.25
 
-	-- 낙사 리스폰 대기(초). 엔진 내장 낙사 리스폰(PlayerComponent.RespawnDuration)을 이 값으로 낮춰 빠르게 복귀. 스테이지마다 스폰포인트를 RespawnPosition에 주입해 원점(0,0,0) 대신 그 자리로 복귀시킴.
 	property number FallRespawnDuration = 0.5
 
 	property number BossHP = 500.0
@@ -164,11 +155,7 @@ script GameConstants extends Logic
 
 	property string MatFxDefault = "DashFxDefault"
 
-	property string DashEffectClip = "96cf396aa0824844a857ab2cef6f1175"
-
 	property number DashEffectAlpha = 0.9
-
-	property number DashEffectScale = 0.6
 
 	property number DashGhostAlpha = 0.55
 
@@ -196,7 +183,6 @@ script GameConstants extends Logic
 
 	property boolean DrawGizmo = true
 
-	-- 대시 불가지역(DashBlock) 빨간 박스 기즈모 표시 여부. false면 대시 사거리/레이 등 다른 기즈모는 유지한 채 블록 박스만 숨김.
 	property boolean DashGizmoDrawBlocks = false
 
 	property string DashGizmoLineModelId = "dashgizmoline"
@@ -224,10 +210,6 @@ script GameConstants extends Logic
 	property number GizmoCombatWidth = 0.15
 
 	property number GizmoAttackFlash = 0.15
-
-	property string AttackEffectClip = "74950ab5791c49e5b257cd65d6bd2c2e"
-
-	property number AttackEffectScale = 0.225
 
 	property number AttackEffectAlpha = 1.0
 
@@ -263,10 +245,8 @@ script GameConstants extends Logic
 
 	property string TelegraphFillPrefix = "TgFill"
 
-	-- 텔레그래프 동시 표시 슬롯 수(프레임+필 각 N). 보스만 쓸 땐 8로 충분했으나 일반 적 공격 예고까지 쓰므로 상향. 동시 적 수 실측 후 조정.
 	property integer TelegraphPoolSize = 16
 
-	-- 일반 적(근접/원거리) 공격 예고 표시 게이트. 보스 예고는 항상 on(별개). false면 일반 적 Show 스킵.
 	property boolean ShowEnemyTelegraph = true
 
 	property number TelegraphFrameAlpha = 0.22
@@ -281,52 +261,76 @@ script GameConstants extends Logic
 
 	property number TelegraphPxBaseWorld = 0.16
 
-	-- ========== 보스 패턴 수치 (boss_design_doc §3 — 밸런싱 조정용. windup=시전(예고)시간 / Cd=후딜쿨 / BoxHW·HH=히트박스 반폭·반높이) ==========
-	-- 엘리쟈(오르비스): O1 암흑구체(원거리 3부채꼴) / O2 암흑강림(추적 광역) / O3 그림자쐐기(보스 좌우 2광역)
 	property number BossO1Windup = 0.6
+
 	property number BossO1Cd = 1.0
+
 	property number BossO2Windup = 1.0
+
 	property number BossO2Cd = 2.5
+
 	property number BossO2BoxHW = 2.0
+
 	property number BossO2BoxHH = 1.5
+
 	property number BossO3Windup = 1.1
+
 	property number BossO3Cd = 2.8
+
 	property number BossO3BoxHW = 2.0
+
 	property number BossO3BoxHH = 1.5
-	-- 스노우맨(엘나스): E1 눈주먹(근접) / E2 고드름(원거리 단발) / E3 블리자드(대형 광역)
+
 	property number BossE1Windup = 0.9
+
 	property number BossE1Cd = 1.2
+
 	property number BossE1BoxHW = 1.8
+
 	property number BossE1BoxHH = 1.0
+
 	property number BossE2Windup = 0.7
+
 	property number BossE2Cd = 1.1
+
 	property number BossE3Windup = 1.1
+
 	property number BossE3Cd = 2.8
+
 	property number BossE3BoxHW = 3.5
+
 	property number BossE3BoxHH = 2.0
-	-- 자쿰(폐광): Z1 팔후려치기(근접 좌/우=전방) / Z2 박수레이저(수평 단발) / Z3 용암분출(다지점)
+
 	property number BossZ1Windup = 0.7
+
 	property number BossZ1Cd = 1.0
+
 	property number BossZ1BoxHW = 2.0
+
 	property number BossZ1BoxHH = 1.0
+
 	property number BossZ2Windup = 0.8
+
 	property number BossZ2Cd = 1.0
-	-- P-Z2 박수 레이저 빔 비주얼(연출 전용 — 실제 판정은 발사되는 투사체). Clip=fieldskill 가로 레이저.
-	-- ScaleX=빔 길이 / ScaleY=빔 두께 / OffsetX=보스 발사방향 중심 이동(월드유닛). 전부 눈 튜닝용.
-	property string BossZakumBeamClip = "3a2ea8cf59ad4372b6982266be675704"
-	property number BossZakumBeamScaleX = 0.7
-	property number BossZakumBeamScaleY = 0.7
+
 	property number BossZakumBeamOffsetX = 4.0
+
 	property number BossZ3Windup = 1.0
+
 	property number BossZ3Cd = 2.5
+
 	property number BossZ3BoxHW = 1.5
+
 	property number BossZ3BoxHH = 1.5
+
 	property integer BossZ3Points = 3
-	-- 좌우 쐐기(O3) 보스 발밑 안전지대 반폭(박스 중심 오프셋 = 이 값 + BoxHW). 자쿰 용암 랜덤 가로 분포 반경(보스중심 ±).
+
 	property number BossSidesSafeHalf = 1.0
+
 	property number BossMultiSpreadX = 6.0
-	-- 거리밴드 경계(가로거리 d, §1.6): d≤Close=CLOSE(광역>근접>원거리) / d≤Mid=MID(광역>원거리) / 그외=FAR(원거리만).
+
 	property number BossBandClose = 4.0
+
 	property number BossBandMid = 7.5
 
 	method integer NormalStagesForFloor(integer floor)
