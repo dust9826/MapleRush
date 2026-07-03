@@ -317,7 +317,11 @@ script GameConstants extends Logic
 
 	property string TelegraphFillPrefix = "TgFill"
 
-	property integer TelegraphPoolSize = 8
+	-- 텔레그래프 동시 표시 슬롯 수(프레임+필 각 N). 보스만 쓸 땐 8로 충분했으나 일반 적 공격 예고까지 쓰므로 상향. 동시 적 수 실측 후 조정.
+	property integer TelegraphPoolSize = 16
+
+	-- 일반 적(근접/원거리) 공격 예고 표시 게이트. 보스 예고는 항상 on(별개). false면 일반 적 Show 스킵.
+	property boolean ShowEnemyTelegraph = true
 
 	property number TelegraphFrameAlpha = 0.22
 

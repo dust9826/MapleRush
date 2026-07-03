@@ -18,6 +18,9 @@ script EnemyMelee extends Component
 
 	property any pendingAttack = nil
 
+	-- 공격 예고 게이지 id(TelegraphService). windup 시작 시 발급, resolve/취소/사망/그레이스/기절에서 Hide. 0=없음.
+	@HideFromInspector property integer telegraphId = 0
+
 	-- 모션 구동: 모델 기본 SpriteRUID(stand)를 캡처해 두고 상태별로 교체.
 	property string standClip = ""
 
@@ -65,14 +68,16 @@ script EnemyMelee extends Component
 		-- 근거리 적 AI: 감지(3) → 추격 → 공격(1, 텔레그래프 0.6s) → 쿨다운. 슬로우 배율 적용, 낭떠러지 정지.
 		---@type EnemyHealth
 		local hp = self.Entity:GetComponent("script.EnemyHealth")
-		if hp ~= nil and hp.IsDead == true then self:PlayClip(self:AnimClip("die", self.standClip)) return end
+		if hp ~= nil and hp.IsDead == true then self:ClearTelegraph() self:PlayClip(self:AnimClip("die", self.standClip)) return end
 		if _StageManager:IsGraceActive() then
+			self:ClearTelegraph()
 			self:StopMove()
 			self:PlayClip(self.standClip)
 			return
 		end
 		-- 섬광탄 기절: 이동·공격 완전 정지 (공격 판정도 진행 안 함)
 		if _BattlefieldFx:IsStunActive() then
+			self:ClearTelegraph()
 			self:StopMove()
 			self:PlayClip(self.standClip)
 			return
@@ -85,6 +90,7 @@ script EnemyMelee extends Component
 				self.pendingAttack = nil
 				log("[EnemyMelee] " .. self.Entity.Name .. " hit → windup canceled")
 			end
+			self:ClearTelegraph()
 			self.aiState = "hit"
 			self:StopMove()
 			self:PlayClip(self:AnimClip("hit", self.standClip))
@@ -105,6 +111,7 @@ script EnemyMelee extends Component
 			end
 		end
 		if player == nil then
+			self:ClearTelegraph()
 			self:StopMove()
 			self:PlayClip(self.standClip)
 			return
@@ -120,6 +127,8 @@ script EnemyMelee extends Component
 		if self.aiState == "windup" then
 			self.stateTimer -= scaledDelta
 			if self.stateTimer <= 0 then
+				-- 예고 게이지 먼저 제거(RequestHit가 플레이어 사망→ResetStage로 self 파괴 가능하므로 여기서 Entity 유효할 때).
+				self:ClearTelegraph()
 				local rec = self.pendingAttack
 				if rec ~= nil and rec.canceled == false then
 					local phb = _CombatPrimitives:HurtboxOf(player, _GameConstants.PlayerHboxHW, _GameConstants.PlayerHboxHH, _GameConstants.PlayerCenterYOffset)
@@ -157,6 +166,10 @@ script EnemyMelee extends Component
 				local f = _GameConstants.EnemyMeleeBoxForward
 				local boxCenter = Vector2(myCenter.x + facingX * f * 0.5, myCenter.y)
 				self.pendingAttack = _CombatPrimitives:RegisterEnemyAttackBox(boxCenter, f * 0.5, _GameConstants.EnemyMeleeBoxHeight * 0.5, 1, self.AttackParryable, self.WindupTime, self.Entity)
+				-- 공격 예고: 판정 박스와 동일 좌표/크기의 게이지(보스 Telegraph 모듈 재사용). 채움·색은 렌더러가 자동.
+				if _GameConstants.ShowEnemyTelegraph then
+					self.telegraphId = _TelegraphService:Show(self.Entity, boxCenter, f * 0.5, _GameConstants.EnemyMeleeBoxHeight * 0.5, self.WindupTime, self.AttackParryable, "box", 0, 0)
+				end
 				self:StopMove()
 				self:PlayClip(self:AnimClip("attack", _GameConstants.MeleeAttackClip))
 				log("[EnemyMelee] " .. self.Entity.Name .. " windup start (parryable=" .. tostring(self.AttackParryable) .. ")")
@@ -167,6 +180,15 @@ script EnemyMelee extends Component
 				self:StopMove()
 				self:PlayClip(self.standClip)
 			end
+		end
+	end
+
+	@ExecSpace("ServerOnly")
+	method void ClearTelegraph()
+		-- 공격 예고 게이지 제거(있을 때만 1회). windup 종료/취소/사망/그레이스/기절 공통. 파괴 가드.
+		if self.telegraphId > 0 then
+			if isvalid(self.Entity) then _TelegraphService:Hide(self.Entity.CurrentMap, self.telegraphId) end
+			self.telegraphId = 0
 		end
 	end
 
