@@ -11,7 +11,7 @@ script SettingsMenu extends Logic
 		-- 설정 창 열기.
 		---@type SettingsController
 		local c = self.ctrl
-		if isvalid(c) then c:Open() end
+		if isvalid(c) then c:ShowSettings() end
 	end
 
 	@ExecSpace("ClientOnly")
@@ -19,7 +19,7 @@ script SettingsMenu extends Logic
 		-- 설정 창 닫기.
 		---@type SettingsController
 		local c = self.ctrl
-		if isvalid(c) then c:Close() end
+		if isvalid(c) then c:HideSettings() end
 	end
 
 	@ExecSpace("ClientOnly")
@@ -27,7 +27,7 @@ script SettingsMenu extends Logic
 		-- 설정 창 열림 여부.
 		---@type SettingsController
 		local c = self.ctrl
-		if isvalid(c) then return c:IsOpen() end
+		if isvalid(c) then return c:IsSettingsOpen() end
 		return false
 	end
 

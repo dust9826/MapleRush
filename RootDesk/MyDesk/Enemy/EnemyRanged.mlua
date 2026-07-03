@@ -11,8 +11,8 @@ script EnemyRanged extends Component
 	-- 이동 속도(월드유닛/초). SideView=InputSpeed, MapleTile=MoveVelocity 배율.
 	property number MoveSpeed = 2.0
 
-	-- 투사체 속도(이 적 전용; 전역 ProjectileSpeed와 별개).
-	property number ProjectileSpeed = 10.0
+	-- 사용할 투사체 모델 id. 투사체 스펙(속도/수명/히트반경/스프라이트)은 그 모델의 Projectile 컴포넌트 값.
+	property string ProjectileModelId = "enemyprojectile"
 
 	property number FireCooldown = 1.0
 
@@ -202,9 +202,13 @@ script EnemyRanged extends Component
 				self.AimDirX = d.x
 				self.AimDirY = d.y
 				self.aimLocked = true
-				-- 공격 예고: 발사축을 따라가는 레인 게이지(보스 Telegraph 재사용). 방향은 잠긴 AimDir(추적 안 함). 채움=aim 진행도.
+				-- 공격 예고: 길이=gizmo 레인 길이, 폭=투사체 히트반경. 방향은 잠긴 AimDir.
 				if _GameConstants.ShowEnemyTelegraph then
-					self.telegraphId = _TelegraphService:Show(self.Entity, myCenter, _GameConstants.GizmoRangedLaneLength * 0.5, _GameConstants.GizmoRangedLaneWidth * 0.5, self.LockedTime, self.ProjectileParryable, "ranged", self.AimDirX, self.AimDirY)
+					local spec = _ProjectileRegistry:Get(self.ProjectileModelId, self.Entity)
+					local laneLen = _GameConstants.GizmoRangedLaneLength
+					local laneW = spec.hitRadius
+					self.telegraphId = _TelegraphService:Show(self.Entity, myCenter, laneLen * 0.5, laneW * 0.5, self.LockedTime, self.ProjectileParryable, "ranged", self.AimDirX, self.AimDirY)
+					log("[EnemyRanged] telegraph model=" .. self.ProjectileModelId .. " len=" .. string.format("%.2f", laneLen) .. " width=" .. string.format("%.2f", laneW) .. " hitRadius=" .. tostring(spec.hitRadius) .. " gizmoLen=" .. tostring(_GameConstants.GizmoRangedLaneLength))
 				end
 				log("[EnemyRanged] aim LOCKED dir=(" .. string.format("%.2f", d.x) .. "," .. string.format("%.2f", d.y) .. ")")
 			end
@@ -233,15 +237,15 @@ script EnemyRanged extends Component
 		end
 		local spawnPos = Vector3(fromCenter.x + dir.x * 0.4, fromCenter.y + dir.y * 0.4, 0)
 		local name = self.Entity.Name .. "_proj_" .. tostring(self.shotIndex)
-		local proj = _SpawnService:SpawnByModelId("enemyprojectile", name, spawnPos, map)
+		local proj = _SpawnService:SpawnByModelId(self.ProjectileModelId, name, spawnPos, map)
 		if proj == nil then
-			log_error("[EnemyRanged] SpawnByModelId('enemyprojectile') returned nil")
+			log_error("[EnemyRanged] SpawnByModelId('" .. self.ProjectileModelId .. "') returned nil")
 			return
 		end
 		---@type Projectile
 		local comp = proj:GetComponent("script.Projectile")
 		if comp ~= nil then
-			comp:Launch(dir.x, dir.y, self.ProjectileSpeed, 1, self.ProjectileParryable)
+			comp:LaunchDir(dir.x, dir.y, self.ProjectileParryable)
 			log("[EnemyRanged] " .. self.Entity.Name .. " fired projectile dir=(" .. string.format("%.2f", dir.x) .. "," .. string.format("%.2f", dir.y) .. ")")
 		end
 	end

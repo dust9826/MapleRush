@@ -62,13 +62,13 @@ script SettingsController extends Component
 	end
 
 	@ExecSpace("ClientOnly")
-	method boolean IsOpen()
+	method boolean IsSettingsOpen()
 		-- 설정 창이 열려 있는지 (일시정지 ESC 처리 등에서 사용).
 		return isvalid(self.settingsRoot) and self.settingsRoot.Enable
 	end
 
 	@ExecSpace("ClientOnly")
-	method void Open()
+	method void ShowSettings()
 		-- 설정 창 표시 + 현재 상태 동기화(볼륨 슬라이더 + 코디 체크박스). 로비/일시정지 "설정" 버튼이 호출.
 		if isvalid(self.bgmSlider) then
 			local bv = _SoundManager:GetBgmVolume()
@@ -85,7 +85,7 @@ script SettingsController extends Component
 	end
 
 	@ExecSpace("ClientOnly")
-	method void Close()
+	method void HideSettings()
 		-- 설정 창 닫기 (뒤의 원래 화면=로비/일시정지 유지).
 		if isvalid(self.settingsRoot) then self.settingsRoot.Enable = false end
 	end
@@ -93,7 +93,7 @@ script SettingsController extends Component
 	@ExecSpace("ClientOnly")
 	method void OnCloseClick(ButtonClickEvent event)
 		-- 닫기 버튼.
-		self:Close()
+		self:HideSettings()
 	end
 
 	@ExecSpace("ClientOnly")
