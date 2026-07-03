@@ -372,6 +372,8 @@ script GameConstants extends Logic
 		if theme == "orbis" then return "OrbisLevel" end
 		if theme == "elnath" then return "ElnathLevel" end
 		if theme == "deepmine" then return "DeepMineLevel" end
+		-- ★ 빈/미지정 테마 fallback: 의도치 않게 ElnathLevel이 대상이 됨(엘나스 맵 마커 오삭제 후보). 반드시 눈에 띄게.
+		log_error("[GameConstants] MapForTheme: 미지정/빈 테마 '" .. tostring(theme) .. "' -> ElnathLevel fallback (엘나스 맵이 의도치 않게 prep/삭제 대상이 됨)")
 		return "ElnathLevel"
 	end
 
