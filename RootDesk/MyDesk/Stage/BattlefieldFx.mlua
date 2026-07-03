@@ -25,6 +25,9 @@ script BattlefieldFx extends Logic
 	-- 클라: 현재 진행 중인 연막 루프 이펙트 serial (스테이지 리셋 시 즉시 제거용).
 	@HideFromInspector property any smokeEffectSerial = nil
 
+	-- 클라: 기절한 일반 적들에게 붙인 기절 이펙트 serial 목록 (기절 종료/재발동/스테이지 리셋 시 제거용).
+	@HideFromInspector property any stunEffectSerials = nil
+
 	@ExecSpace("ServerOnly")
 	method void ActivateSmoke(Vector2 center, number duration)
 		-- 연막탄: 생성 위치 고정 은신 영역. 일반 적 감지/조준 해제 (보스 무시 — Phase 6).
@@ -93,6 +96,51 @@ script BattlefieldFx extends Logic
 		end
 		-- 기즈모 사용-잔상: 빨강 원(대상 적)을 기절 지속시간만큼 표시 (PlayerItemGizmo 폴링).
 		self.clientFlashGizmoUntil = _WallClock:Now() + _GameConstants.FlashStunDuration
+		-- 기절한 일반 적 머리 위 기절 이펙트(루프) 부착 — FlashStunDuration 후 자동 제거.
+		self:ShowStunEffects()
+	end
+
+	@ExecSpace("Client")
+	method void ShowStunEffects()
+		-- 현재 맵의 일반 적(보스/사망 제외)에게 기절 이펙트를 머리 위에 부착(루프). 지속시간 후 일괄 제거.
+		-- 적을 따라다니도록 PlayEffectAttached 사용. 재발동 시 이전 세트 먼저 정리.
+		self:RemoveStunEffects()
+		local player = _UserService.LocalPlayer
+		if isvalid(player) == false then return end
+		local map = player.CurrentMap
+		if isvalid(map) == false then return end
+		local comps = map:GetChildComponentsByTypeName("script.EnemyHealth", true)
+		if comps == nil then return end
+		local s = _GameConstants.StunEffectScale
+		local yoff = _GameConstants.StunEffectYOffset
+		local serials = {}
+		for _, cAny in ipairs(comps) do
+			---@type EnemyHealth
+			local hc = cAny
+			if isvalid(hc.Entity) and hc.EnemyKind ~= "boss" and hc.IsDead == false then
+				local serial = _EffectService:PlayEffectAttached(_GameConstants.StunEffectClip, hc.Entity, Vector3(0, yoff, 0), 0, Vector3(s, s, 1), true, {})
+				table.insert(serials, serial)
+			end
+		end
+		self.stunEffectSerials = serials
+		_TimerService:SetTimerOnce(function()
+			for _, sv in ipairs(serials) do
+				_EffectService:RemoveEffect(sv)
+			end
+			if self.stunEffectSerials == serials then self.stunEffectSerials = nil end
+		end, _GameConstants.FlashStunDuration)
+		log("[BattlefieldFx] ShowStunEffects: " .. tostring(#serials) .. " enemies stunned")
+	end
+
+	@ExecSpace("Client")
+	method void RemoveStunEffects()
+		-- 진행 중인 기절 이펙트 즉시 제거 (재발동/스테이지 리셋).
+		if self.stunEffectSerials ~= nil then
+			for _, sv in ipairs(self.stunEffectSerials) do
+				_EffectService:RemoveEffect(sv)
+			end
+			self.stunEffectSerials = nil
+		end
 	end
 
 	@ExecSpace("ServerOnly")
@@ -126,6 +174,7 @@ script BattlefieldFx extends Logic
 		end
 		self.clientSmokeGizmoUntil = -999.0
 		self.clientFlashGizmoUntil = -999.0
+		self:RemoveStunEffects()
 		log("[BattlefieldFx] ClearClientFx: smoke/flash visuals cleared")
 	end
 

@@ -116,6 +116,13 @@ script GameConstants extends Logic
 
 	property string SmokeEffectBurstClip = "e1fa6fbb8ba646169ca1e06efb389100"
 
+	-- 섬광탄 기절 시각: 기절한 일반 적 머리 위에 붙는 루프 이펙트(FlashStunDuration 동안만 유지). 인스펙터 튜닝.
+	property string StunEffectClip = "798781ce1301446bada194bf3f109174"
+
+	property number StunEffectScale = 1.0
+
+	property number StunEffectYOffset = 1.1
+
 	property number GroggyDuration = 3.0
 
 	property number RangedAimTime = 1.0
