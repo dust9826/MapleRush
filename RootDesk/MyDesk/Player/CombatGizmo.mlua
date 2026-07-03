@@ -118,7 +118,7 @@ script CombatGizmo extends Component
 		-- 보스 tripleShot: windup 중(TelegraphTriple) → ±BossTripleSpread 3갈래
 		local bossList = map:GetChildComponentsByTypeName("script.BossController", true)
 		if bossList ~= nil then
-			local spread = _GameConstants.BossTripleSpread
+			local spread = _BossConfig.BossTripleSpread
 			for _, compAny in ipairs(bossList) do
 				---@type BossController
 				local comp = compAny

@@ -12,6 +12,9 @@ script BossController extends Component
 	-- 고정형 보스 여부(모델 주입). true면 플레이어 추격 없이 제자리에서 패턴만 발동. 자쿰=원작 고정 보스.
 	property boolean Stationary = false
 
+	-- 원거리 패턴이 쏘는 투사체 모델 id(보스별 모델 주입, EnemyRanged와 동일 방식). 속도/수명/히트반경은 그 모델의 Projectile 값.
+	property string ProjectileModelId = "enemyprojectile"
+
 	-- 현재 보스의 패턴 세트(서버, OnBeginPlay에서 BuildPatterns). 항목 = 패턴 config 테이블.
 	property any patterns = nil
 
@@ -69,11 +72,11 @@ script BossController extends Component
 		-- 보스별 3패턴 config (boss_design_doc §3 수치). 히트박스 hw/hh = 문서 가로/세로의 절반.
 		-- cls="box": mode forward(전방)/self(보스중앙)/player(플레이어추적)/sides(좌우2)/multi(다지점). parryable=노랑/빨강.
 		-- cls="ranged": mode fan(3부채꼴)/single(1발)/horizontal(수평고정 1발).
-		local C = _GameConstants
+		local C = _BossConfig
 		if kind == "elija" then
 			-- 오르비스 엘리쟈: 근접 없음. 원거리1 + 광역2 회피형.
 			return {
-				{ id = "P-O1", cls = "ranged", mode = "fan",    windup = C.BossO1Windup, cd = C.BossO1Cd, parryable = true, projfx = "boss_elija_orb" },
+				{ id = "P-O1", cls = "ranged", mode = "fan",    windup = C.BossO1Windup, cd = C.BossO1Cd, parryable = true },
 				{ id = "P-O2", cls = "box",    mode = "player", hw = C.BossO2BoxHW, hh = C.BossO2BoxHH, windup = C.BossO2Windup, cd = C.BossO2Cd, parryable = false, fx = "boss_elija_descent" },
 				{ id = "P-O3", cls = "box",    mode = "sides",  hw = C.BossO3BoxHW, hh = C.BossO3BoxHH, windup = C.BossO3Windup, cd = C.BossO3Cd, parryable = false, fx = "boss_elija_wedge" },
 			}
@@ -81,7 +84,7 @@ script BossController extends Component
 			-- 엘나스 스노우맨: 묵직·느림·넓은 범위.
 			return {
 				{ id = "P-E1", cls = "box",    mode = "forward", hw = C.BossE1BoxHW, hh = C.BossE1BoxHH, windup = C.BossE1Windup, cd = C.BossE1Cd, parryable = true, fx = "boss_snowman_fist" },
-				{ id = "P-E2", cls = "ranged", mode = "single",  windup = C.BossE2Windup, cd = C.BossE2Cd, parryable = true, projfx = "boss_snowman_icicle" },
+				{ id = "P-E2", cls = "ranged", mode = "single",  windup = C.BossE2Windup, cd = C.BossE2Cd, parryable = true },
 				{ id = "P-E3", cls = "box",    mode = "player",  hw = C.BossE3BoxHW, hh = C.BossE3BoxHH, windup = C.BossE3Windup, cd = C.BossE3Cd, parryable = false, fx = "boss_snowman_blizzard" },
 			}
 		elseif kind == "zakum" then
@@ -89,14 +92,14 @@ script BossController extends Component
 			return {
 				{ id = "P-Z1", cls = "box",    mode = "forward",    hw = C.BossZ1BoxHW, hh = C.BossZ1BoxHH, windup = C.BossZ1Windup, cd = C.BossZ1Cd, parryable = true, fx = "boss_zakum_arm" },
 				{ id = "P-Z2", cls = "ranged", mode = "horizontal", windup = C.BossZ2Windup, cd = C.BossZ2Cd, parryable = true },
-				{ id = "P-Z3", cls = "box",    mode = "multi", count = C.BossZ3Points, hw = C.BossZ3BoxHW, hh = C.BossZ3BoxHH, windup = C.BossZ3Windup, cd = C.BossZ3Cd, parryable = false, fx = "boss_zakum_lava" },
+				{ id = "P-Z3", cls = "box",    mode = "multi", count = C.BossZ3Points, hw = C.BossZ3BoxHW, hh = C.BossZ3BoxHH, windup = C.BossZ3Windup, cd = C.BossZ3Cd, parryable = false, fx = "boss_zakum_lava", yup = C.BossZ3BoxHH * 2.0 * C.BossZ3BoxYUpFactor },
 			}
 		end
 		-- 기본(더미 bossenemy): 기존 slam/tripleShot/redSmash 골격.
 		return {
-			{ id = "slam",       cls = "box",    mode = "forward", hw = _GameConstants.BossSlamBoxForward * 0.5, hh = _GameConstants.BossSlamBoxHeight * 0.5, windup = 0.8, cd = _GameConstants.BossPatternDelay, parryable = true },
-			{ id = "tripleShot", cls = "ranged", mode = "fan",     windup = 0.6, cd = _GameConstants.BossPatternDelay, parryable = true },
-			{ id = "redSmash",   cls = "box",    mode = "self",    hw = _GameConstants.BossRedSmashBoxHalfW, hh = _GameConstants.BossRedSmashBoxHalfH, windup = 1.0, cd = _GameConstants.BossPatternDelay, parryable = false },
+			{ id = "slam",       cls = "box",    mode = "forward", hw = _BossConfig.BossSlamBoxForward * 0.5, hh = _BossConfig.BossSlamBoxHeight * 0.5, windup = 0.8, cd = _BossConfig.BossPatternDelay, parryable = true },
+			{ id = "tripleShot", cls = "ranged", mode = "fan",     windup = 0.6, cd = _BossConfig.BossPatternDelay, parryable = true },
+			{ id = "redSmash",   cls = "box",    mode = "self",    hw = _BossConfig.BossRedSmashBoxHalfW, hh = _BossConfig.BossRedSmashBoxHalfH, windup = 1.0, cd = _BossConfig.BossPatternDelay, parryable = false },
 		}
 	end
 
@@ -182,19 +185,26 @@ script BossController extends Component
 	@ExecSpace("ServerOnly")
 	method void AddBox(Vector2 center, number hw, number hh, boolean parryable, number windup)
 		-- 공격 박스 1개 등록 + 예고 게이지(판정과 동일 영역) 1개 표시. pendingAttacks/telegraphIds에 누적.
-		local rec = _CombatPrimitives:RegisterEnemyAttackBox(center, hw, hh, 1, parryable, windup, self.Entity)
+		-- curPat.yup(>0, 예: P-Z3 불기둥)이면 박스·예고만 위로 올리고, 이펙트중심(attackCenters)은 원래 center(바닥) 유지.
+		local yUp = 0.0
+		if self.curPat ~= nil then yUp = self.curPat.yup or 0.0 end
+		local boxCenter = center
+		if yUp ~= 0.0 then boxCenter = Vector2(center.x, center.y + yUp) end
+		local rec = _CombatPrimitives:RegisterEnemyAttackBox(boxCenter, hw, hh, 1, parryable, windup, self.Entity)
 		rec.bossEntityId = self.Entity.Name
 		table.insert(self.pendingAttacks, rec)
 		table.insert(self.attackCenters, center)
-		local id = _TelegraphService:Show(self.Entity, center, hw, hh, windup, parryable, "box", 0, 0)
+		local id = _TelegraphService:Show(self.Entity, boxCenter, hw, hh, windup, parryable, "box", 0, 0)
 		table.insert(self.telegraphIds, id)
 	end
 
 	@ExecSpace("ServerOnly")
 	method void ShowRangedTelegraph(Vector2 myCenter, number dirX, number dirY, number windup)
 		-- 원거리(노랑) 레인 예고: 보스 중심 → dir 방향. 발사는 resolve에서.
+		-- 폭 = 투사체 모델의 HitRadius(EnemyRanged와 동일). 투사체가 바뀌면 예고 폭도 따라감.
+		local spec = _ProjectileRegistry:Get(self.ProjectileModelId, self.Entity)
 		local laneHalf = _GameConstants.GizmoRangedLaneLength * 0.5
-		local laneHalfW = _GameConstants.GizmoRangedLaneWidth * 0.5
+		local laneHalfW = spec.hitRadius * 0.5
 		local id = _TelegraphService:Show(self.Entity, myCenter, laneHalf, laneHalfW, windup, true, "ranged", dirX, dirY)
 		table.insert(self.telegraphIds, id)
 	end
@@ -213,9 +223,9 @@ script BossController extends Component
 		local pats = self.patterns
 		if pats == nil or #pats == 0 then return nil end
 		local order = { "ranged" }
-		if d <= _GameConstants.BossBandClose then
+		if d <= _BossConfig.BossBandClose then
 			order = { "aoe", "melee", "ranged" }
-		elseif d <= _GameConstants.BossBandMid then
+		elseif d <= _BossConfig.BossBandMid then
 			order = { "aoe", "ranged" }
 		end
 		local now = _WallClock:ServerNow()
@@ -274,14 +284,14 @@ script BossController extends Component
 				self:AddBox(Vector2(playerCenter.x, playerCenter.y), pat.hw, pat.hh, pat.parryable, pat.windup)
 			elseif pat.mode == "sides" then
 				-- 보스 좌우 2박스, 발밑 중앙(반폭 BossSidesSafeHalf)은 안전지대.
-				local off = _GameConstants.BossSidesSafeHalf + pat.hw
+				local off = _BossConfig.BossSidesSafeHalf + pat.hw
 				self:AddBox(Vector2(myCenter.x - off, myCenter.y), pat.hw, pat.hh, pat.parryable, pat.windup)
 				self:AddBox(Vector2(myCenter.x + off, myCenter.y), pat.hw, pat.hh, pat.parryable, pat.windup)
 			elseif pat.mode == "multi" then
 				-- 플레이어 위치 1 + 랜덤 (count-1). 모두 바닥(myCenter.y) 정렬, 보스중심 ±BossMultiSpreadX 분포.
 				self:AddBox(Vector2(playerCenter.x, myCenter.y), pat.hw, pat.hh, pat.parryable, pat.windup)
 				local extra = (pat.count or 3) - 1
-				local spread = _GameConstants.BossMultiSpreadX
+				local spread = _BossConfig.BossMultiSpreadX
 				local k = 0
 				while k < extra do
 					local rx = myCenter.x + (_UtilLogic:RandomDouble() * 2.0 - 1.0) * spread
@@ -316,7 +326,7 @@ script BossController extends Component
 		self:PlayBossAtkSfx(self.curPat)
 		local pat = self.curPat
 		if pat == nil then
-			if isvalid(self.Entity) then self.phase = "delay" self.phaseTimer = _GameConstants.BossPatternDelay end
+			if isvalid(self.Entity) then self.phase = "delay" self.phaseTimer = _BossConfig.BossPatternDelay end
 			return
 		end
 		if pat.cls == "box" then
@@ -347,24 +357,23 @@ script BossController extends Component
 			local myPos = self.Entity.TransformComponent.WorldPosition
 			local myCenter = Vector2(myPos.x, myPos.y + 0.5)
 			if isvalid(map) then
-				local projfx = pat.projfx or ""
 				if pat.mode == "fan" then
 					for i = -1, 1 do
 						self.shotIndex += 1
-						local dir = _CombatPrimitives:DirectionTo(myCenter, Vector2(self.AimTargetX, self.AimTargetY + i * _GameConstants.BossTripleSpread))
-						self:SpawnProj(map, myCenter, dir, projfx)
+						local dir = _CombatPrimitives:DirectionTo(myCenter, Vector2(self.AimTargetX, self.AimTargetY + i * _BossConfig.BossTripleSpread))
+						self:SpawnProj(map, myCenter, dir, pat.parryable)
 					end
 				elseif pat.mode == "horizontal" then
 					self.shotIndex += 1
 					local sgn = 1.0
 					if self.AimTargetX < myCenter.x then sgn = -1.0 end
-					self:SpawnProj(map, myCenter, Vector2(sgn, 0), projfx)
+					self:SpawnProj(map, myCenter, Vector2(sgn, 0), pat.parryable)
 					-- 박수 레이저 빔 플래시(연출 전용). 발사 행을 따라 수평 빔, 판정은 위 투사체가 담당.
 					self:ShowZakumBeam(myCenter.x, myCenter.y, sgn)
 				else
 					self.shotIndex += 1
 					local dir = _CombatPrimitives:DirectionTo(myCenter, Vector2(self.AimTargetX, self.AimTargetY))
-					self:SpawnProj(map, myCenter, dir, projfx)
+					self:SpawnProj(map, myCenter, dir, pat.parryable)
 				end
 				log("[BossController] " .. pat.id .. " fired (" .. pat.mode .. ")")
 			end
@@ -376,21 +385,22 @@ script BossController extends Component
 		self:PlayClip(self.standClip)
 		self.phase = "delay"
 		-- 패턴 간 짧은 공통 간격. 같은(특히 광역) 패턴 재선택은 위 개별 쿨다운이 막는다.
-		self.phaseTimer = _GameConstants.BossPatternDelay
+		self.phaseTimer = _BossConfig.BossPatternDelay
 	end
 
 	@ExecSpace("ServerOnly")
-	method void SpawnProj(Entity map, Vector2 from, Vector2 dir, string fxKey)
-		-- 적 투사체 1발 발사 (보스 원거리 공용). fxKey!="" 이면 투사체 비주얼 이펙트 지정(클라가 부착 재생).
+	method void SpawnProj(Entity map, Vector2 from, Vector2 dir, boolean parryable)
+		-- 적 투사체 1발 발사 (보스 원거리 공용). 모델=ProjectileModelId(보스별) — 속도/수명/히트반경·스프라이트 전부 그 모델값(LaunchDir). 별도 이펙트 지정 없음.
 		local spawnPos = Vector3(from.x + dir.x * 0.5, from.y + dir.y * 0.5, 0)
-		local proj = _SpawnService:SpawnByModelId("enemyprojectile", "bossproj_" .. tostring(self.shotIndex), spawnPos, map)
-		if proj ~= nil then
-			---@type Projectile
-			local comp = proj:GetComponent("script.Projectile")
-			if comp ~= nil then
-				comp:Launch(dir.x, dir.y, _GameConstants.ProjectileSpeed, 1, true)
-				if fxKey ~= "" then comp.FxKey = fxKey end
-			end
+		local proj = _SpawnService:SpawnByModelId(self.ProjectileModelId, "bossproj_" .. tostring(self.shotIndex), spawnPos, map)
+		if proj == nil then
+			log_error("[BossController] SpawnByModelId('" .. self.ProjectileModelId .. "') returned nil")
+			return
+		end
+		---@type Projectile
+		local comp = proj:GetComponent("script.Projectile")
+		if comp ~= nil then
+			comp:LaunchDir(dir.x, dir.y, parryable)
 		end
 	end
 
@@ -416,7 +426,7 @@ script BossController extends Component
 		if isvalid(map) == false then return end
 		local sc = _EffectTable:Scale("boss_zakum_beam")
 		local fo = _EffectTable:Offset("boss_zakum_beam")
-		local pos = Vector3(cx + sgn * _GameConstants.BossZakumBeamOffsetX + fo.x, cy + fo.y, 0)
+		local pos = Vector3(cx + sgn * _BossConfig.BossZakumBeamOffsetX + fo.x, cy + fo.y, 0)
 		local options = _EffectTable:Options("boss_zakum_beam")
 		options["FlipX"] = sgn < 0
 		_EffectService:PlayEffect(clip, map, pos, _EffectTable:Rot("boss_zakum_beam"), Vector3(sc.x, sc.y, 1), false, options)
@@ -438,7 +448,7 @@ script BossController extends Component
 			self:HideTelegraph()
 			self.TelegraphTriple = false
 			self.phase = "delay"
-			self.phaseTimer = _GameConstants.BossPatternDelay
+			self.phaseTimer = _BossConfig.BossPatternDelay
 		end
 	end
 

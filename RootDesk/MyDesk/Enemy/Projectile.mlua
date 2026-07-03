@@ -36,6 +36,9 @@ script Projectile extends Component
 	-- 피격 판정 반경(타입별; 전역 RadiusProjectile 대체). 예고 레인 폭 계산에도 사용. 모델마다 인스펙터 조절.
 	property number HitRadius = 0.2
 
+	-- 발사 방향으로 스프라이트를 Z회전시킬 때 에셋 기본방향 보정(도). 스프라이트가 우측(+X)을 향해 그려졌으면 0, 위를 향했으면 -90 등. 모델별 인스펙터 조절.
+	property number SpriteAngleOffset = 0.0
+
 	property number age = 0.0
 
 	@ExecSpace("ClientOnly")
@@ -87,6 +90,16 @@ script Projectile extends Component
 		self.Parryable = parryable
 		self.OwnerSide = "enemy"
 		self.Launched = true
+		self:ApplyDirRotation()
+	end
+
+	@ExecSpace("ServerOnly")
+	method void ApplyDirRotation()
+		-- 발사 방향으로 스프라이트 Z회전(직선비행이라 발사 시 1회). 에셋 기본방향은 SpriteAngleOffset로 보정. @Sync는 QuaternionRotation이 담당.
+		local t = self.Entity.TransformComponent
+		if isvalid(t) then
+			t.ZRotation = math.deg(math.atan(self.DirY, self.DirX)) + self.SpriteAngleOffset
+		end
 	end
 
 	@ExecSpace("ServerOnly")
@@ -97,6 +110,7 @@ script Projectile extends Component
 		self.Parryable = parryable
 		self.OwnerSide = "enemy"
 		self.Launched = true
+		self:ApplyDirRotation()
 	end
 
 	@ExecSpace("ServerOnly")
@@ -106,6 +120,7 @@ script Projectile extends Component
 		self.DirY = -self.DirY
 		self.OwnerSide = "player"
 		self.Damage = reflectDamage
+		self:ApplyDirRotation()
 		log("[Projectile] reflected! now player-owned, dmg=" .. tostring(reflectDamage))
 	end
 
