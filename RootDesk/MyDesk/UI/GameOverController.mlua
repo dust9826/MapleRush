@@ -3,6 +3,12 @@ script GameOverController extends Component
 
 	property Entity gameOverRoot = "50c12345-57eb-4ba9-9045-1e5af99aa65c"
 
+	-- 등장 fade-in용: GameOverGroup 루트의 CanvasGroup (GroupAlpha 0→1).
+	property CanvasGroupComponent canvasGroup = "37a2b2be-ccee-4175-a315-bac3716d78d1"
+
+	-- fade-in 진행 시간(>=0 진행 중, -1 정지).
+	@HideFromInspector property number fadeT = -1.0
+
 	property TextComponent statsText = "bd54f3d1-6b01-4cb7-a7a6-7a201ecc022d"
 
 	property TextComponent scoreText = "e8fb3e40-ea93-44aa-95c6-ce951e9bb347"
@@ -34,9 +40,24 @@ script GameOverController extends Component
 	end
 
 	@ExecSpace("ClientOnly")
+	method void OnUpdate(number delta)
+		-- 등장 fade-in: fadeT 진행 → GroupAlpha 0→1 (PopupFadeDuration 동안).
+		if self.fadeT < 0 then return end
+		self.fadeT += delta
+		local dur = _GameConstants.PopupFadeDuration
+		if dur <= 0 then dur = 0.01 end
+		local a = self.fadeT / dur
+		if a >= 1 then a = 1 self.fadeT = -1 end
+		if isvalid(self.canvasGroup) then self.canvasGroup.GroupAlpha = a end
+	end
+
+	@ExecSpace("ClientOnly")
 	method void Open(integer score)
 		-- 게임오버 팝업 (PDF p.14): 도달 층 · 처치 · 메소 + 영구 강화 점수.
 		self.gameOverRoot.Enable = true
+		-- 등장 fade-in 시작 (CanvasGroup 알파 0에서 램프업).
+		if isvalid(self.canvasGroup) then self.canvasGroup.GroupAlpha = 0 end
+		self.fadeT = 0.0
 		self.statsText.Text = "도달 " .. tostring(_GameStateManager.CurrentFloor) .. "층   ·   처치 " .. tostring(_GameStateManager.RunKills) .. "   ·   메소 " .. tostring(math.floor(_GameStateManager.Meso))
 		self.scoreText.Text = "영구 강화 점수 +" .. tostring(score) .. "    (누적 " .. tostring(_MetaProgression.MetaScore) .. ")"
 		log("[GameOverController] opened (score+" .. tostring(score) .. ")")
@@ -46,6 +67,8 @@ script GameOverController extends Component
 	method void OnRestartClick(ButtonClickEvent event)
 		-- 다시 도전: 팝업 닫기 + 전투 컨텍스트 + 런 재시작 요청.
 		self.gameOverRoot.Enable = false
+		self.fadeT = -1.0
+		if isvalid(self.canvasGroup) then self.canvasGroup.GroupAlpha = 1 end
 		_InputRouter:SetContext("Combat")
 		_StageManager:RequestRestartRun()
 		log("[GameOverController] restart requested")
@@ -55,6 +78,8 @@ script GameOverController extends Component
 	method void OnLobbyClick(ButtonClickEvent event)
 		-- 로비로: 런 포기하고 메인 로비 복귀 (재시작 안 함).
 		self.gameOverRoot.Enable = false
+		self.fadeT = -1.0
+		if isvalid(self.canvasGroup) then self.canvasGroup.GroupAlpha = 1 end
 		local lobby = _EntityService:GetEntityByPath("/ui/LobbyGroup/Root")
 		if lobby ~= nil then lobby.Enable = true end
 		_InputRouter:SetContext("Lobby")

@@ -28,6 +28,9 @@ script StageManager extends Logic
 	-- 클라: 게임오버 UI 컨트롤러 참조
 	property any gameOverUI = nil
 
+	-- 클라: 풀스크린 검정 페이드 오버레이 참조(FadeOverlay가 OnBeginPlay에서 등록). 사망→부활 화면 전환.
+	@HideFromInspector property any fadeOverlay = nil
+
 	-- 서버: 추적 중인 플레이어 엔티티 (1인 1런 전제, 멀티맵 조회용)
 	property any trackedPlayer = nil
 
@@ -516,6 +519,10 @@ script StageManager extends Logic
 			local dash = player:GetComponent("script.PlayerDash")
 			if dash ~= nil then dash:ResetForStage() end
 		end
+		-- 사망 부활 시 검게 했던 화면을 다시 밝게 (신규 진입이면 이미 투명이라 무해).
+		if self.fadeOverlay ~= nil and isvalid(self.fadeOverlay) then
+			self.fadeOverlay:FromBlack()
+		end
 		_UtilLogic:SetClientTimeScale(1.0)
 		_InputRouter:SetContext("Combat")
 	end
@@ -530,6 +537,14 @@ script StageManager extends Logic
 			if isvalid(pcc) then pcc.Enable = false end
 		end
 		_InputRouter:SetContext("Frozen")
+	end
+
+	@ExecSpace("Client")
+	method void ClientFadeToBlack()
+		-- 사망(부활) 화면 전환: 풀스크린 검정 오버레이를 검게. 복원(FromBlack)은 ClientStageReset이 담당.
+		if self.fadeOverlay ~= nil and isvalid(self.fadeOverlay) then
+			self.fadeOverlay:ToBlack()
+		end
 	end
 
 	@ExecSpace("ServerOnly")
@@ -613,6 +628,8 @@ script StageManager extends Logic
 			-- + grace 연장으로 적 프리즈 → 잠깐의 사망 여운 후 스폰포인트에서 재개.
 			self.StageActive = false
 			self.combatGraceUntil = _UtilLogic.ServerElapsedSeconds + _GameConstants.StageEndDelay + 1.5
+			-- 화면 검게(부활 전환): 재개 시 ClientStageReset이 다시 밝게(FromBlack).
+			if deadPc ~= nil then self:ClientFadeToBlack(deadPc.UserId) end
 			_TimerService:SetTimerOnce(function()
 				-- 텀 동안 게임오버/런 종료 등으로 상태가 바뀌지 않았을 때만 재시작.
 				if _GameStateManager.RunActive then self:ResetStage() end

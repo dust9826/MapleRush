@@ -154,6 +154,12 @@ script GameConstants extends Logic
 	-- 스테이지 종료 공통 텀(초). 사망 부활 / 클리어(보상 팝업) / 실패(게임오버) 모두 이 시간 뒤에 처리 — 그 사이 전투 정지(적 프리즈). 인스펙터 튜닝.
 	property number StageEndDelay = 1.2
 
+	-- 사망→부활 풀스크린 검정 페이드 속도(초). 검게/밝게 각각 이 시간. 인스펙터 튜닝.
+	property number ScreenFadeDuration = 0.3
+
+	-- 클리어/실패 팝업 등장 fade-in 속도(초). CanvasGroup 알파 0→1. 인스펙터 튜닝.
+	property number PopupFadeDuration = 0.25
+
 	-- 낙사 리스폰 대기(초). 엔진 내장 낙사 리스폰(PlayerComponent.RespawnDuration)을 이 값으로 낮춰 빠르게 복귀. 스테이지마다 스폰포인트를 RespawnPosition에 주입해 원점(0,0,0) 대신 그 자리로 복귀시킴.
 	property number FallRespawnDuration = 0.5
 
