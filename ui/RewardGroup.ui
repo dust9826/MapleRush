@@ -195,7 +195,8 @@
             },
             {
               "@type": "script.RewardController",
-              "Enable": true
+              "Enable": true,
+              "fadeT": -1.0
             }
           ],
           "@version": 1

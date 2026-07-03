@@ -1,0 +1,34 @@
+@Logic
+script SettingsMenu extends Logic
+
+	-- 공용 설정 창 중개자(클라). SettingsController가 OnBeginPlay에서 자신을 등록(_SettingsMenu.ctrl = self).
+	-- 로비/일시정지는 이 Logic을 통해 열고/닫아 크로스-그룹 컴포넌트 프로퍼티 바인딩(LEA-4002)을 피한다.
+	-- (RewardController→_StageManager.rewardUI 등 프로젝트의 '컨트롤러가 매니저에 자기 등록' 패턴과 동일.)
+	@HideFromInspector property any ctrl = nil
+
+	@ExecSpace("ClientOnly")
+	method void Open()
+		-- 설정 창 열기.
+		---@type SettingsController
+		local c = self.ctrl
+		if isvalid(c) then c:Open() end
+	end
+
+	@ExecSpace("ClientOnly")
+	method void Close()
+		-- 설정 창 닫기.
+		---@type SettingsController
+		local c = self.ctrl
+		if isvalid(c) then c:Close() end
+	end
+
+	@ExecSpace("ClientOnly")
+	method boolean IsOpen()
+		-- 설정 창 열림 여부.
+		---@type SettingsController
+		local c = self.ctrl
+		if isvalid(c) then return c:IsOpen() end
+		return false
+	end
+
+end

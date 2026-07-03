@@ -15,20 +15,6 @@ script LobbyController extends Component
 
 	property MetaUpgradeController metaCtrl = "6287c883-1d96-47f8-ac0a-cbabb609d0ed"
 
-	-- 설정 플레이스홀더 팝업.
-	property Entity settingsPopup = "7deada11-9fa1-47dc-abc6-3d0861446085"
-
-	property ButtonComponent btnSettingsClose = "03ec3131-d7f1-4b4d-ad68-5ae5089d4527"
-
-	-- 설정 팝업: 사운드 볼륨 슬라이더 2종 + 현재값 % 텍스트.
-	property SliderComponent bgmSlider = "57b41381-15bd-40d4-82d2-44a07dca9d00"
-
-	property SliderComponent sfxSlider = "8d98a3ea-dd98-4dc0-b686-6f61ddf975e7"
-
-	property TextComponent bgmValueText = "6f8bef77-4e04-40e5-9921-b4737d824022"
-
-	property TextComponent sfxValueText = "ca2c2a13-b740-4a9f-bc15-910f0fdc89e5"
-
 	-- "잠시 휴식하기" 팝업: MSW엔 스크립트 종료 API가 없어 ESC/시스템 메뉴 안내만 표시.
 	property Entity restConfirm = "208f2c5e-e60b-423d-b1a7-235eac9c19dd"
 
@@ -42,30 +28,18 @@ script LobbyController extends Component
 
 	property any hUpgrade = nil
 
-	property any hSettingsClose = nil
-
 	property any hRestOk = nil
-
-	property any hBgm = nil
-
-	property any hSfx = nil
-
 
 	@ExecSpace("ClientOnly")
 	method void OnBeginPlay()
-		-- 메인 로비: 부팅 시 기본 표시(default_show). 서브팝업 숨김 + 버튼 연결 + 입력 컨텍스트 = 비전투(Lobby).
-		if isvalid(self.settingsPopup) then self.settingsPopup.Enable = false end
+		-- 메인 로비: 부팅 시 서브팝업 숨김 + 버튼 연결. 로비 표시·bgm_title·입력 컨텍스트(Lobby)는 컷씬 종료 시 CutsceneController가 담당.
 		if isvalid(self.restConfirm) then self.restConfirm.Enable = false end
-		-- 컷씬(인트로)이 먼저 재생되도록 로비는 숨긴 상태로 시작 — 컷씬 종료 시 CutsceneController가 표시.
 		if isvalid(self.lobbyRoot) then self.lobbyRoot.Enable = false end
 		self.hStart = self.btnStart.Entity:ConnectEvent(ButtonClickEvent, self.OnStartClick)
 		self.hSettings = self.btnSettings.Entity:ConnectEvent(ButtonClickEvent, self.OnSettingsClick)
 		self.hRest = self.btnRest.Entity:ConnectEvent(ButtonClickEvent, self.OnRestClick)
 		self.hUpgrade = self.btnUpgrade.Entity:ConnectEvent(ButtonClickEvent, self.OnUpgradeClick)
-		self.hSettingsClose = self.btnSettingsClose.Entity:ConnectEvent(ButtonClickEvent, self.OnSettingsClose)
 		self.hRestOk = self.btnRestOk.Entity:ConnectEvent(ButtonClickEvent, self.OnRestOk)
-		self:InitSoundSliders()
-		-- 로비 표시·bgm_title·입력 컨텍스트(Lobby)는 컷씬 종료 시 CutsceneController가 담당(이중 재생 방지).
 		log("[LobbyController] init (hidden; cutscene will reveal lobby)")
 	end
 
@@ -76,61 +50,7 @@ script LobbyController extends Component
 		if self.hSettings ~= nil then self.btnSettings.Entity:DisconnectEvent(ButtonClickEvent, self.hSettings) end
 		if self.hRest ~= nil then self.btnRest.Entity:DisconnectEvent(ButtonClickEvent, self.hRest) end
 		if self.hUpgrade ~= nil then self.btnUpgrade.Entity:DisconnectEvent(ButtonClickEvent, self.hUpgrade) end
-		if self.hSettingsClose ~= nil then self.btnSettingsClose.Entity:DisconnectEvent(ButtonClickEvent, self.hSettingsClose) end
 		if self.hRestOk ~= nil then self.btnRestOk.Entity:DisconnectEvent(ButtonClickEvent, self.hRestOk) end
-		if self.hBgm ~= nil and isvalid(self.bgmSlider) then self.bgmSlider.Entity:DisconnectEvent(SliderValueChangedEvent, self.hBgm) end
-		if self.hSfx ~= nil and isvalid(self.sfxSlider) then self.sfxSlider.Entity:DisconnectEvent(SliderValueChangedEvent, self.hSfx) end
-	end
-
-	@ExecSpace("ClientOnly")
-	method void InitSoundSliders()
-		-- 슬라이더 현재값을 SoundManager 저장값으로 맞추고, 값 텍스트 갱신 후 변경 이벤트 연결.
-		-- (초기 세팅이 핸들러를 트리거하지 않도록 Value 설정을 ConnectEvent보다 먼저 수행)
-		if isvalid(self.bgmSlider) then
-			local bv = _SoundManager:GetBgmVolume()
-			self.bgmSlider.Value = bv
-			self:UpdateBgmText(bv)
-			self.hBgm = self.bgmSlider.Entity:ConnectEvent(SliderValueChangedEvent, self.OnBgmChanged)
-		end
-		if isvalid(self.sfxSlider) then
-			local sv = _SoundManager:GetSfxVolume()
-			self.sfxSlider.Value = sv
-			self:UpdateSfxText(sv)
-			self.hSfx = self.sfxSlider.Entity:ConnectEvent(SliderValueChangedEvent, self.OnSfxChanged)
-		end
-	end
-
-	@ExecSpace("ClientOnly")
-	method void OnBgmChanged(SliderValueChangedEvent event)
-		-- 배경음 슬라이더 값 변경 → SoundManager 반영(엔진 BGM 볼륨 즉시 적용) + 텍스트 갱신.
-		_SoundManager:SetBgmVolume(event.Value)
-		self:UpdateBgmText(event.Value)
-	end
-
-	@ExecSpace("ClientOnly")
-	method void OnSfxChanged(SliderValueChangedEvent event)
-		-- 효과음 슬라이더 값 변경 → 볼륨/텍스트만 실시간 반영. 클릭음은 UI 공통 전역 클릭 후킹
-		-- (SoundManager.OnGlobalKeyDown)이 슬라이더를 누르는 순간 1회 재생하므로 여기선 소리를 내지 않는다.
-		-- (예전엔 여기서도 테스트음을 내 '누를 때 + 뗄 때' 2번 나던 문제를 제거.)
-		_SoundManager:SetSfxVolume(event.Value)
-		self:UpdateSfxText(event.Value)
-	end
-
-	@ExecSpace("ClientOnly")
-	method void UpdateBgmText(number v)
-		-- 배경음 현재값 % 표기 갱신.
-		if isvalid(self.bgmValueText) then self.bgmValueText.Text = self:FormatPct(v) end
-	end
-
-	@ExecSpace("ClientOnly")
-	method void UpdateSfxText(number v)
-		-- 효과음 현재값 % 표기 갱신.
-		if isvalid(self.sfxValueText) then self.sfxValueText.Text = self:FormatPct(v) end
-	end
-
-	method string FormatPct(number v)
-		-- 0.0~1.0 볼륨을 "NN%" 문자열로 변환.
-		return tostring(math.floor(v * 100 + 0.5)) .. "%"
 	end
 
 	@ExecSpace("ClientOnly")
@@ -144,15 +64,9 @@ script LobbyController extends Component
 
 	@ExecSpace("ClientOnly")
 	method void OnSettingsClick(ButtonClickEvent event)
-		-- "설정": 플레이스홀더 팝업 표시.
-		self.settingsPopup.Enable = true
-		log("[LobbyController] settings opened")
-	end
-
-	@ExecSpace("ClientOnly")
-	method void OnSettingsClose(ButtonClickEvent event)
-		-- 설정 팝업 닫기.
-		self.settingsPopup.Enable = false
+		-- "설정": 공용 설정 창 열기 (_SettingsMenu 중개 → SettingsController).
+		_SettingsMenu:Open()
+		log("[LobbyController] settings opened (shared)")
 	end
 
 	@ExecSpace("ClientOnly")

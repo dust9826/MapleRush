@@ -47,9 +47,49 @@ script PlayerBootstrap extends Logic
 			end
 		end
 		log("[PlayerBootstrap] combat components attached to " .. player.Name)
+		self:ApplyCostume(player, false)
 		self:EnsureDashPreview(player)
 		_StageManager:OnPlayerReady(player)
 		self:GrantDebugItems(player)
+	end
+
+	@ExecSpace("ServerOnly")
+	method void ApplyCostume(Entity player, boolean useOwn)
+		-- 코디 전환. useOwn=true → 내 계정 코디(커스텀 슬롯 비움 + UseCustomEquipOnly=false) / false → '만지' 코디(4종 + UseCustomEquipOnly=true).
+		-- RUID 출처: docs/Codi/manjiRUID. @Sync 프로퍼티라 서버 세팅이 전 클라 반영. 롱코트는 상·하의 슬롯을 점유하므로 coat/pants는 비워 충돌 방지.
+		local costume = player.CostumeManagerComponent
+		if isvalid(costume) == false then
+			log_warning("[PlayerBootstrap] CostumeManagerComponent missing — costume skipped")
+			return
+		end
+		if useOwn then
+			costume.CustomHairEquip = ""
+			costume.CustomFaceEquip = ""
+			costume.CustomLongcoatEquip = ""
+			costume.CustomCapEquip = ""
+			costume.UseCustomEquipOnly = false
+			log("[PlayerBootstrap] costume = OWN(account) for " .. player.Name)
+		else
+			costume.CustomHairEquip = "5003729e0d77491aa4b8feeb82ead954"
+			costume.CustomFaceEquip = "fcc9a22f4ad54b068116e2e5ad86bf66"
+			costume.CustomLongcoatEquip = "d942441a03d0468f96c313144a7181f8"
+			costume.CustomCapEquip = "946be6efb0514c2b806a3b042ce11f7a"
+			costume.CustomCoatEquip = ""
+			costume.CustomPantsEquip = ""
+			costume.UseCustomEquipOnly = true
+			log("[PlayerBootstrap] costume = MANJI for " .. player.Name)
+		end
+	end
+
+	@ExecSpace("Server")
+	method void RequestSetUseOwnCostume(boolean useOwn)
+		-- 설정 '내 캐릭터 코디 사용' 체크박스(클라) → 요청 유저 본인의 코디 전환. senderUserId로 본인만 대상.
+		local player = _UserService:GetUserEntityByUserId(senderUserId)
+		if player == nil then
+			log_warning("[PlayerBootstrap] RequestSetUseOwnCostume — player not found")
+			return
+		end
+		self:ApplyCostume(player, useOwn)
 	end
 
 	@ExecSpace("ServerOnly")
