@@ -1,65 +1,219 @@
 @Logic
 script MetaProgression extends Logic
 
-	-- 누적 영구 강화 점수 (캡 65535). UserDataStorage 영속.
+	-- 영구(메타) 강화: 클리어 점수로 10종 강화를 레벨제로 구매/환불. 런 시작 시 base에 합산 (meta_upgrade_doc_ver1).
+	-- 점수·레벨 모두 UserDataStorage 영속. 자동보너스(구버전) 폐기 → 레벨/점수 소비 시스템으로 교체.
+
+	-- 누적 강화 점수 (캡 65535). @Sync로 UI 표시.
 	@Sync
 	property integer MetaScore = 0
+
+	-- 강화 id -> 현재 레벨. @Sync로 클라 UI 반영. id: atk/life/dash/recover/itemcap(능력치), ironbody/chamgong/immovable/manji/spin(능력).
+	@Sync
+	property SyncTable<string, integer> Levels
+
+	-- 강화 메타(레벨당 최대·점수요구치). 서버 검증용 + 문서 §2/§3 수치. 클라/서버 공통 빌드(plain table).
+	property any meta = nil
 
 	property string ownerUserId = ""
 
 	property boolean loaded = false
 
+	-- 클라: 메타 강화 UI(MetaUpgradeController)가 자기 등록 → 점수/레벨 동기화 시 갱신 통지.
+	@HideFromInspector property any ui = nil
+
+	method void EnsureMeta()
+		-- 강화 메타 테이블 1회 빌드 (max=최대레벨, cost=레벨당 점수요구치). 수치는 _MetaConfig(기획자 편집)에서 읽는다.
+		if self.meta ~= nil then return end
+		self.meta = {
+			atk = { max = _MetaConfig.AtkMax, cost = _MetaConfig.AtkCost },
+			life = { max = _MetaConfig.LifeMax, cost = _MetaConfig.LifeCost },
+			dash = { max = _MetaConfig.DashMax, cost = _MetaConfig.DashCost },
+			recover = { max = _MetaConfig.RecoverMax, cost = _MetaConfig.RecoverCost },
+			itemcap = { max = _MetaConfig.ItemCapMax, cost = _MetaConfig.ItemCapCost },
+			ironbody = { max = _MetaConfig.IronBodyMax, cost = _MetaConfig.IronBodyCost },
+			chamgong = { max = _MetaConfig.ChamgongMax, cost = _MetaConfig.ChamgongCost },
+			immovable = { max = _MetaConfig.ImmovableMax, cost = _MetaConfig.ImmovableCost },
+			manji = { max = _MetaConfig.ManjiMax, cost = _MetaConfig.ManjiCost },
+			spin = { max = _MetaConfig.SpinMax, cost = _MetaConfig.SpinCost },
+		}
+	end
+
+	method integer GetMax(string upgradeId)
+		-- 강화 최대 레벨 (UI 표시·검증). _MetaConfig 기반.
+		self:EnsureMeta()
+		local m = self.meta[upgradeId]
+		if m == nil then return 0 end
+		return m.max
+	end
+
+	method integer GetCost(string upgradeId)
+		-- 강화 레벨당 점수요구치. _MetaConfig 기반.
+		self:EnsureMeta()
+		local m = self.meta[upgradeId]
+		if m == nil then return 0 end
+		return m.cost
+	end
+
+	method void OnBeginPlay()
+		-- 강화 메타 빌드 (서버/클라 공통).
+		self:EnsureMeta()
+	end
+
 	@ExecSpace("ServerOnly")
 	method void LoadFor(string userId)
-		-- 유저 입장 시 1회 로드 (datastorage.md §4.1 — 캐시 우선, 이후 메모리 서비스).
+		-- 유저 입장 시 1회 로드 (점수 + 레벨). 캐시 우선(datastorage.md §4.1).
 		if self.loaded and self.ownerUserId == userId then return end
+		self:EnsureMeta()
 		self.ownerUserId = userId
+		---@type UserDataStorage
 		local storage = _DataStorageService:GetUserDataStorage(userId)
-		local errorCode, raw = storage:GetAndWait("metaScore")
-		if errorCode == 0 and raw ~= nil and raw ~= "" then
-			self.MetaScore = math.floor(tonumber(raw) or 0)
+		-- 점수
+		local scoreErr, scoreRaw = storage:GetAndWait("metaScore")
+		if scoreErr == 0 and scoreRaw ~= nil and scoreRaw ~= "" then
+			self.MetaScore = math.floor(tonumber(scoreRaw) or 0)
 		else
-			-- 1000002 NotFound = 최초 접속 → 기본값 0
 			self.MetaScore = 0
 		end
+		-- 레벨 (CSV "atk:5,life:2,...")
+		local lvErr, lvRaw = storage:GetAndWait("metaLevels")
+		if lvErr == 0 and lvRaw ~= nil and lvRaw ~= "" then
+			for pair in string.gmatch(lvRaw, "([^,]+)") do
+				-- string.match(2캡처)를 테이블로 캡처(LSP가 string.match를 1반환으로 오탐 → arity 경고 회피).
+				local mm = { string.match(pair, "(%w+):(%d+)") }
+				local id = mm[1]
+				local lvStr = mm[2]
+				if id ~= nil and lvStr ~= nil and self.meta[id] ~= nil then
+					self.Levels[id] = math.floor(tonumber(lvStr) or 0)
+				end
+			end
+		end
 		self.loaded = true
-		log("[MetaProgression] loaded: score=" .. tostring(self.MetaScore) .. " (err=" .. tostring(errorCode) .. ")")
+		log("[MetaProgression] loaded: score=" .. tostring(self.MetaScore) .. " levels='" .. self:SerializeLevels() .. "' (err=" .. tostring(scoreErr) .. "/" .. tostring(lvErr) .. ")")
+	end
+
+	method integer GetLevel(string upgradeId)
+		-- 강화 현재 레벨 (미보유=0). 서버(효과)·클라(UI) 공통 — Levels는 @Sync.
+		local v = self.Levels[upgradeId]
+		if v == nil then return 0 end
+		return v
+	end
+
+	@ExecSpace("Server")
+	method void RequestBuyLevel(string upgradeId)
+		-- 클라 + 버튼 → 레벨 +1 (점수 소비). 최대/잔액 검증. 본인만.
+		if senderUserId ~= self.ownerUserId then return end
+		self:EnsureMeta()
+		local m = self.meta[upgradeId]
+		if m == nil then return end
+		local lv = self:GetLevel(upgradeId)
+		if lv >= m.max then return end
+		if self.MetaScore < m.cost then
+			log("[MetaProgression] buy denied (need " .. tostring(m.cost) .. ", have " .. tostring(self.MetaScore) .. ") " .. upgradeId)
+			return
+		end
+		self.Levels[upgradeId] = lv + 1
+		self.MetaScore = self.MetaScore - m.cost
+		self:PersistMeta()
+		log("[MetaProgression] buy " .. upgradeId .. " -> Lv" .. tostring(lv + 1) .. " (score=" .. tostring(self.MetaScore) .. ")")
+	end
+
+	@ExecSpace("Server")
+	method void RequestRefundLevel(string upgradeId)
+		-- 클라 − 버튼 → 레벨 −1 (점수 환불). 본인만.
+		if senderUserId ~= self.ownerUserId then return end
+		self:EnsureMeta()
+		local m = self.meta[upgradeId]
+		if m == nil then return end
+		local lv = self:GetLevel(upgradeId)
+		if lv <= 0 then return end
+		self.Levels[upgradeId] = lv - 1
+		local refunded = self.MetaScore + m.cost
+		if refunded > _GameConstants.ScoreCap then refunded = _GameConstants.ScoreCap end
+		self.MetaScore = refunded
+		self:PersistMeta()
+		log("[MetaProgression] refund " .. upgradeId .. " -> Lv" .. tostring(lv - 1) .. " (score=" .. tostring(self.MetaScore) .. ")")
+	end
+
+	@ExecSpace("ServerOnly")
+	method string SerializeLevels()
+		-- 레벨 -> CSV "id:lv" (0레벨 생략). 영속/로그용.
+		local parts = {}
+		if self.meta ~= nil then
+			for id, _ in pairs(self.meta) do
+				local lv = self:GetLevel(id)
+				if lv > 0 then table.insert(parts, id .. ":" .. tostring(lv)) end
+			end
+		end
+		return table.concat(parts, ",")
+	end
+
+	@ExecSpace("ServerOnly")
+	method void PersistMeta()
+		-- 점수 + 레벨 저장 (버튼 이벤트 드리븐 — OnUpdate/타이머 저장 금지).
+		if self.ownerUserId == "" then return end
+		local storage = _DataStorageService:GetUserDataStorage(self.ownerUserId)
+		storage:SetAsync("metaScore", tostring(self.MetaScore), function(errorCode, value)
+			if errorCode ~= 0 then log_warning("[MetaProgression] score save failed (err=" .. tostring(errorCode) .. ")") end
+		end)
+		storage:SetAsync("metaLevels", self:SerializeLevels(), function(errorCode, value)
+			if errorCode ~= 0 then log_warning("[MetaProgression] levels save failed (err=" .. tostring(errorCode) .. ")") end
+		end)
 	end
 
 	@ExecSpace("ServerOnly")
 	method void AwardScore(integer score)
-		-- 게임 클리어 시에만 적립 (이벤트 드리븐 — OnUpdate/타이머 저장 금지). 변경 시에만 SetAsync.
+		-- 게임 클리어 시에만 적립 (이벤트 드리븐). 변경 시에만 저장.
 		if score <= 0 then return end
 		local newScore = self.MetaScore + score
-		if newScore > _GameConstants.ScoreCap then
-			newScore = _GameConstants.ScoreCap
-		end
+		if newScore > _GameConstants.ScoreCap then newScore = _GameConstants.ScoreCap end
 		if newScore == self.MetaScore then return end
 		self.MetaScore = newScore
 		log("[MetaProgression] score +" .. tostring(score) .. " -> total " .. tostring(self.MetaScore))
 		if self.ownerUserId == "" then return end
 		local storage = _DataStorageService:GetUserDataStorage(self.ownerUserId)
 		storage:SetAsync("metaScore", tostring(self.MetaScore), function(errorCode, value)
-			if errorCode ~= 0 then
-				log_warning("[MetaProgression] save failed (err=" .. tostring(errorCode) .. ") — will retry next award")
-			else
-				log("[MetaProgression] score saved to UserDataStorage")
-			end
+			if errorCode ~= 0 then log_warning("[MetaProgression] score save failed (err=" .. tostring(errorCode) .. ")") end
 		end)
 	end
 
-	method integer GetBonusLives()
-		-- 영구 강화 자동 보너스 (메타 트리 UI는 플레이스홀더): 점수 10당 최대 목숨 +1, 최대 +3.
-		local bonus = math.floor(self.MetaScore / 10)
-		if bonus > 3 then bonus = 3 end
-		return bonus
-	end
+	-- ===== 효과 getter (런 시작·능력 발동 시 서버에서 읽음) =====
 
 	method number GetBonusAttack()
-		-- 영구 강화 자동 보너스: 점수 5당 공격력 +1, 최대 +10.
-		local bonus = math.floor(self.MetaScore / 5)
-		if bonus > 10 then bonus = 10 end
-		return bonus
+		-- 공격력 영구 보너스 = 공격력 강화 + 참공. 레벨당 수치는 _MetaConfig.
+		return self:GetLevel("atk") * _MetaConfig.AtkPerLevel + self:GetLevel("chamgong") * _MetaConfig.ChamgongPerLevel
+	end
+
+	method integer GetBonusLives()
+		-- 최대 목숨 보너스 (정수). _MetaConfig.LifePerLevel.
+		return math.floor(self:GetLevel("life") * _MetaConfig.LifePerLevel)
+	end
+
+	method integer GetBonusMaxDash()
+		-- 최대 대시 보너스 (정수). _MetaConfig.DashPerLevel.
+		return math.floor(self:GetLevel("dash") * _MetaConfig.DashPerLevel)
+	end
+
+	method number GetDashRecoverMult()
+		-- 대시 회복시간 배율 = 1 − PerLevel×Lv (하한 RecoverMinMult). 회복시간 = Base × 이 값.
+		local m = 1.0 - _MetaConfig.RecoverPerLevel * self:GetLevel("recover")
+		if m < _MetaConfig.RecoverMinMult then m = _MetaConfig.RecoverMinMult end
+		return m
+	end
+
+	method number GetInvincibleBonus()
+		-- 금강불괴 무적 지속 보너스. _MetaConfig.IronBodyPerLevel.
+		return self:GetLevel("ironbody") * _MetaConfig.IronBodyPerLevel
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnSyncProperty(string name, any value)
+		-- 점수/레벨 동기화 → 등록된 메타 강화 UI 갱신 (구매/환불은 항상 MetaScore를 바꾸므로 확실히 발화).
+		if self.ui ~= nil and isvalid(self.ui) then
+			---@type MetaUpgradeController
+			local u = self.ui
+			u:RefreshAll()
+		end
 	end
 
 end

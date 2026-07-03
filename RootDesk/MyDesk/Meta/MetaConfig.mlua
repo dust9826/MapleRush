@@ -1,0 +1,62 @@
+@Logic
+script MetaConfig extends Logic
+
+	-- 메타(영구) 강화 튜닝 수치 캡슐. 기획자가 Maker 인스펙터에서 값만 수정하면 로직/UI가 자동 반영.
+	-- (GameConstants/PlayerConfig와 동일 패턴 — 전역 _MetaConfig.<name>.) 수치 근거: meta_upgrade_doc_ver1 §2·§3.
+	-- 각 강화: <Name>Max=최대 레벨, <Name>Cost=레벨당 점수요구치, <Name>PerLevel=레벨당 효과량.
+	-- MetaProgression이 이 값으로 meta 테이블/효과를 구성하고, MetaUpgradeController가 max/cost 표시를 읽는다.
+
+	-- ===== 능력치 탭 (§2) =====
+	-- 공격력: 기본 10, +2/Lv, 최대 10Lv(→+20), 1점/Lv.
+	property integer AtkMax = 10
+	property integer AtkCost = 1
+	property number AtkPerLevel = 2.0
+
+	-- 목숨(최대): 기본 5, +1/Lv, 최대 5Lv(→10), 3점/Lv.
+	property integer LifeMax = 5
+	property integer LifeCost = 3
+	property number LifePerLevel = 1.0
+
+	-- 최대 대시: 기본 2, +1/Lv, 최대 2Lv(→4), 5점/Lv.
+	property integer DashMax = 2
+	property integer DashCost = 5
+	property number DashPerLevel = 1.0
+
+	-- 대시 회복시간: 레벨당 −5%(회복시간 = Base × (1 − 0.05×Lv)), 최대 10Lv(−50%), 2점/Lv.
+	property integer RecoverMax = 10
+	property integer RecoverCost = 2
+	property number RecoverPerLevel = 0.05
+	property number RecoverMinMult = 0.5        -- 회복 배율 하한(−50%까지)
+
+	-- 최대 아이템 보관: 기본 3, +1/Lv, 최대 2Lv(→5), 5점/Lv. (BaseMaxItems 시스템 구현 시 반영)
+	property integer ItemCapMax = 2
+	property integer ItemCapCost = 5
+	property number ItemCapPerLevel = 1.0
+
+	-- ===== 능력 탭 (§3) =====
+	-- 금강불괴: 무적 지속 +0.5초/Lv, 최대 3Lv(→2.5초), 5점/Lv.
+	property integer IronBodyMax = 3
+	property integer IronBodyCost = 5
+	property number IronBodyPerLevel = 0.5
+
+	-- 참공: 영구 공격력 +4/Lv, 최대 5Lv(→+20 ATK), 4점/Lv. (§2 공격력과 합산)
+	property integer ChamgongMax = 5
+	property integer ChamgongCost = 4
+	property number ChamgongPerLevel = 4.0
+
+	-- 부동심: 무효화 횟수 +1회/Lv, 최대 2Lv(→3회), 5점/Lv. (능력 구현 시 반영)
+	property integer ImmovableMax = 2
+	property integer ImmovableCost = 5
+	property number ImmovablePerLevel = 1.0
+
+	-- 만지 일섬: 데미지 +ATK×50%/Lv, 최대 3Lv(→ATK×550%), 5점/Lv. (능력 구현 시 반영)
+	property integer ManjiMax = 3
+	property integer ManjiCost = 5
+	property number ManjiPerLevel = 0.5
+
+	-- 회전베기: 반지름 +0.5 wu/Lv, 최대 2Lv(→4.0 wu), 4점/Lv. (능력 구현 시 반영)
+	property integer SpinMax = 2
+	property integer SpinCost = 4
+	property number SpinPerLevel = 0.5
+
+end

@@ -62,8 +62,9 @@ script PlayerAbility extends Component
 		if self.AbilityId == "" or self.UsesLeft <= 0 then return end
 		self.UsesLeft -= 1
 		if self.AbilityId == "invincible" then
-			self.abilityInvincibleUntil = _WallClock:ServerNow() + _PlayerConfig.InvincibleAbilityDuration
-			log("[PlayerAbility] INVINCIBLE for " .. tostring(_PlayerConfig.InvincibleAbilityDuration) .. "s (left=" .. tostring(self.UsesLeft) .. ")")
+			local invDur = _PlayerConfig.InvincibleAbilityDuration + _MetaProgression:GetInvincibleBonus()
+			self.abilityInvincibleUntil = _WallClock:ServerNow() + invDur
+			log("[PlayerAbility] INVINCIBLE for " .. tostring(invDur) .. "s (base+금강불괴 meta, left=" .. tostring(self.UsesLeft) .. ")")
 		elseif self.AbilityId == "clearProjectiles" then
 			local map = self.Entity.CurrentMap
 			local removed = 0
