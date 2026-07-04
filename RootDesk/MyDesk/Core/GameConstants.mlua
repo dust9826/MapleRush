@@ -129,6 +129,9 @@ script GameConstants extends Logic
 
 	property integer MaxFloors = 3
 
+	-- 층당 적 체력 증가량(합연산). 1층 +0% / 2층 +20% / 3층 +40% (stage_design 스케일링).
+	property number HpAddPerFloor = 0.20
+
 	property string MapNormal = "map02"
 
 	property string MapBoss = "map03"
@@ -252,6 +255,11 @@ script GameConstants extends Logic
 	method integer NormalStagesForFloor(integer floor)
 		-- 층별 일반 스테이지 진행 횟수: 4 + 1*(층수-1) (stage_design_doc §2.2.3)
 		return self.Floor1NormalStages + (floor - 1)
+	end
+
+	method number EnemyHpMultForFloor(integer floor)
+		-- 적 체력 배율 = 1 + HpAddPerFloor*(층-1) (합연산). 1층=1.0 / 2층=1.2 / 3층=1.4.
+		return 1.0 + self.HpAddPerFloor * (floor - 1)
 	end
 
 	method number ClampMeso(number meso)
