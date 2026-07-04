@@ -1,7 +1,7 @@
 ---
 id: MR-Z
 title: 베스트 기록 & 런 타이머 & 글로벌 리더보드
-status: review
+status: done
 owner: D4LGONA
 area: mixed
 touches: [RootDesk/MyDesk/Core/WallClock.mlua, RootDesk/MyDesk/Stage/FloorManager.mlua, RootDesk/MyDesk/Stage/StageManager.mlua, ui/LobbyGroup.ui, ui/]
