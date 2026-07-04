@@ -6,13 +6,13 @@ script RegressionOverlay extends Component
 	-- (스크립트가 여기 살아 OnUpdate 필요) → 숨김은 자식 alpha 0 + CanvasGroup.BlocksRaycasts=false로.
 
 	-- 3레이어(바인딩 주입, Task 5). illust=회귀 이미지 / blackFill=풀스크린 검정(암전 보장) / vignette=방사형 iris.
-	property SpriteGUIRendererComponent illust = ""
+	property SpriteGUIRendererComponent illust = "51bf92b4-b05c-4c05-a81a-5eee292fef09"
 
-	property SpriteGUIRendererComponent blackFill = ""
+	property SpriteGUIRendererComponent blackFill = "6da0184a-6d03-42ce-998f-c6b59a6d6ace"
 
-	property SpriteGUIRendererComponent vignetteSr = ""
+	property SpriteGUIRendererComponent vignetteSr = "ca2f0b99-5637-4da6-b96a-d65ec8d79256"
 
-	property UITransformComponent vignetteTf = ""
+	property UITransformComponent vignetteTf = "ca2f0b99-5637-4da6-b96a-d65ec8d79256"
 
 	-- 상태: idle / close1 / open1 / hold / close2 / open2. mode: restart / lobby.
 	@HideFromInspector property string phase = "idle"
