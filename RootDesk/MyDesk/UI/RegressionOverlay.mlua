@@ -1,20 +1,19 @@
 @Component
 script RegressionOverlay extends Component
 
-	-- 회귀(Regression) 눈뜨기 연출. RegressionGroup 루트에 부착(ClientOnly). openness(0=감음/1=뜸) 한 파라미터로
-	-- 5비트 상태머신을 OnUpdate 구동. FadeOverlay 패턴 확장(자기등록 + 매프레임 램프). 루트는 항상 Enable 유지
-	-- (스크립트가 여기 살아 OnUpdate 필요) → 숨김은 자식 alpha 0 + CanvasGroup.BlocksRaycasts=false로.
+	-- 회귀(Regression) 눈뜨기 연출. RegressionGroup 루트에 부착(ClientOnly).
+	-- 회귀 이미지(Illust)에 RadialGradient 셰이더 머티리얼(RegressionVignetteMat)을 걸고 Intensity(iris 반경)를
+	-- 애니메이션 → 진짜 방사형 iris(해상도 독립·소프트). 경계(게임오버↔목적지) 암전은 BlackFill 균일 페이드.
+	-- 5비트: close1(게임오버 위 암전) → open1(iris 열림=회귀 이미지) → hold → close2(iris 닫힘, 암전 뒤 로드) → open2(목적지 암전 걷힘).
+	-- 루트는 항상 Enable(스크립트 OnUpdate) → 숨김=자식 alpha 0 + CanvasGroup.BlocksRaycasts=false.
 
-	-- 3레이어(바인딩 주입, Task 5). illust=회귀 이미지 / blackFill=풀스크린 검정(암전 보장) / vignette=방사형 iris.
 	property SpriteGUIRendererComponent illust = "51bf92b4-b05c-4c05-a81a-5eee292fef09"
 
 	property SpriteGUIRendererComponent blackFill = "6da0184a-6d03-42ce-998f-c6b59a6d6ace"
 
-	property SpriteGUIRendererComponent vignetteSr = "ca2f0b99-5637-4da6-b96a-d65ec8d79256"
+	-- RadialGradient 머티리얼 EntryId(이름으로 OnBeginPlay 해석). Intensity를 ChangeMaterialProperty로 구동.
+	@HideFromInspector property string matId = ""
 
-	property UITransformComponent vignetteTf = "ca2f0b99-5637-4da6-b96a-d65ec8d79256"
-
-	-- 상태: idle / close1 / open1 / hold / close2 / open2. mode: restart / lobby.
 	@HideFromInspector property string phase = "idle"
 
 	@HideFromInspector property number phaseT = 0.0
@@ -23,19 +22,21 @@ script RegressionOverlay extends Component
 
 	@ExecSpace("ClientOnly")
 	method void OnBeginPlay()
-		-- 레지스트리 등록 + 초기 완전 숨김(비차단).
+		-- 레지스트리 등록 + 머티리얼 해석·부착 + 초기 완전 숨김.
 		_StageManager.regressionOverlay = self
+		self.matId = _EntryService:GetMaterialIdByName(_GameConstants.RegressionVignetteMatName)
+		if isvalid(self.illust) and self.matId ~= "" then self.illust:ChangeMaterial(self.matId) end
 		self.phase = "idle"
-		self:ApplyOpenness(1.0)
 		if isvalid(self.illust) then self.illust:SetAlpha(0) end
+		if isvalid(self.blackFill) then self.blackFill:SetAlpha(0) end
 		local cg = self.Entity.CanvasGroupComponent
 		if isvalid(cg) then cg.BlocksRaycasts = false end
-		log("[RegressionOverlay] registered")
+		log("[RegressionOverlay] registered (mat=" .. tostring(self.matId ~= "") .. ")")
 	end
 
 	@ExecSpace("ClientOnly")
 	method void Play(string mode)
-		-- 진입점. 재생 중이면 재진입 무시(더블클릭 가드).
+		-- 진입점. 재생 중이면 무시(더블클릭 가드).
 		if self.phase ~= "idle" then return end
 		self.mode = mode
 		local cg = self.Entity.CanvasGroupComponent
@@ -52,42 +53,41 @@ script RegressionOverlay extends Component
 	end
 
 	@ExecSpace("ClientOnly")
-	method void ApplyOpenness(number o)
-		-- openness→비주얼: BlackFill/Vignette alpha=1-o(가장자리 더 어둡게=비네팅), Vignette scale=closed→open 보간.
-		if isvalid(self.blackFill) then self.blackFill:SetAlpha(1 - o) end
-		if isvalid(self.vignetteSr) then self.vignetteSr:SetAlpha(1 - o) end
-		if isvalid(self.vignetteTf) then
-			local cs = _GameConstants.VignetteClosedScale
-			local os = _GameConstants.VignetteOpenScale
-			local s = cs + (os - cs) * o
-			self.vignetteTf.UIScale = Vector3(s, s, 1)
+	method void SetIris(number intensity)
+		-- RadialGradient Intensity(iris 반경) 설정. ClientOnly·공유 머티리얼(이 오버레이 전용).
+		if self.matId ~= "" then
+			_MaterialService:ChangeMaterialProperty(self.matId, { ["Intensity"] = intensity })
 		end
 	end
 
 	@ExecSpace("ClientOnly")
 	method void Enter(string p)
-		-- 비트 진입: phase/타이머 리셋 + 초기 비주얼(회귀 이미지 표시 토글 포함).
+		-- 비트 진입: phase/타이머 리셋 + 초기 비주얼.
 		self.phase = p
 		self.phaseT = 0.0
 		if p == "close1" then
 			if isvalid(self.illust) then self.illust:SetAlpha(0) end
-			self:ApplyOpenness(1.0)
+			if isvalid(self.blackFill) then self.blackFill:SetAlpha(0) end
 		elseif p == "open1" then
+			-- 검정 걷고 회귀 이미지 iris(닫힘부터) 노출. iris가 암전을 대체.
+			if isvalid(self.blackFill) then self.blackFill:SetAlpha(0) end
 			if isvalid(self.illust) then self.illust:SetAlpha(1) end
-			self:ApplyOpenness(0.0)
+			self:SetIris(_GameConstants.VignetteClosedIntensity)
 		elseif p == "hold" then
-			self:ApplyOpenness(1.0)
+			self:SetIris(_GameConstants.VignetteOpenIntensity)
 		elseif p == "close2" then
-			self:ApplyOpenness(1.0)
+			self:SetIris(_GameConstants.VignetteOpenIntensity)
 		elseif p == "open2" then
-			self:ApplyOpenness(0.0)
+			-- 암전 잠금 + 회귀 이미지 제거(목적지 노출 준비).
+			if isvalid(self.blackFill) then self.blackFill:SetAlpha(1) end
+			if isvalid(self.illust) then self.illust:SetAlpha(0) end
 		end
 		log("[RegressionOverlay] phase=" .. p)
 	end
 
 	@ExecSpace("ClientOnly")
 	method void DoLoad()
-		-- close2 암전 완료 순간(뒤에서) 목적지 로드 + 배경 이미지 제거(open2가 목적지를 드러내도록).
+		-- close2 암전 완료(iris 닫힘) 순간 뒤에서 목적지 로드.
 		if isvalid(self.illust) then self.illust:SetAlpha(0) end
 		if self.mode == "restart" then
 			_StageManager:RequestRestartRun()
@@ -102,10 +102,11 @@ script RegressionOverlay extends Component
 
 	@ExecSpace("ClientOnly")
 	method void Finish()
-		-- 종료: 완전 투명·비차단 복귀 + 최종 입력 컨텍스트.
+		-- 종료: 완전 투명·비차단 복귀 + 최종 입력 컨텍스트. iris는 닫힘값으로 리셋(다음 재생 대비).
 		self.phase = "idle"
-		self:ApplyOpenness(1.0)
+		if isvalid(self.blackFill) then self.blackFill:SetAlpha(0) end
 		if isvalid(self.illust) then self.illust:SetAlpha(0) end
+		self:SetIris(_GameConstants.VignetteClosedIntensity)
 		local cg = self.Entity.CanvasGroupComponent
 		if isvalid(cg) then cg.BlocksRaycasts = false end
 		if self.mode == "restart" then
@@ -118,7 +119,7 @@ script RegressionOverlay extends Component
 
 	@ExecSpace("ClientOnly")
 	method void OnUpdate(number delta)
-		-- 5비트 진행. openness 계산 → ApplyOpenness. 비트 종료 시 다음 비트/로드/종료.
+		-- 5비트 진행. close1/open2=BlackFill 균일 페이드(경계 암전) / open1/close2=iris Intensity 애니메이션(회귀 이미지).
 		if self.phase == "idle" then return end
 		self.phaseT += delta
 		local closeDur = _GameConstants.RegressionBlinkCloseDuration
@@ -126,24 +127,27 @@ script RegressionOverlay extends Component
 		local holdDur = _GameConstants.RegressionHoldDuration
 		if closeDur <= 0 then closeDur = 0.01 end
 		if openDur <= 0 then openDur = 0.01 end
-		local o = 1.0
+		local cI = _GameConstants.VignetteClosedIntensity
+		local oI = _GameConstants.VignetteOpenIntensity
 		if self.phase == "close1" then
-			o = 1.0 - self:Clamp01(self.phaseT / closeDur)
+			local p = self:Clamp01(self.phaseT / closeDur)
+			if isvalid(self.blackFill) then self.blackFill:SetAlpha(p) end
 			if self.phaseT >= closeDur then self:Enter("open1") return end
 		elseif self.phase == "open1" then
-			o = self:Clamp01(self.phaseT / openDur)
+			local p = self:Clamp01(self.phaseT / openDur)
+			self:SetIris(cI + (oI - cI) * p)
 			if self.phaseT >= openDur then self:Enter("hold") return end
 		elseif self.phase == "hold" then
-			o = 1.0
 			if self.phaseT >= holdDur then self:Enter("close2") return end
 		elseif self.phase == "close2" then
-			o = 1.0 - self:Clamp01(self.phaseT / closeDur)
+			local p = self:Clamp01(self.phaseT / closeDur)
+			self:SetIris(oI + (cI - oI) * p)
 			if self.phaseT >= closeDur then self:DoLoad() self:Enter("open2") return end
 		elseif self.phase == "open2" then
-			o = self:Clamp01(self.phaseT / openDur)
+			local p = self:Clamp01(self.phaseT / openDur)
+			if isvalid(self.blackFill) then self.blackFill:SetAlpha(1 - p) end
 			if self.phaseT >= openDur then self:Finish() return end
 		end
-		self:ApplyOpenness(o)
 	end
 
 end

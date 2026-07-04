@@ -1,0 +1,38 @@
+{
+  "Id": "",
+  "GameId": "",
+  "EntryKey": "material://a276726e-ae86-411b-9782-7631abce767b",
+  "ContentType": "x-mod/material",
+  "Content": "",
+  "Usage": 0,
+  "UsePublish": 1,
+  "UseService": 0,
+  "CoreVersion": "26.5.0.0",
+  "StudioVersion": "0.1.0.0",
+  "DynamicLoading": 0,
+  "ContentProto": {
+    "Use": "Json",
+    "Json": {
+      "name": "RegressionVignetteMat",
+      "id": "a276726e-ae86-411b-9782-7631abce767b",
+      "shadertype": "RadialGradient",
+      "Blend": 1.0,
+      "InColor": {
+        "r": 0.0,
+        "g": 0.0,
+        "b": 0.0,
+        "a": 0.0
+      },
+      "Intensity": 1.0,
+      "LitMode": 0,
+      "OutColor": {
+        "r": 0.0,
+        "g": 0.0,
+        "b": 0.0,
+        "a": 1.0
+      },
+      "IsUIMaterial": true,
+      "RequiresUIStencilStateChange": false
+    }
+  }
+}
