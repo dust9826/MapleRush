@@ -44,24 +44,35 @@ script GameClearController extends Component
 
 	@ExecSpace("ClientOnly")
 	method void OnRestartClick(ButtonClickEvent event)
-		-- 다시 도전: 새 런 시작.
+		-- 다시 도전: 팝업 닫고 회귀 연출 재생(오버레이가 새 런 시작 수행). 폴백=기존 즉시 경로.
 		self.clearRoot.Enable = false
-		_InputRouter:SetContext("Combat")
-		_StageManager:RequestRestartRun()
-		log("[GameClearController] restart")
+		---@type RegressionOverlay
+		local ov = _StageManager.regressionOverlay
+		if ov ~= nil and isvalid(ov) then
+			ov:Play("restart")
+		else
+			_InputRouter:SetContext("Combat")
+			_StageManager:RequestRestartRun()
+		end
+		log("[GameClearController] restart -> regression")
 	end
 
 	@ExecSpace("ClientOnly")
 	method void OnLobbyClick(ButtonClickEvent event)
-		-- 로비로: 메인 로비 복귀.
+		-- 로비로: 팝업 닫고 회귀 연출 재생(오버레이가 로비 복귀 수행). 폴백=기존 즉시 로비 복귀.
 		self.clearRoot.Enable = false
-		local lobby = _EntityService:GetEntityByPath("/ui/LobbyGroup/Root")
-		if lobby ~= nil then lobby.Enable = true end
-		-- 로비 복귀 시 일러스트 배경 다시 깔기(첫 로비와 일관). TIP 없음.
-		_SelectBackdrop:ShowLoading(false)
-		_InputRouter:SetContext("Lobby")
-		_SoundManager:PlayBGMKey("bgm_title")
-		log("[GameClearController] -> lobby")
+		---@type RegressionOverlay
+		local ov = _StageManager.regressionOverlay
+		if ov ~= nil and isvalid(ov) then
+			ov:Play("lobby")
+		else
+			local lobby = _EntityService:GetEntityByPath("/ui/LobbyGroup/Root")
+			if lobby ~= nil then lobby.Enable = true end
+			_SelectBackdrop:ShowLoading(false)
+			_InputRouter:SetContext("Lobby")
+			_SoundManager:PlayBGMKey("bgm_title")
+		end
+		log("[GameClearController] lobby -> regression")
 	end
 
 end

@@ -34,6 +34,9 @@ script StageManager extends Logic
 	-- 클라: 풀스크린 검정 페이드 오버레이 참조(FadeOverlay가 OnBeginPlay에서 등록). 사망→부활 화면 전환.
 	@HideFromInspector property any fadeOverlay = nil
 
+	-- 클라: 회귀 연출 오버레이(RegressionOverlay가 OnBeginPlay에서 등록). 게임오버/클리어 버튼이 조회. (MR-AE)
+	@HideFromInspector property any regressionOverlay = nil
+
 	-- 서버: 추적 중인 플레이어 엔티티 (1인 1런 전제, 멀티맵 조회용)
 	property any trackedPlayer = nil
 
