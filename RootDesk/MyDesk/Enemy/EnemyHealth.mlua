@@ -39,6 +39,21 @@ script EnemyHealth extends Component
 		log("[EnemyHealth] spawned: " .. self.Entity.Name .. " kind=" .. self.EnemyKind .. " floor=" .. tostring(floor) .. " HP=" .. tostring(self.HP))
 	end
 
+	-- 적 측면충돌 진입 방향 판정용 직전 X. 90000=미초기화.
+	@HideFromInspector property number solidPrevX = 99999.0
+
+	@ExecSpace("ServerOnly")
+	method void OnUpdate(number delta)
+		-- 적 측면충돌: 모든 DashBlock 솔리드 콜라이더 옆면 밖으로 밀어내 벽 통과 방지(사이드뷰 플랫포머 벽). 윗면은 풋홀드 담당.
+		-- ★DashBlock 그룹의 일반 기능(Breakable 무관) — 모든 적이 EnemyHealth를 가지므로 여기 한 곳에서 처리. 사망 시 스킵.
+		-- prevX(직전 X)로 '들어온 쪽' 면에 클램프 → 좁은 벽 관통 방지. (v2)
+		if self.IsDead then return end
+		local curX = self.Entity.TransformComponent.WorldPosition.x
+		if self.solidPrevX > 90000 then self.solidPrevX = curX end
+		_CombatPrimitives:ResolveSolid(self.Entity, _GameConstants.EnemyHboxHW, _GameConstants.EnemyHboxHH, 0.5, self.solidPrevX)
+		self.solidPrevX = self.Entity.TransformComponent.WorldPosition.x
+	end
+
 	@ExecSpace("ServerOnly")
 	method void TakeDamage(number amount, string source)
 		-- 서버 권위 데미지 적용. 보스는 그로기 게이지 충전 (일반공격=데미지량 / 반사 명중=(ATK×100%)×2). HP 0 이하 시 사망.

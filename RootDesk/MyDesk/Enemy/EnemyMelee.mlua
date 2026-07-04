@@ -166,6 +166,7 @@ script EnemyMelee extends Component
 			end
 		else
 			-- 벽(DashBlock) 시야 차단: 인지 거리 안일 때만 raycast(성능). 사이에 벽이 있으면 인식 실패 → 대기(공격·추격 안 함).
+			--   (병합: 이 브랜치의 근접 LOS(SegmentHitsBlocker)는 master #78의 IsSightBlocked 시야차단으로 통합 — 개념 동일·추격까지 반영.)
 			local blocked = false
 			if dist <= self.DetectRadius then
 				blocked = _CombatPrimitives:IsSightBlocked(self.Entity.CurrentMap, myCenter, playerCenter)

@@ -165,6 +165,14 @@ script Projectile extends Component
 			end
 		end
 
+		-- (2b) DashBlock 솔리드 벽 충돌 → 소멸(원거리 공격이 벽에 막힘). 발판(foothold)과 별개인 스크립트 벽/브레이커블 커버.
+		--   TerrainGrace 이후에만(발사 지점 근처 자기 진영 벽에 즉시 걸리는 문제 방지). 파괴된 벽은 BoxSize=0이라 자동 통과.
+		if self.traveled > self.TerrainGrace and isvalid(map) and _CombatPrimitives:SegmentHitsBlocker(map, Vector2(pos.x, pos.y), Vector2(nx, ny)) then
+			log("[Projectile] destroyed: DashBlock wall pos=(" .. string.format("%.1f,%.1f", pos.x, pos.y) .. ")")
+			e:Destroy()
+			return
+		end
+
 		t.Position = Vector3(nx, ny, pos.z)
 		local myPos = Vector2(nx, ny)
 

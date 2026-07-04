@@ -704,6 +704,113 @@ script CombatPrimitives extends Logic
 		return result
 	end
 
+	method boolean SegmentHitsBlocker(Entity map, Vector2 a, Vector2 b)
+		-- 선분 a-b가 온전한(BoxSize>0) DashBlock 솔리드 콜라이더를 통과하면 true.
+		-- ★단일 진실원: 대시(ClampRayToCurrentRoom)·걷기(Breakable GetHitbox)와 같은 DashBlock 그룹 콜라이더를 읽는다.
+		--   근접공격 LOS 게이팅용 — 적↔플레이어 사이에 벽이 있으면 벽 뒤로 때리지 못하게 한다. 파괴되면 BoxSize=0이라 자동 통과.
+		if isvalid(map) == false then return false end
+		local grp = CollisionGroups[_GameConstants.DashBlockGroup]
+		if grp == nil then return false end
+		if self.blockColliderCacheMapName ~= map.Name then
+			self.blockColliderCache = self:BuildBlockColliders(map, grp)
+			self.blockColliderCacheMapName = map.Name
+		end
+		local cols = self.blockColliderCache
+		if cols == nil then return false end
+		for _, tc in ipairs(cols) do
+			if isvalid(tc) and isvalid(tc.Entity) then
+				local bs = tc.BoxSize
+				if bs.x > 0 and bs.y > 0 then
+					local tf = tc.Entity.TransformComponent
+					local p = tf.WorldPosition
+					local sc = tf.Scale
+					local off = tc.ColliderOffset
+					local cx = p.x + off.x * sc.x
+					local cy = p.y + off.y * sc.y
+					local hw = bs.x * math.abs(sc.x) * 0.5
+					local hh = bs.y * math.abs(sc.y) * 0.5
+					if self:SegmentBoxOverlap(a, b, Vector2(cx, cy), hw, hh, 0.0) then
+						return true
+					end
+				end
+			end
+		end
+		return false
+	end
+
+	method void ResolveSolid(Entity target, number thw, number thh, number tyoff, number prevX)
+		-- (측면충돌 v2: prevX 진입방향 기반 면 선택 + 하드 클램프 + 축분리)
+		-- ★DashBlock 그룹의 일반 측면충돌: 대상을 모든 DashBlock 솔리드 콜라이더의 '옆면' 밖으로 밀어낸다(사이드뷰 플랫포머 벽).
+		--   윗면(올라서기)은 FootholdComponent가 담당 → 여기선 수평(측면) 차단만. 콜라이더 BoxSize=0(파괴 등)이면 자동 통과.
+		--   Breakable 등 특정 스크립트와 무관 — 플레이어/적이 각자 매 프레임 호출한다(대시는 PlayerDash가 ray-clamp로 별도 처리).
+		-- prevX = 직전 프레임의 대상 X(진입 방향 판정용). 밀어낼 면은 'prevX가 있던 쪽'으로 고른다 → 좁은 벽을 빠르게 밀어도
+		--   반대편으로 튀어나가는 터널링을 방지(겹침 부호 dx로 고르면 중심을 넘는 순간 반대 면으로 스냅=관통). 프레임 시작 prevX를 모든 박스에 공통 사용.
+		if isvalid(target) == false then return end
+		local mc = target.MovementComponent
+		if isvalid(mc) == false then return end
+		local map = target.CurrentMap
+		if isvalid(map) == false then return end
+		local grp = CollisionGroups[_GameConstants.DashBlockGroup]
+		if grp == nil then return end
+		if self.blockColliderCacheMapName ~= map.Name then
+			self.blockColliderCache = self:BuildBlockColliders(map, grp)
+			self.blockColliderCacheMapName = map.Name
+		end
+		local cols = self.blockColliderCache
+		if cols == nil then return end
+		local rb = target.RigidbodyComponent
+		for _, tc in ipairs(cols) do
+			if isvalid(tc) and isvalid(tc.Entity) then
+				self:PushOutSide(target, mc, rb, tc, thw, thh, tyoff, prevX)
+			end
+		end
+	end
+
+	method void PushOutSide(Entity target, any mc, any rb, any tc, number thw, number thh, number tyoff, number prevX)
+		-- 대상이 콜라이더 박스와 겹치고 '윗면에 올라선 상태가 아니면' 수평으로만 밀어낸다(측면 벽). 윗면은 풋홀드 담당이라 스킵.
+		local bs = tc.BoxSize
+		if bs.x <= 0 or bs.y <= 0 then return end
+		local ce = tc.Entity
+		local ctf = ce.TransformComponent
+		local cp = ctf.WorldPosition
+		local csc = ctf.Scale
+		local off = tc.ColliderOffset
+		local cx = cp.x + off.x * csc.x
+		local cy = cp.y + off.y * csc.y
+		local hw = bs.x * math.abs(csc.x) * 0.5
+		local hh = bs.y * math.abs(csc.y) * 0.5
+		local tp = target.TransformComponent.WorldPosition
+		local dx = tp.x - cx
+		local dy = (tp.y + tyoff) - cy
+		local ox = (hw + thw) - math.abs(dx)
+		local oy = (hh + thh) - math.abs(dy)
+		if ox <= 0 or oy <= 0 then return end
+		-- 최소 침투 축이 '세로'면(위/아래 면 접촉) 수평으로 밀지 않는다 — 윗면은 FootholdComponent, 아랫면(천장)은 중력이 담당.
+		--   측면(가로가 최소침투)일 때만 밀어냄 → 모서리에서 옆으로/위로 튀는 것 방지.
+		if ox > oy then return end
+		-- 발이 박스 윗면 근처/위면 '올라선' 상태 → 수평 차단 스킵(풋홀드가 세로를 잡음). feetY = 대상 발 높이.
+		local feetY = (tp.y + tyoff) - thh
+		if feetY >= (cy + hh - 0.15) then return end
+		-- 밀어낼 면 = 대상이 '들어온 쪽'. prevX(직전 X)가 박스 중심보다 왼쪽이면 왼쪽 면으로, 오른쪽이면 오른쪽 면으로 클램프.
+		-- ★터널링 방지 핵심: 현재 dx가 중심을 넘어갔어도(빠르게 파고듦) 들어온 쪽 면으로 되돌린다 → 반대편으로 통과 불가.
+		--   prevX 정보가 없으면(초기 프레임) dx 부호로 폴백. 벽을 이미 넘어 '반대편에서 나가는' 정상 이동은 prevX도 그쪽이라 안 잡음.
+		local fromLeft = prevX <= cx
+		if prevX > 90000 or prevX < -90000 then fromLeft = (dx < 0) end
+		local nx = cx + hw + thw
+		if fromLeft then nx = cx - hw - thw end
+		-- 벽을 향한 수평 입력속도 상쇄(들어온 쪽으로 계속 밀 때). ★이것만으로 벽을 향한 전진을 막는다 — 위치 텔레포트 안 함.
+		if isvalid(rb) then
+			local mv = rb.MoveVelocity
+			if (fromLeft and mv.x > 0) or ((fromLeft == false) and mv.x < 0) then rb.MoveVelocity = Vector2(0, mv.y) end
+		end
+		-- ★낙하 보존이 핵심: 매 프레임 SetWorldPosition은 Rigidbody의 낙하/점프 속도 누산기를 리셋해서 '벽에 붙어 슬금슬금
+		--   미끄러짐(점프해서 벽으로 밀면 Y가 천천히 흘러내림)'을 유발한다. 그래서 평상시엔 위치를 건드리지 않는다(중력·점프 그대로).
+		--   단, 속도 상쇄만으로 못 막고 '깊게' 파고든 예외(빠른 진입/텔레포트)에서만 X를 면 바깥으로 스냅한다. 이땐 드물어 낙하 리셋 체감이 없다.
+		if ox > 0.30 then
+			mc:SetWorldPosition(Vector2(nx, tp.y))
+		end
+	end
+
 	method table BuildBlockColliders(Entity map, any grp)
 		-- 맵의 DashBlock 그룹 TriggerComponent 목록 (맵별 캐시). 전체 열거 클램프용. grp.Id로 필터.
 		local list = {}
