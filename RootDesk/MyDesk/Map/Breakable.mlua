@@ -27,7 +27,11 @@ script Breakable extends Component
 	property number DebrisScale = 1.0
 
 	-- 파괴 연출이 보이도록 엔티티 소멸을 이만큼 지연(초). 스프라이트는 즉시 숨김.
+	-- ※ 스테이지 재시작 복구를 위해 이제 엔티티를 삭제하지 않는다(숨김만) → 이 값은 현재 미사용(호환용 유지).
 	property number DestroyDelay = 0.2
+
+	-- 서버: 파괴 시 비운 CustomFoothold edge 백업(재시작 복구용). CFC 없는 오브젝트면 계속 nil.
+	@HideFromInspector property any footholdBackup = nil
 
 	-- 플레이어를 막을지 (솔리드). true면 히트박스에 들어온 로컬 플레이어를 매 프레임 밖으로 밀어낸다(걷기·점프·대시 전부 차단). 부서지면 자동 해제.
 	-- ★ MapleTile 풋홀드 벽은 "지형 체인에 연결"돼야 걷기를 막는데 그건 런타임 생성이 안 됨 → 스크립트 밀어내기로 확실히 막는다.
@@ -85,7 +89,7 @@ script Breakable extends Component
 	end
 
 	method void PushOut(Entity target, any hb, number thw, number thh, number tyoff, boolean allowTop)
-		-- 대상이 히트박스 hb에 겹치면 밖으로 밀어낸다. allowTop=true면 위에서 내려올 때 윗면에 올려세움(발판). ★아래로는 절대 안 밈.
+		-- 대상이 히트박스 hb에 겹치면 밖으로 밀어낸다. allowTop=true면 "위에서 내려온" 경우에만 윗면에 올려세움(발판). ★아래로는 절대 안 밈.
 		local mc = target.MovementComponent
 		if isvalid(mc) == false then return end
 		local tp = target.TransformComponent.WorldPosition
@@ -94,12 +98,28 @@ script Breakable extends Component
 		local ox = (hb.hw + thw) - math.abs(dx)
 		local oy = (hb.hh + thh) - math.abs(dy)
 		if ox <= 0 or oy <= 0 then return end
-		if allowTop and dy > 0 and oy <= ox then
+		-- 윗면 안착은 "발이 박스 상단 위"일 때만 (위에서 내려온 착지). 측면에서 밀 때(발이 상단보다 아래)는 무조건 수평 차단
+		-- → 공중 박스 측면을 밀 때 위로 튕겨 올라가 붙는 버그 방지. feetY = 중심 - 반높이, boxTop = hb.cy + hb.hh.
+		local feetY = (tp.y + tyoff) - thh
+		local landingOnTop = allowTop and dy > 0 and feetY >= (hb.cy + hb.hh - 0.15)
+		if landingOnTop then
 			mc:SetWorldPosition(Vector2(tp.x, hb.cy + hb.hh + thh - tyoff))
 		else
-			local nx = hb.cx - hb.hw - thw
-			if dx >= 0 then nx = hb.cx + hb.hw + thw end
-			mc:SetWorldPosition(Vector2(nx, tp.y))
+			-- 수평 차단. ★매 프레임 SetWorldPosition(nx, tp.y)로 Y까지 고정하면 점프/낙하 속도가 죽어
+			--   공중 박스 옆에서 그대로 "붙어버리는" 버그가 난다(로그: py 고정).
+			--   → (1) 박스로 향하는 수평 입력속도만 상쇄해 침투를 예방하고, (2) 그래도 깊게(빠르게)
+			--   파고든 경우에만 X를 가장자리로 스냅. 가벼운 접촉 프레임엔 순간이동을 안 해 중력/점프가 산다.
+			local rb = target.RigidbodyComponent
+			if isvalid(rb) then
+				local mv = rb.MoveVelocity
+				local intoBox = (dx < 0 and mv.x > 0) or (dx >= 0 and mv.x < 0)
+				if intoBox then rb.MoveVelocity = Vector2(0, mv.y) end
+			end
+			if ox > 0.12 then
+				local nx = hb.cx - hb.hw - thw
+				if dx >= 0 then nx = hb.cx + hb.hw + thw end
+				mc:SetWorldPosition(Vector2(nx, tp.y))
+			end
 		end
 	end
 
@@ -145,11 +165,56 @@ script Breakable extends Component
 			if isvalid(sp) then ruid = sp.SpriteRUID end
 		end
 		self:PlayDebris(Vector3(hb.cx, hb.cy, z), ruid)
-		-- 파괴 가능 벽: CustomFootholdComponent(IsDynamicFoothold=true)가 있으면 부술 때 벽(풋홀드)을 비워 길을 연다.
+		-- 파괴 가능 벽: CustomFootholdComponent가 있으면 edge를 백업 후 비워 길을 연다(재시작 시 복구).
 		local cfc = self.Entity.CustomFootholdComponent
-		if isvalid(cfc) then cfc.edgeLists:Clear() end
-		self.Entity:Destroy(self.DestroyDelay)
+		if isvalid(cfc) then
+			self:BackupFootholds(cfc)
+			cfc.edgeLists:Clear()
+		end
+		-- ★ Destroy 하지 않는다 — 스테이지 재시작 시 Reset()으로 되살리려면 엔티티가 살아있어야 한다.
+		--   시각 제거는 PlayDebris가 스프라이트를 숨겨 처리, 솔리드 차단은 OnUpdate가 IsBroken=true면 자동 해제.
 		log("[Breakable] " .. self.Entity.Name .. " broke by " .. source)
+	end
+
+	@ExecSpace("ServerOnly")
+	method void Reset()
+		-- 스테이지 재시작/진입 시 파괴 상태 복구: 다시 파괴 가능 + 솔리드 차단 부활(OnUpdate) + 스프라이트 재표시 + 풋홀드 복원.
+		if isvalid(self.Entity) == false then return end
+		if self.IsBroken == false then return end
+		self.IsBroken = false
+		local cfc = self.Entity.CustomFootholdComponent
+		if isvalid(cfc) then self:RestoreFootholds(cfc) end
+		self:ShowSprite()
+		log("[Breakable] " .. self.Entity.Name .. " reset (restored)")
+	end
+
+	@ExecSpace("Multicast")
+	method void ShowSprite()
+		-- 전 클라: 파괴 때 숨겼던 스프라이트를 다시 표시.
+		if isvalid(self.Entity) == false then return end
+		local sp = self.Entity.SpriteRendererComponent
+		if isvalid(sp) then sp.Enable = true end
+	end
+
+	method void BackupFootholds(any cfc)
+		-- edgeLists(풋홀드 세그먼트)를 순수 테이블로 1회 백업 (재시작 복원용).
+		if self.footholdBackup ~= nil then return end
+		local backup = {}
+		local segs = cfc.edgeLists:ToTable()
+		for _, seg in ipairs(segs) do
+			local pts = seg:ToTable()
+			if #pts >= 2 then table.insert(backup, { pts[1], pts[2] }) end
+		end
+		self.footholdBackup = backup
+	end
+
+	method void RestoreFootholds(any cfc)
+		-- 백업된 풋홀드 세그먼트를 edgeLists에 재삽입 (현재 비어있을 때만).
+		if self.footholdBackup == nil then return end
+		if cfc.edgeLists.Count > 0 then return end
+		for _, seg in ipairs(self.footholdBackup) do
+			cfc.edgeLists:Add({ seg[1], seg[2] })
+		end
 	end
 
 	@ExecSpace("Multicast")
