@@ -211,6 +211,11 @@ script MetaProgression extends Logic
 		return math.floor(self:GetLevel("immovable") * _MetaConfig.ImmovablePerLevel)
 	end
 
+	method integer GetBonusItemCap()
+		-- 아이템 보관 슬롯 추가(+1/Lv). 총 최대 = _PlayerConfig.BaseMaxItems + 이 값 (물리 슬롯 5개 상한).
+		return math.floor(self:GetLevel("itemcap") * _MetaConfig.ItemCapPerLevel)
+	end
+
 	method number GetManjiBonus()
 		-- 만지 일섬 추가 데미지 배율(+ATK×50%/Lv → 계수 +0.5/Lv). 총 배율 = base + 이 값.
 		return self:GetLevel("manji") * _MetaConfig.ManjiPerLevel

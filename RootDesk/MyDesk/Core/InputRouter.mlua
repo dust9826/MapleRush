@@ -73,6 +73,12 @@ script InputRouter extends Logic
 			self:Emit("debugWarpBoss", self:CursorWorld())
 		elseif event.key == KeyboardKey.Alpha7 and _GameConstants.CheatMode then
 			self:Emit("debugCycleAbility", self:CursorWorld())
+		elseif event.key == KeyboardKey.Alpha4 then
+			-- 아이템 슬롯4 (itemcap 강화로 해금). CheatMode일 땐 위 debugGrant가 먼저 잡으므로 릴리스에서만 발화.
+			self:Emit("item4", self:CursorWorld())
+		elseif event.key == KeyboardKey.Alpha5 then
+			-- 아이템 슬롯5 (itemcap 강화로 해금). CheatMode일 땐 위 debugGrant가 먼저 잡음.
+			self:Emit("item5", self:CursorWorld())
 		end
 	end
 

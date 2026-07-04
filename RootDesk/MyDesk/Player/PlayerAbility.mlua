@@ -351,7 +351,13 @@ script PlayerAbility extends Component
 		local fo = _EffectTable:Offset("ability_spin")
 		local center = Vector3(pos.x + fo.x, pos.y + _GameConstants.PlayerCenterYOffset + fo.y, pos.z)
 		local sc = _EffectTable:Scale("ability_spin")
-		_EffectService:PlayEffect(clip, self.Entity, center, _EffectTable:Rot("ability_spin"), Vector3(sc.x, sc.y, 1), false, _EffectTable:Options("ability_spin"))
+		-- 회전베기 강화(spin 메타)로 판정 반지름이 커지면 이펙트도 같은 비율로 확대 → 판정↔시각 일치.
+		-- 기준 스케일은 base SpinRadius에 맞춰져 있으므로 (현재반지름/base) 배율을 곱한다.
+		local ratio = 1.0
+		if _PlayerConfig.SpinRadius > 0 then
+			ratio = (_PlayerConfig.SpinRadius + _MetaProgression:GetSpinBonus()) / _PlayerConfig.SpinRadius
+		end
+		_EffectService:PlayEffect(clip, self.Entity, center, _EffectTable:Rot("ability_spin"), Vector3(sc.x * ratio, sc.y * ratio, 1), false, _EffectTable:Options("ability_spin"))
 	end
 
 end
