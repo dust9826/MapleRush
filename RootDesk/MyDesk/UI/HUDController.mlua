@@ -344,7 +344,7 @@ script HUDController extends Component
 	method string ItemIcon(string itemId)
 		-- 아이템 종류별 아이콘 RUID. 빈 슬롯("")은 "" 반환 → 아이콘 숨김.
 		if itemId == "rock" then return "9f317ee0b97d44dba5f85fb352aee093"
-		elseif itemId == "flash" then return "bb183c305c274a1da619165665255b9f"
+		elseif itemId == "flash" then return "2470d182e8524171965ce4e1db95f2d4"
 		elseif itemId == "smoke" then return "dbdbb1b56ae54672ae68ac6882fff6a2"
 		end
 		return ""
