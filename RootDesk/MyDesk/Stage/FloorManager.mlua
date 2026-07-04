@@ -244,6 +244,9 @@ script FloorManager extends Logic
 	method void ClientShowShop()
 		-- 클라: 상점 팝업.
 		_InputRouter:SetContext("Shop")
+		-- 상점 뒤 맵을 로딩화면(일러스트)으로 가림. 상점은 ResetStage를 안 타므로 여기서 켜면
+		-- 유지되고, 상점 나가 보스 스테이지 진입 시 ClientStageReset이 HideLoading으로 끔.
+		_SelectBackdrop:ShowLoading(true)
 		if self.shopUI ~= nil then
 			self.shopUI:Open()
 		else
