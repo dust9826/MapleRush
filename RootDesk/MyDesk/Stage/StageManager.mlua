@@ -85,6 +85,7 @@ script StageManager extends Logic
 			return
 		end
 		_GameStateManager:StartRun()
+		_RunTimer:StartRun()
 		_ShopManager:ResetPrices()
 		_FloorManager:StartGameFlow()
 		log("[StageManager] run started from lobby")
@@ -488,6 +489,8 @@ script StageManager extends Logic
 		self.freshStage = false
 		self.StageActive = true
 		self.combatGraceUntil = _WallClock:ServerNow() + 1.5
+		-- 런 타이머 활성화(전투 스테이지 진입 = 첫 조작가능 순간). shop은 ResetStage를 안 타므로 여기 도달=전투.
+		_RunTimer:SetActive(true)
 		log("[StageManager] ResetStage done: spawned=" .. tostring(self.SpawnedCount))
 	end
 
@@ -519,6 +522,8 @@ script StageManager extends Logic
 		_WallClock:SetServerPaused(false)
 		self.StageActive = false
 		_GameStateManager.RunActive = false
+		-- 런 포기: 타이머만 정지(기록 미제출 — 사망/클리어만 기록, 기획서 §4.3).
+		_RunTimer:StopRun()
 		local map = self:GetMap()
 		if map ~= nil and isvalid(map) then
 			local enemies = map:GetChildComponentsByTypeName("script.EnemyHealth", true)
@@ -644,6 +649,8 @@ script StageManager extends Logic
 			-- 클리어 텀: 마지막 적 처치 후 곧바로 보상 팝업을 띄우지 않고 같은 텀을 둔 뒤 StageClear.
 			-- 즉시 StageActive=false로 중복 클리어/피격 차단 + grace 연장(적 프리즈) + 플레이어 이동 정지.
 			self.StageActive = false
+			-- 마지막 적 처치 = 전투 종료 → 런 타이머 정지(보상/노드/상점/다음스테이지 로딩 동안 미누적).
+			_RunTimer:SetActive(false)
 			self.combatGraceUntil = _WallClock:ServerNow() + _GameConstants.StageEndDelay + 1.5
 			local cp = self:GetPlayer()
 			if cp ~= nil and cp.PlayerComponent ~= nil then self:ClientFreezePlayer(cp.PlayerComponent.UserId) end
@@ -702,6 +709,8 @@ script StageManager extends Logic
 	method void OnPlayerDeath(Entity player)
 		-- 사망 처리: 목숨 1 감소 후 재시작 / 목숨 0에서 사망 시 게임 오버 (player_design §1.4).
 		if self.StageActive == false then return end
+		-- 사망 순간 런 타이머 정지(부활 페이드 동안 미누적; 부활 시 ResetStage가 재활성).
+		_RunTimer:SetActive(false)
 		-- 사망(회귀) 효과음 — 죽은 플레이어 클라에서 1회 재생 (목숨 잔여 무관).
 		local deadPc = player.PlayerComponent
 		if deadPc ~= nil then self:ClientPlayerDeathSfx(deadPc.UserId) end
@@ -748,6 +757,9 @@ script StageManager extends Logic
 		-- 게임 오버: 런 종료 + 진행도 기반 영구 강화 점수 적립 + 클라 게임오버 화면.
 		self.StageActive = false
 		_GameStateManager.RunActive = false
+		-- 런 타이머 종료 + 베스트 기록 판정/저장/리더보드 등록(사망 종료 → bossCleared=false).
+		local runTime = _RunTimer:StopRun()
+		_RecordStorage:SubmitRun(_GameStateManager.CurrentFloor, _FloorManager.NormalsClearedThisFloor, _FloorManager.ShopDoneThisFloor, false, runTime)
 		local score = _GameStateManager.NormalClears + _GameStateManager.BossClears * 3
 		_MetaProgression:AwardScore(score)
 		log("[StageManager] GAME OVER (normalClears=" .. tostring(_GameStateManager.NormalClears) .. " score+" .. tostring(score) .. ")")
@@ -778,6 +790,7 @@ script StageManager extends Logic
 		-- 게임오버/게임클리어 화면에서 재시작.
 		log("[StageManager] run restart requested")
 		_GameStateManager:StartRun()
+		_RunTimer:StartRun()
 		_ShopManager:ResetPrices()
 		_FloorManager:StartGameFlow()
 	end

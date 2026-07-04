@@ -1,0 +1,23 @@
+{
+  "Id": "",
+  "GameId": "",
+  "EntryKey": "directory://4b4a913803e6424d9ec4093d0175fa0b",
+  "ContentType": "x-mod/directory",
+  "Content": "",
+  "Usage": 0,
+  "UsePublish": 1,
+  "UseService": 0,
+  "CoreVersion": "26.5.0.0",
+  "StudioVersion": "0.1.0.0",
+  "DynamicLoading": 0,
+  "ContentProto": {
+    "Use": "Json",
+    "Json": {
+      "entry_id": "directory://4b4a913803e6424d9ec4093d0175fa0b",
+      "name": "Record",
+      "lock": false,
+      "folding": false,
+      "nameEditable": true
+    }
+  }
+}

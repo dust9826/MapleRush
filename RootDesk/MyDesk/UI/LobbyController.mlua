@@ -23,6 +23,18 @@ script LobbyController extends Component
 
 	property ButtonComponent btnRestOk = "0caff84b-c10a-41d0-9f6d-c2a342f626d1"
 
+	-- 베스트 기록판 (중앙 좌측) — 기획서 §5.1. 기록 값은 _RecordStorage @Sync에서, 순위 라인은 리더보드 연동(RT5).
+	property TextComponent recordLineText = "ceab0671-e8eb-4ce1-b14e-1e2e91032c80"
+
+	property TextComponent recordTimeText = "b0c2e9c0-4889-4e40-bf57-35d374a33983"
+
+	property TextComponent recordRankText = "cdfc8a66-b005-435d-b89a-472feb5f789e"
+
+	-- 글로벌 랭킹 TOP N 리스트 본문(여러 줄 1개 텍스트). §8.2 상위 10명 + 내 순위.
+	property TextComponent leaderboardText = "0fc215bb-2662-4d2e-96fa-4eb8b2032df9"
+
+	@HideFromInspector property boolean wasLobbyVisible = false
+
 	property any hStart = nil
 
 	property any hTutorial = nil
@@ -40,6 +52,8 @@ script LobbyController extends Component
 		-- 메인 로비: 부팅 시 서브팝업 숨김 + 버튼 연결. 로비 표시·bgm_title·입력 컨텍스트(Lobby)는 컷씬 종료 시 CutsceneController가 담당.
 		if isvalid(self.restConfirm) then self.restConfirm.Enable = false end
 		if isvalid(self.lobbyRoot) then self.lobbyRoot.Enable = false end
+		-- 리더보드 결과 수신용으로 자기 등록.
+		_RecordStorage.lobbyUI = self
 		self.hStart = self.btnStart.Entity:ConnectEvent(ButtonClickEvent, self.OnStartClick)
 		self.hTutorial = self.btnTutorial.Entity:ConnectEvent(ButtonClickEvent, self.OnTutorialClick)
 		self.hSettings = self.btnSettings.Entity:ConnectEvent(ButtonClickEvent, self.OnSettingsClick)
@@ -107,6 +121,70 @@ script LobbyController extends Component
 	method void OnRestOk(ButtonClickEvent event)
 		-- 안내 확인 → 팝업 닫기 (실제 종료는 ESC / 우상단 시스템 메뉴 담당).
 		self.restConfirm.Enable = false
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnUpdate(number delta)
+		-- 로비 표시 중일 때만: 진입 순간 1회 글로벌 랭킹 조회, 매 프레임 기록판 텍스트 갱신.
+		local visible = isvalid(self.lobbyRoot) and self.lobbyRoot.Enable
+		if visible == false then
+			self.wasLobbyVisible = false
+			return
+		end
+		if self.wasLobbyVisible == false then
+			self.wasLobbyVisible = true
+			-- 로비 진입: 순위/상위10 조회(서버 → ClientReceiveLeaderboard → ShowLeaderboard).
+			if isvalid(self.recordRankText) then self.recordRankText.Text = "글로벌 순위: 조회 중..." end
+			if isvalid(self.leaderboardText) then self.leaderboardText.Text = "불러오는 중..." end
+			_RecordStorage:RequestLeaderboard(10)
+		end
+		self:RefreshRecordBoard()
+	end
+
+	@ExecSpace("ClientOnly")
+	method void RefreshRecordBoard()
+		-- 베스트 기록판 문구 갱신 (기획서 §5.1 케이스별). 순위/리스트는 ShowLeaderboard가 담당.
+		if isvalid(self.recordLineText) == false then return end
+		if _RecordStorage.HasRecord == false then
+			self.recordLineText.Text = "기록 없음 — 첫 도전!"
+			if isvalid(self.recordTimeText) then self.recordTimeText.Text = "" end
+			return
+		end
+		local floor = _RecordStorage.BestFloor
+		local phase = _RecordStorage.BestPhase
+		local label = ""
+		if phase == "boss_cleared" then
+			if floor >= _GameConstants.MaxFloors then
+				label = "전 층 클리어"
+			else
+				label = tostring(floor) .. "층 클리어"
+			end
+		else
+			label = tostring(floor) .. "층 · 스테이지 " .. tostring(_RecordStorage.BestStageInFloor)
+		end
+		self.recordLineText.Text = label
+		if isvalid(self.recordTimeText) then
+			self.recordTimeText.Text = _RecordStorage:FormatBest(_RecordStorage.BestTime)
+		end
+	end
+
+	@ExecSpace("ClientOnly")
+	method void ShowLeaderboard(integer myRank, table rows)
+		-- 서버가 보낸 내 순위 + 상위 리스트 표시(§8.2). rows = 표시용 행 문자열 배열.
+		if isvalid(self.recordRankText) then
+			if myRank > 0 then
+				self.recordRankText.Text = "글로벌 순위: #" .. tostring(myRank)
+			else
+				self.recordRankText.Text = "글로벌 순위: 미등록"
+			end
+		end
+		if isvalid(self.leaderboardText) then
+			if rows == nil or #rows == 0 then
+				self.leaderboardText.Text = "아직 랭킹 데이터가 없습니다."
+			else
+				self.leaderboardText.Text = table.concat(rows, "\n")
+			end
+		end
 	end
 
 end

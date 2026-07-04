@@ -1,0 +1,77 @@
+@Logic
+script RunTimer extends Logic
+
+	-- 런 경과 타이머. "순수 전투 시간"만 누적한다(테마/노드/상점/맵전환/ESC 정지는 제외).
+	-- WallClock:ServerNow()(ESC 정지가 자동 제외됨) 위에 얹고, 비전투 구간은 Active 토글로 게이팅.
+	-- 서버 권위. HUD 라이브 표시는 클라가 WallClock:Now() 세그먼트로 미러한다.
+	-- 규칙: docs/record_and_run_timer_design_doc.md §4. delta 누산 금지 — 스냅샷 차분만 사용.
+
+	@Sync property boolean Running = false       -- 런 진행 중(시작~종료)
+	@Sync property boolean Active = false         -- 실제 누적 중(전투 활성 & 비정지)
+	@Sync property number Accumulated = 0.0       -- 마지막 정지까지 확정된 전투 초
+
+	property number segStart = 0.0                -- 서버: Active 재개 시점 ServerNow 스냅샷
+	property number clientSegStart = 0.0          -- 클라: Active=true 통지 시점 Now 스냅샷
+
+	@ExecSpace("ServerOnly")
+	method void StartRun()
+		-- 런 시작(로비 '구하러 가기' → 서버). 누적 0으로 초기화. Active는 첫 전투 스테이지 진입 때 켜진다.
+		self.Running = true
+		self.Active = false
+		self.Accumulated = 0.0
+		self.segStart = 0.0
+		log("[RunTimer] run started (accum reset)")
+	end
+
+	@ExecSpace("ServerOnly")
+	method void SetActive(boolean on)
+		-- 전투 활성/비활성 게이팅. on=true 진입 시 세그 시작, false 시 세그를 누적에 커밋. 런 미진행/동일상태는 무시.
+		if self.Running == false then return end
+		if on == self.Active then return end
+		if on then
+			self.segStart = _WallClock:ServerNow()
+			self.Active = true
+		else
+			self.Accumulated = self.Accumulated + (_WallClock:ServerNow() - self.segStart)
+			self.Active = false
+		end
+	end
+
+	@ExecSpace("ServerOnly")
+	method number StopRun()
+		-- 런 종료(사망/최종 클리어). 진행 중 세그를 커밋한 뒤 정지. 최종 누적 초를 반환(기록 판정용).
+		if self.Running == false then return self.Accumulated end
+		if self.Active then
+			self.Accumulated = self.Accumulated + (_WallClock:ServerNow() - self.segStart)
+			self.Active = false
+		end
+		self.Running = false
+		log("[RunTimer] run stopped: elapsed=" .. tostring(self.Accumulated))
+		return self.Accumulated
+	end
+
+	method number ServerElapsed()
+		-- 서버 기준 현재 경과 초(누적 + 진행 중 세그). 스테이지별 기록 스탬프용.
+		if self.Running and self.Active then
+			return self.Accumulated + (_WallClock:ServerNow() - self.segStart)
+		end
+		return self.Accumulated
+	end
+
+	method number ClientElapsed()
+		-- 클라 HUD 표시용 경과 초. Active 세그는 클라 WallClock:Now()로 미러(ESC 정지 자동 제외).
+		if self.Running and self.Active then
+			return self.Accumulated + (_WallClock:Now() - self.clientSegStart)
+		end
+		return self.Accumulated
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnSyncProperty(string name, any value)
+		-- Active가 true로 동기화되는 순간 클라 세그 시작점을 스냅샷(라이브 표시 기준).
+		if name == "Active" and value == true then
+			self.clientSegStart = _WallClock:Now()
+		end
+	end
+
+end
