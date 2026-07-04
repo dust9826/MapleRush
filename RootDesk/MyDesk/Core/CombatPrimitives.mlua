@@ -909,6 +909,48 @@ script CombatPrimitives extends Logic
 		end
 	end
 
+	method boolean PointInWall(Entity map, number px, number py)
+		-- 점 (px,py)가 DashBlock 벽 OBB 안에 있는지. 2단계 앵커(방향 정지)용.
+		if isvalid(map) == false then return false end
+		local grp = CollisionGroups[_GameConstants.DashBlockGroup]
+		if grp == nil then return false end
+		if self.blockColliderCacheMapName ~= map.Name then
+			self.blockColliderCache = self:BuildBlockColliders(map, grp)
+			self.blockColliderCacheMapName = map.Name
+		end
+		local cols = self.blockColliderCache
+		if cols == nil then return false end
+		for _, tc in ipairs(cols) do
+			if isvalid(tc) and isvalid(tc.Entity) then
+				local bs = tc.BoxSize
+				if bs.x > 0 and bs.y > 0 then
+					local e = tc.Entity
+					local tf = e.TransformComponent
+					local cp = tf.WorldPosition
+					local sc = tf.Scale
+					local off = tc.ColliderOffset
+					local a = math.rad(tf.WorldZRotation)
+					local ca = math.cos(a)
+					local sa = math.sin(a)
+					local oxw = off.x * sc.x
+					local oyw = off.y * sc.y
+					local cx = cp.x + (oxw * ca - oyw * sa)
+					local cyw = cp.y + (oxw * sa + oyw * ca)
+					local halfW = bs.x * math.abs(sc.x) * 0.5
+					local halfH = bs.y * math.abs(sc.y) * 0.5
+					local rx = px - cx
+					local ry = py - cyw
+					local lx = rx * ca + ry * sa
+					local ly = -rx * sa + ry * ca
+					if lx > -halfW and lx < halfW and ly > -halfH and ly < halfH then
+						return true
+					end
+				end
+			end
+		end
+		return false
+	end
+
 	method table BuildBlockColliders(Entity map, any grp)
 		-- 맵의 DashBlock 그룹 TriggerComponent 목록 (맵별 캐시). 전체 열거 클램프용. grp.Id로 필터.
 		local list = {}
