@@ -153,6 +153,8 @@ script TutorialManager extends Logic
 	@ExecSpace("Client")
 	method void ClientTutorialReady()
 		-- 클라: 튜토리얼 맵 도착 → 전투 입력 컨텍스트 + 이동 컨트롤러 활성 + 타임스케일 정상.
+		-- 로비 배경 로딩화면(EndCutscene에서 켜짐)을 여기서 끔 — 이게 없으면 튜토리얼 맵이 일러스트에 가려짐.
+		_SelectBackdrop:HideLoading()
 		_UtilLogic:SetClientTimeScale(1.0)
 		local player = _UserService.LocalPlayer
 		if player ~= nil and isvalid(player) then
@@ -175,6 +177,8 @@ script TutorialManager extends Logic
 		end
 		local lobby = _EntityService:GetEntityByPath("/ui/LobbyGroup/Root")
 		if lobby ~= nil then lobby.Enable = true end
+		-- 로비 복귀 시 일러스트 배경 다시 깔기(첫 로비와 일관). TIP 없음.
+		_SelectBackdrop:ShowLoading(false)
 		_InputRouter:SetContext("Lobby")
 		_SoundManager:PlayBGMKey("bgm_title")
 		log("[TutorialManager] -> title (" .. reason .. ")")
