@@ -1,0 +1,291 @@
+@Logic
+script RecordStorage extends Logic
+
+	-- 베스트 기록(도달 층·층내 진행도·누적 시간) 영속 + 리더보드용 단일 정수 인코딩.
+	-- UserDataStorage 영속(MetaProgression 패턴). 서버 권위. 로비 기록판/HUD 이전기록은 @Sync로 클라 노출.
+	-- 규칙: docs/record_and_run_timer_design_doc.md §3(비교), §6(스키마/인코딩). 솔로 런 전제(GameStateManager와 동일 가정).
+
+	-- ===== 클라 노출 베스트 (@Sync) =====
+	@Sync property boolean HasRecord = false
+	@Sync property integer BestFloor = 0            -- 도달 최대 층
+	@Sync property integer BestStageInFloor = 0     -- 해당 층 내 클리어한 일반 스테이지 수
+	@Sync property string BestPhase = ""            -- "normal" | "shop" | "boss_cleared"
+	@Sync property number BestTime = 0.0            -- 위 진행도 도달까지 최소 누적 시간(초)
+	-- 스테이지별 이전 최고 시간(HUD 이전기록 라인). key "floor-progress" -> 초.
+	@Sync property SyncTable<string, number> StageBests
+
+	-- ===== 서버 전용 상태 =====
+	property string ownerUserId = ""
+	property boolean loaded = false
+	property integer bestScore = 0
+	property integer totalRuns = 0
+	property any stageCache = nil                   -- 서버 직렬화 소스(plain table). StageBests(@Sync)로 미러.
+
+	-- 클라: 로비 컨트롤러 참조(리더보드 결과 전달용). LobbyController가 OnBeginPlay에서 등록.
+	@HideFromInspector property any lobbyUI = nil
+
+	-- 인코딩 밴드 (기획서 §6.3). TIME_MAX = 10^8 센티초 상한.
+	property integer TIME_MAX = 100000000
+
+	method void EnsureCache()
+		-- stageCache lazy 초기화(LoadFor가 OnBeginPlay보다 먼저 불려도 안전).
+		if self.stageCache == nil then self.stageCache = {} end
+	end
+
+	@ExecSpace("ServerOnly")
+	method void LoadFor(string userId)
+		-- 유저 입장 시 1회 로드(캐시 우선, datastorage.md §4.1). blob 1키("user_best_record")로 저장.
+		if self.loaded and self.ownerUserId == userId then return end
+		self.ownerUserId = userId
+		self:EnsureCache()
+		---@type UserDataStorage
+		local storage = _DataStorageService:GetUserDataStorage(userId)
+		local err, raw = storage:GetAndWait("user_best_record")
+		if err == 0 and raw ~= nil and raw ~= "" then
+			local rec = _UtilLogic:StringToTable(raw)
+			if rec ~= nil then
+				self:ApplyRecord(rec)
+			else
+				self:ResetRecord()
+			end
+		else
+			self:ResetRecord()
+		end
+		self.loaded = true
+		log("[RecordStorage] loaded: hasRecord=" .. tostring(self.HasRecord) .. " floor=" .. tostring(self.BestFloor) .. " prog=" .. tostring(self.BestStageInFloor) .. " time=" .. tostring(self.BestTime) .. " score=" .. tostring(self.bestScore) .. " (err=" .. tostring(err) .. ")")
+	end
+
+	@ExecSpace("ServerOnly")
+	method void ResetRecord()
+		-- 기록 없음 상태로 초기화.
+		self.HasRecord = false
+		self.BestFloor = 0
+		self.BestStageInFloor = 0
+		self.BestPhase = ""
+		self.BestTime = 0.0
+		self.bestScore = 0
+		self.totalRuns = 0
+		self.stageCache = {}
+		-- StageBests(@Sync)는 세션 시작 시 비어 있고 로드는 유저당 1회 → 별도 clear 불필요(솔로 전제).
+	end
+
+	@ExecSpace("ServerOnly")
+	method void ApplyRecord(any rec)
+		-- 로드된 blob 테이블을 @Sync 프로퍼티 + stageCache/StageBests에 반영.
+		self.bestScore = math.floor(tonumber(rec.bestScore) or 0)
+		self.HasRecord = self.bestScore > 0
+		self.BestFloor = math.floor(tonumber(rec.maxFloor) or 0)
+		self.BestStageInFloor = math.floor(tonumber(rec.maxStageInFloor) or 0)
+		self.BestPhase = tostring(rec.bestFloorPhase or "")
+		self.BestTime = tonumber(rec.bestTime) or 0.0
+		self.totalRuns = math.floor(tonumber(rec.totalRuns) or 0)
+		self.stageCache = {}
+		if rec.stageRecords ~= nil then
+			for k, v in pairs(rec.stageRecords) do
+				local key = tostring(k)
+				local val = tonumber(v) or 0.0
+				self.stageCache[key] = val
+				self.StageBests[key] = val
+			end
+		end
+	end
+
+	method integer ComputeStageProgress(integer normalsCleared, boolean shopDone, boolean bossCleared)
+		-- 층 내 진행 순번 단조 인코딩(기획서 §8.1 제안): normals*2 + shop + boss*100.
+		local p = normalsCleared * 2
+		if shopDone then p = p + 1 end
+		if bossCleared then p = p + 100 end
+		return p
+	end
+
+	method integer EncodeScore(integer floor, integer stageProgress, number timeSec)
+		-- (층, 진행도, 시간) → 단일 정수(기획서 §6.3). 층↑ > 진행도↑ > 시간↓ 순.
+		local centis = math.floor(timeSec * 100)
+		if centis < 0 then centis = 0 end
+		if centis > self.TIME_MAX - 1 then centis = self.TIME_MAX - 1 end
+		return floor * 100000000000 + stageProgress * 100000000 + (self.TIME_MAX - centis)
+	end
+
+	method integer DecodeFloor(integer score)
+		-- 인코딩 점수에서 층 복원(리더보드 타 유저 표시용).
+		return score // 100000000000
+	end
+
+	method number DecodeTime(integer score)
+		-- 인코딩 점수에서 누적 시간(초) 복원.
+		local rem = score % 100000000000
+		local band = rem % 100000000
+		local centis = self.TIME_MAX - band
+		return centis / 100.0
+	end
+
+	@ExecSpace("ServerOnly")
+	method void StampStage(integer floor, integer progressAfterClear, number elapsed)
+		-- 스테이지 클리어 시점 누적시간을 (층-진행도) 키로 최소값 기록(HUD 이전기록 라인용). 인메모리만, 런 종료 때 flush.
+		self:EnsureCache()
+		local key = tostring(floor) .. "-" .. tostring(progressAfterClear)
+		local prev = self.stageCache[key]
+		if prev == nil or elapsed < prev then
+			self.stageCache[key] = elapsed
+			self.StageBests[key] = elapsed
+		end
+	end
+
+	@ExecSpace("ServerOnly")
+	method boolean SubmitRun(integer floor, integer normalsCleared, boolean shopDone, boolean bossCleared, number elapsed)
+		-- 런 종료(사망/클리어) 시 신기록 판정 + 저장 + 리더보드 등록(기획서 §6.4). 신기록이면 true.
+		self.totalRuns = self.totalRuns + 1
+		local progress = self:ComputeStageProgress(normalsCleared, shopDone, bossCleared)
+		local score = self:EncodeScore(floor, progress, elapsed)
+		local isNew = score > self.bestScore
+		if isNew then
+			self.bestScore = score
+			self.HasRecord = true
+			self.BestFloor = floor
+			self.BestStageInFloor = normalsCleared
+			if bossCleared then
+				self.BestPhase = "boss_cleared"
+			elseif shopDone then
+				self.BestPhase = "shop"
+			else
+				self.BestPhase = "normal"
+			end
+			self.BestTime = elapsed
+			log("[RecordStorage] NEW RECORD floor=" .. tostring(floor) .. " prog=" .. tostring(progress) .. " time=" .. tostring(elapsed) .. " score=" .. tostring(score))
+			self:SubmitToLeaderboard(score)
+		else
+			log("[RecordStorage] run submitted (not a record): floor=" .. tostring(floor) .. " prog=" .. tostring(progress) .. " score=" .. tostring(score) .. " best=" .. tostring(self.bestScore))
+		end
+		self:Persist()
+		return isNew
+	end
+
+	@ExecSpace("ServerOnly")
+	method void Persist()
+		-- blob 1키 저장(이벤트 드리븐 — 런 종료 시 1회). value ≤ 4KB 목표(datastorage.md).
+		if self.ownerUserId == "" then return end
+		self:EnsureCache()
+		local sr = {}
+		for k, v in pairs(self.stageCache) do
+			sr[k] = v
+		end
+		local rec = {
+			maxFloor = self.BestFloor,
+			maxStageInFloor = self.BestStageInFloor,
+			bestFloorPhase = self.BestPhase,
+			bestTime = self.BestTime,
+			bestScore = self.bestScore,
+			totalRuns = self.totalRuns,
+			stageRecords = sr,
+		}
+		local blob = _UtilLogic:TableToString(rec)
+		---@type UserDataStorage
+		local storage = _DataStorageService:GetUserDataStorage(self.ownerUserId)
+		storage:SetAsync("user_best_record", blob, function(errorCode, value)
+			if errorCode ~= 0 then log_warning("[RecordStorage] save failed (err=" .. tostring(errorCode) .. ")") end
+		end)
+	end
+
+	@ExecSpace("ServerOnly")
+	method void SubmitToLeaderboard(integer score)
+		-- 글로벌 리더보드 등록(ranking-basic-package). 신기록일 때만 호출 → force=false 안전.
+		-- tag=닉네임(§8.2 표시용). 시간은 score에서 디코드하므로 tag에 시간 불필요.
+		if self.ownerUserId == "" then return end
+		if _RankingDataStorageLogic.IsInit == false then
+			log_warning("[RecordStorage] leaderboard not init — submit skipped")
+			return
+		end
+		local player = _UserService:GetUserEntityByUserId(self.ownerUserId)
+		if player == nil or isvalid(player) == false then return end
+		local pc = player.PlayerComponent
+		if isvalid(pc) == false then return end
+		local profileCode = pc.ProfileCode
+		if profileCode == nil or profileCode == "" then
+			log_warning("[RecordStorage] leaderboard submit skipped — ProfileCode 없음(신기록 미등록)")
+			return
+		end
+		local tag = pc.Nickname
+		if tag == nil then tag = "" end
+		local cycleIndex = _RankingDataStorageLogic.ConfigData:GetCycleIndex(_DateTimeLogic:GetTimeElapsed())
+		local ok = _RankingDataStorageLogic:SetScoreAndWait(cycleIndex, profileCode, score, tag, false)
+		log("[RecordStorage] leaderboard submit score=" .. tostring(score) .. " tag=" .. tag .. " ok=" .. tostring(ok))
+		if ok then
+			-- ★ 등록 직후 랭킹 테이블 재빌드 + 캐시 클리어. 안 하면 방금 점수가 다음 갱신주기(기본 30분)/캐시(10분)까지
+			--   상위N 리스트·내 순위에 반영 안 됨(=로비에서 '등록 안 된 것처럼' 보임). 신기록 시에만 호출이라 비용 미미.
+			_RankingDataStorageLogic:UpdateDataTable()
+			_RankingDataCacheLogic:Clear()
+		end
+	end
+
+	@ExecSpace("Server")
+	method void RequestLeaderboard(integer topN)
+		-- 로비(클라) 요청 → 내 순위 + 상위 topN 조회 → 클라로 푸시(§8.2).
+		if _RankingDataStorageLogic.IsInit == false then return end
+		local player = _UserService:GetUserEntityByUserId(senderUserId)
+		if player == nil or isvalid(player) == false then return end
+		local pc = player.PlayerComponent
+		if isvalid(pc) == false then return end
+		local profileCode = pc.ProfileCode
+		if profileCode == nil or profileCode == "" then
+			-- ProfileCode 미확정: 빈 결과로 응답(로비가 '조회 중'에서 벗어나도록).
+			self:ClientReceiveLeaderboard(0, {}, senderUserId)
+			return
+		end
+		local cycleIndex = _RankingDataStorageLogic.ConfigData:GetCycleIndex(_DateTimeLogic:GetTimeElapsed())
+		-- 내 순위
+		local myRank = 0
+		local myData = _RankingDataCacheLogic:GetMyRankingDataAndWait(profileCode, cycleIndex)
+		if myData ~= nil then myRank = myData.Rank end
+		-- 상위 topN → 표시용 행 문자열 배열(RPC는 table). 시간/층은 score 디코드.
+		local validPageNo = _RankingDataStorageLogic:GetValidPageNo(1, topN)
+		local list = _RankingDataStorageLogic:GetRankingDataList(validPageNo, topN)
+		local rows = {}
+		for i = 1, #list do
+			---@type RankingData
+			local d = list[i]
+			local flr = self:DecodeFloor(d.Score)
+			local timeStr = self:FormatBest(self:DecodeTime(d.Score))
+			local name = d.Tag
+			if name == nil or name == "" then name = "익명" end
+			rows[i] = tostring(d.Rank) .. ".  " .. name .. "   " .. tostring(flr) .. "층  " .. timeStr
+		end
+		self:ClientReceiveLeaderboard(myRank, rows, senderUserId)
+	end
+
+	@ExecSpace("Client")
+	method void ClientReceiveLeaderboard(integer myRank, table rows)
+		-- 클라: 등록된 로비 컨트롤러에 전달(§5.1 순위 라인 + 상위 리스트).
+		if self.lobbyUI ~= nil and isvalid(self.lobbyUI) then
+			---@type LobbyController
+			local lc = self.lobbyUI
+			lc:ShowLeaderboard(myRank, rows)
+		end
+	end
+
+	method string FormatBest(number sec)
+		-- MM:SS.CC (1시간 초과 시 HH:MM:SS.CC). 기획서 §3.4 베스트 표시.
+		local total = math.floor(sec * 100 + 0.5)
+		local cc = total % 100
+		local totalSec = (total - cc) // 100
+		local s = totalSec % 60
+		local m = (totalSec // 60) % 60
+		local h = totalSec // 3600
+		if h > 0 then
+			return string.format("%d:%02d:%02d.%02d", h, m, s, cc)
+		end
+		return string.format("%02d:%02d.%02d", m, s, cc)
+	end
+
+	method string FormatClock(number sec)
+		-- MM:SS (1시간 초과 시 HH:MM:SS). 기획서 §3.4 인게임 표시(매초 갱신).
+		local totalSec = math.floor(sec)
+		local s = totalSec % 60
+		local m = (totalSec // 60) % 60
+		local h = totalSec // 3600
+		if h > 0 then
+			return string.format("%d:%02d:%02d", h, m, s)
+		end
+		return string.format("%02d:%02d", m, s)
+	end
+
+end

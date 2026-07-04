@@ -252,6 +252,9 @@ script FloorManager extends Logic
 	method void RequestLeaveShop()
 		-- 상점 나가기 → 보스 노드 (stage_design §2.4.2).
 		self.ShopDoneThisFloor = true
+		-- 상점 완료 진행도 스탬프: HUD '이전 기록' 라인의 조회 키(shop 비트 포함)와 스탬프 키를 일치시킨다.
+		--   (상점은 전투 종료로 진행 안 되므로 OnStageRewardDone을 안 타 스탬프가 누락됐던 지점.)
+		_RecordStorage:StampStage(_GameStateManager.CurrentFloor, _RecordStorage:ComputeStageProgress(self.NormalsClearedThisFloor, true, false), _RunTimer:ServerElapsed())
 		log("[FloorManager] shop left -> boss node")
 		self:NextNode()
 	end
@@ -275,6 +278,14 @@ script FloorManager extends Logic
 	@ExecSpace("ServerOnly")
 	method void OnStageRewardDone(string stageType)
 		-- 보상 수령 완료 후 진행 (StageManager.RequestProceedNext가 호출).
+		-- 스테이지별 이전기록 스탬프(HUD '이전 기록' 라인): 이번 클리어로 도달한 진행도 + 현재 경과시간(전투 종료 시점 고정).
+		local stampProgress = 0
+		if stageType == "boss" then
+			stampProgress = _RecordStorage:ComputeStageProgress(self.NormalsClearedThisFloor, self.ShopDoneThisFloor, true)
+		else
+			stampProgress = _RecordStorage:ComputeStageProgress(self.NormalsClearedThisFloor + 1, self.ShopDoneThisFloor, false)
+		end
+		_RecordStorage:StampStage(_GameStateManager.CurrentFloor, stampProgress, _RunTimer:ServerElapsed())
 		if stageType == "boss" then
 			if _GameStateManager.CurrentFloor >= _GameConstants.MaxFloors then
 				self:GameClear()
@@ -322,6 +333,9 @@ script FloorManager extends Logic
 		-- 전층 클리어: 게임 클리어 화면 + 영구 강화 점수 (Phase 7).
 		self.PhaseName = "clear"
 		_GameStateManager.RunActive = false
+		-- 런 타이머 종료 + 베스트 기록(최종 클리어 → bossCleared=true = 전 층 클리어).
+		local runTime = _RunTimer:StopRun()
+		_RecordStorage:SubmitRun(_GameStateManager.CurrentFloor, self.NormalsClearedThisFloor, self.ShopDoneThisFloor, true, runTime)
 		local score = _GameStateManager.NormalClears + _GameStateManager.BossClears * 3
 		log("[FloorManager] GAME CLEAR! score=" .. tostring(score))
 		_MetaProgression:AwardScore(score)
