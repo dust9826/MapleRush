@@ -270,37 +270,26 @@ script HUDController extends Component
 
 	@ExecSpace("ClientOnly")
 	method void UpdateAbility(PlayerAbility ability)
-		-- 능력 라벨 갱신 + 사용 감지 시 중앙 "⚡ 능력명 사용!" 플래시 (1.2s). #6(MR-I) 이식.
+		-- 능력을 텍스트 대신 아이콘으로 표시(사용 가능=기본 / 사용횟수 0=비활성 아이콘). 능력 없으면 아이콘 숨김.
 		local id = ability.AbilityId
 		local uses = ability.UsesLeft
-		-- 표시명.
-		local label = "능력 없음"
-		if id == "invincible" then
-			label = "무적"
-		elseif id == "clearProjectiles" then
-			label = "투사체 무효"
-		elseif id == "immovable" then
-			label = "부동심"
-		elseif id == "manji" then
-			label = "만지 일섬"
-		elseif id == "spin" then
-			label = "회전베기"
-		elseif id ~= "" then
-			label = id
-		end
 		self.prevAbilityUses = uses
-		-- 우측 버튼 라벨.
-		if isvalid(self.abilityBtnText) then
-			if id == "" then
-				self.abilityBtnText.Text = "능력 없음"
-			else
-				self.abilityBtnText.Text = label .. " (" .. tostring(uses) .. ")"
-			end
+		-- 라벨 텍스트 제거(아이콘으로 대체).
+		if isvalid(self.abilityBtnText) then self.abilityBtnText.Text = "" end
+		if isvalid(self.abilityCenterText) then self.abilityCenterText.Text = "" end
+		-- 능력 버튼 아이콘 갱신.
+		if isvalid(self.abilityBtnText) == false then return end
+		local ico = self.abilityBtnText.Entity:GetChildByName("Ico")
+		if isvalid(ico) == false then return end
+		if id == "" then
+			ico.Enable = false
+			return
 		end
-		-- 능력 사용 중앙 "⚡ 능력명 사용!" 플래시 제거(사용자 요청) — 항상 빈 텍스트 유지.
-		if isvalid(self.abilityCenterText) then
-			self.abilityCenterText.Text = ""
-		end
+		ico.Enable = true
+		local ir = self:AbilityIcon(id, uses > 0)
+		if ir == "" then return end
+		local isr = ico.SpriteGUIRendererComponent
+		if isvalid(isr) and (isr.ImageRUID == nil or isr.ImageRUID.DataId ~= ir) then isr.ImageRUID = DataRef(ir) end
 	end
 
 	@ExecSpace("ClientOnly")
@@ -314,7 +303,19 @@ script HUDController extends Component
 			return
 		end
 		if isvalid(card) then card.Enable = true end
-		text.Text = self:ItemLabel(itemId)
+		-- 라벨 텍스트 대신 아이템 아이콘 표시. 빈 슬롯이면 아이콘 숨김.
+		text.Text = ""
+		local ico = card:GetChildByName("Ico")
+		if isvalid(ico) then
+			local ir = self:ItemIcon(itemId)
+			if ir == "" then
+				ico.Enable = false
+			else
+				ico.Enable = true
+				local isr = ico.SpriteGUIRendererComponent
+				if isvalid(isr) and (isr.ImageRUID == nil or isr.ImageRUID.DataId ~= ir) then isr.ImageRUID = DataRef(ir) end
+			end
+		end
 		local sprite = card.SpriteGUIRendererComponent
 		if isvalid(sprite) then
 			if active then
@@ -337,6 +338,34 @@ script HUDController extends Component
 		elseif itemId == "flash" then return "섬광"
 		end
 		return "-"
+	end
+
+	@ExecSpace("ClientOnly")
+	method string ItemIcon(string itemId)
+		-- 아이템 종류별 아이콘 RUID. 빈 슬롯("")은 "" 반환 → 아이콘 숨김.
+		if itemId == "rock" then return "9f317ee0b97d44dba5f85fb352aee093"
+		elseif itemId == "flash" then return "bb183c305c274a1da619165665255b9f"
+		elseif itemId == "smoke" then return "dbdbb1b56ae54672ae68ac6882fff6a2"
+		end
+		return ""
+	end
+
+	@ExecSpace("ClientOnly")
+	method string AbilityIcon(string id, boolean usable)
+		-- 능력별 아이콘 RUID. usable=true→기본, false(사용횟수 0 등)→비활성 아이콘.
+		if id == "invincible" then
+			if usable then return "c1ad0196beed412cad77cce63d75fea8" else return "cd268905acec4ed4a7ba988c1c890245" end
+		elseif id == "clearProjectiles" then
+			-- 참공: 기본 아이콘 미제공 → 마우스오버 아이콘을 기본으로 대용.
+			if usable then return "8bf6011177e7458fb4e536ccc312104d" else return "440b5586b8ff4062b1d7cb04c4c53ab4" end
+		elseif id == "immovable" then
+			if usable then return "4b190775131740bfa2def611eb34c3f5" else return "b9779b8a88a1421bb83d4c357fea47ff" end
+		elseif id == "manji" then
+			if usable then return "4c316227ade8479eb7cb1c03566f2676" else return "72e38d824ac04a75ac053e92612cb36b" end
+		elseif id == "spin" then
+			if usable then return "55aadc0ec19b4124a0cca1eb7a4056fa" else return "2e815a776c4a4a28974c0bd9208d8c75" end
+		end
+		return ""
 	end
 
 end
