@@ -14,6 +14,10 @@ script Projectile extends Component
 	-- enemy / player (반사 후 player로 전환)
 	property string OwnerSide = "enemy"
 
+	-- 발사한 적 엔티티 이름(서버, 발사부가 태깅). 그 적이 죽는 순간 자기 탄을 소멸시키는 데 사용
+	-- ("이미 죽은 몬스터의 탄"에 맞아 죽는 러브샷 방지). ""=미태깅(플레이어 아이템 등)이면 사망 소멸 대상 아님.
+	property string OwnerName = ""
+
 	property boolean Launched = false
 
 	-- 투사체 비주얼 이펙트 key(EffectTable). 서버가 스폰 직후 설정 → 클라가 부착 루프로 재생 + 기본 스프라이트 숨김.
@@ -176,7 +180,10 @@ script Projectile extends Component
 								---@type PlayerHit
 								local hitComp = u:GetComponent("script.PlayerHit")
 								if hitComp ~= nil then
-									hitComp:RequestHit("projectile")
+									-- 사수 엔티티(OwnerName로 조회)를 넘겨 러브샷 유예 판정에 사용 — 소멸 수정과 이중 커버.
+									local owner = nil
+									if self.OwnerName ~= "" then owner = map:GetChildByName(self.OwnerName, true) end
+									hitComp:RequestHit("projectile", owner)
 								end
 								e:Destroy()
 								return

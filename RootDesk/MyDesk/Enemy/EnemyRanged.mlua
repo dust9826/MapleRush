@@ -245,6 +245,8 @@ script EnemyRanged extends Component
 		---@type Projectile
 		local comp = proj:GetComponent("script.Projectile")
 		if comp ~= nil then
+			-- 소유자 태깅: 이 적이 죽으면 EnemyHealth.Die가 이 탄을 소멸(사후 명중 러브샷 방지).
+			comp.OwnerName = self.Entity.Name
 			comp:LaunchDir(dir.x, dir.y, self.ProjectileParryable)
 			log("[EnemyRanged] " .. self.Entity.Name .. " fired projectile dir=(" .. string.format("%.2f", dir.x) .. "," .. string.format("%.2f", dir.y) .. ")")
 		end

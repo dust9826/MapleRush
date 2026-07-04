@@ -24,7 +24,7 @@
           "enable": true,
           "visible": true,
           "localize": true,
-          "displayOrder": 8,
+          "displayOrder": 9,
           "pathConstraints": "//",
           "revision": 1,
           "origin": {
@@ -96,7 +96,7 @@
             {
               "@type": "MOD.Core.UIGroupComponent",
               "DefaultShow": false,
-              "GroupOrder": 8,
+              "GroupOrder": 9,
               "GroupType": 1,
               "Enable": true
             },
@@ -147,11 +147,11 @@
               },
               "MobileOnly": false,
               "OffsetMax": {
-                "x": 220.724152,
+                "x": 220.724091,
                 "y": 200.0
               },
               "OffsetMin": {
-                "x": -220.724213,
+                "x": -220.724152,
                 "y": -200.0
               },
               "Pivot": {
