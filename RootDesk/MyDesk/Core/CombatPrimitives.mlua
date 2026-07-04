@@ -156,6 +156,56 @@ script CombatPrimitives extends Logic
 		return count
 	end
 
+	@ExecSpace("ServerOnly")
+	method integer TryParryOBB(Entity mapEntity, number cx, number cy, number hw, number hh, number angRad, number reflectDamage)
+		-- TryParry의 회전 박스(OBB) 버전 — 커서 방향 평타. 판정만 OBB로 바꾸고 윈도우/그로기/반사 로직은 TryParry와 동일.
+		local count = 0
+		local now = _WallClock:ServerNow()
+		local parryLead = _GameConstants.ParryWindowLead
+		local parryTrail = _GameConstants.ParryWindowTrail
+		if self.activeAttacks ~= nil then
+			for _, rec in ipairs(self.activeAttacks) do
+				if rec.canceled == false and rec.parryable and self:OBBAABBOverlap(cx, cy, hw, hh, angRad, rec.center.x, rec.center.y, rec.hw, rec.hh) then
+					if now >= rec.hitAt - parryLead and now <= rec.hitAt + parryTrail then
+						rec.canceled = true
+						count += 1
+						self:BroadcastCancel(mapEntity, rec.id)
+						log("[CombatPrimitives] melee attack PARRIED (id=" .. tostring(rec.id) .. ", dt=" .. tostring(now - rec.hitAt) .. ")")
+						if rec.bossEntityId ~= nil and mapEntity ~= nil then
+							local bossEntity = mapEntity:GetChildByName(rec.bossEntityId, true)
+							if isvalid(bossEntity) then
+								---@type GroggyGauge
+								local gg = bossEntity:GetComponent("script.GroggyGauge")
+								if gg ~= nil then
+									gg:Charge(_GameStateManager.AttackStat * _GameConstants.GroggyParryMult, "parry")
+								end
+							end
+						end
+					else
+						log("[CombatPrimitives] melee parry MISTIMED (id=" .. tostring(rec.id) .. ", dt=" .. tostring(now - rec.hitAt) .. ")")
+					end
+				end
+			end
+		end
+		if mapEntity ~= nil then
+			local list = mapEntity:GetChildComponentsByTypeName("script.Projectile", true)
+			for _, compAny in ipairs(list) do
+				---@type Projectile
+				local comp = compAny
+				local e = comp.Entity
+				if isvalid(e) and comp.OwnerSide == "enemy" and comp.Parryable == true then
+					local p = e.TransformComponent.WorldPosition
+					if self:OBBCircleOverlap(cx, cy, hw, hh, angRad, p.x, p.y, comp.HitRadius) then
+						comp:Reflect(reflectDamage)
+						count += 1
+						log("[CombatPrimitives] projectile REFLECTED (dmg=" .. tostring(reflectDamage) .. ")")
+					end
+				end
+			end
+		end
+		return count
+	end
+
 	method boolean CircleOverlap(Vector2 centerA, number radiusA, Vector2 centerB, number radiusB)
 		-- 단일 원형 오버랩 유틸 (V4 실측 확정: dist <= r1+r2). 모든 범위 판정은 이 함수만 사용.
 		local dx = centerB.x - centerA.x
@@ -182,6 +232,41 @@ script CombatPrimitives extends Logic
 	method boolean BoxBoxOverlap(Vector2 aCenter, number aHw, number aHh, Vector2 bCenter, number bHw, number bHh)
 		-- AABB-AABB. 두 박스 중심 거리가 각 축 반폭/반높이 합 이내면 겹침.
 		return math.abs(aCenter.x - bCenter.x) <= (aHw + bHw) and math.abs(aCenter.y - bCenter.y) <= (aHh + bHh)
+	end
+
+	method boolean OBBAABBOverlap(number cx, number cy, number hw, number hh, number angRad, number bcx, number bcy, number bhw, number bhh)
+		-- 회전 박스(OBB: 중심(cx,cy), 반폭 hw=로컬X, 반높이 hh=로컬Y, 각도 angRad) vs AABB(중심(bcx,bcy), bhw, bhh).
+		-- SAT: OBB 로컬 2축 + 월드 2축, 총 4축 중 분리축이 하나라도 있으면 미겹침. (커서 방향 회전 평타 판정용)
+		local c = math.cos(angRad)
+		local s = math.sin(angRad)
+		local dx = bcx - cx
+		local dy = bcy - cy
+		-- 축1: OBB 로컬X (c,s)
+		if math.abs(dx * c + dy * s) > hw + (bhw * math.abs(c) + bhh * math.abs(s)) then return false end
+		-- 축2: OBB 로컬Y (-s,c)
+		if math.abs(-dx * s + dy * c) > hh + (bhw * math.abs(s) + bhh * math.abs(c)) then return false end
+		-- 축3: 월드X (1,0)
+		if math.abs(dx) > (hw * math.abs(c) + hh * math.abs(s)) + bhw then return false end
+		-- 축4: 월드Y (0,1)
+		if math.abs(dy) > (hw * math.abs(s) + hh * math.abs(c)) + bhh then return false end
+		return true
+	end
+
+	method boolean OBBCircleOverlap(number cx, number cy, number hw, number hh, number angRad, number px, number py, number r)
+		-- 회전 박스(OBB) vs 원. 원 중심을 OBB 로컬 프레임으로 변환 → [-hw,hw]x[-hh,hh]에 클램프한 최근접점 거리 ≤ r.
+		local c = math.cos(angRad)
+		local s = math.sin(angRad)
+		local dx = px - cx
+		local dy = py - cy
+		local lx = dx * c + dy * s
+		local ly = -dx * s + dy * c
+		local qx = lx
+		if qx < -hw then qx = -hw elseif qx > hw then qx = hw end
+		local qy = ly
+		if qy < -hh then qy = -hh elseif qy > hh then qy = hh end
+		local ex = lx - qx
+		local ey = ly - qy
+		return ex * ex + ey * ey <= r * r
 	end
 
 	method any HurtboxOf(Entity e, number fbHW, number fbHH, number fbYOff)
@@ -289,6 +374,26 @@ script CombatPrimitives extends Logic
 			if isvalid(e) then
 				local hb = self:HurtboxOf(e, _GameConstants.EnemyHboxHW, _GameConstants.EnemyHboxHH, 0)
 				if self:BoxBoxOverlap(boxCenter, hw, hh, Vector2(hb.cx, hb.cy), hb.hw, hb.hh) then
+					comp:TakeDamage(damage, source)
+					hitCount += 1
+				end
+			end
+		end
+		return hitCount
+	end
+
+	method integer DamageEnemiesInOBB(Entity mapEntity, number cx, number cy, number hw, number hh, number angRad, number damage, string source)
+		-- 회전 박스(OBB) 범위 내 모든 적에 데미지. DamageEnemiesInBox의 커서 방향 회전 버전. 명중 수 반환.
+		if mapEntity == nil then return 0 end
+		local list = mapEntity:GetChildComponentsByTypeName("script.EnemyHealth", true)
+		local hitCount = 0
+		for _, compAny in ipairs(list) do
+			---@type EnemyHealth
+			local comp = compAny
+			local e = comp.Entity
+			if isvalid(e) then
+				local hb = self:HurtboxOf(e, _GameConstants.EnemyHboxHW, _GameConstants.EnemyHboxHH, 0)
+				if self:OBBAABBOverlap(cx, cy, hw, hh, angRad, hb.cx, hb.cy, hb.hw, hb.hh) then
 					comp:TakeDamage(damage, source)
 					hitCount += 1
 				end
