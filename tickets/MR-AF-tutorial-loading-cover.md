@@ -1,7 +1,7 @@
 ---
 id: MR-AF
 title: 튜토리얼 진입 안 됨 (로비 로딩배경이 안 걷힘)
-status: review
+status: done
 owner: D4LGONA
 area: script
 touches: [RootDesk/MyDesk/Tutorial/TutorialManager.mlua, RootDesk/MyDesk/UI/PauseController.mlua, RootDesk/MyDesk/UI/GameOverController.mlua, RootDesk/MyDesk/UI/GameClearController.mlua]
