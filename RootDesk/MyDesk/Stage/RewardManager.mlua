@@ -38,9 +38,9 @@ script RewardManager extends Logic
 
 	@ExecSpace("Server")
 	method void ClaimAbilityReward()
-		-- 능력 보상: 랜덤 능력(임시무적/투사체무효화) 장착 (기존 능력 교체).
-		local pool = { "invincible", "clearProjectiles" }
-		local abilityId = pool[_UtilLogic:RandomIntegerRange(1, 2)]
+		-- 능력 보상: 랜덤 능력 장착 (기존 능력 교체). 5종 전체 풀(무적/투사체무효화/부동심/만지일섬/회전베기).
+		local pool = { "invincible", "clearProjectiles", "immovable", "manji", "spin" }
+		local abilityId = pool[_UtilLogic:RandomIntegerRange(1, #pool)]
 		local player = self:FindRequester()
 		if player == nil then return end
 		---@type PlayerAbility
