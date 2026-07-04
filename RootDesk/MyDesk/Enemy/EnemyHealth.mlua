@@ -27,9 +27,16 @@ script EnemyHealth extends Component
 
 	@ExecSpace("ServerOnly")
 	method void OnBeginPlay()
+		-- 층 스케일링: 최대 체력 ×(1 + 0.2*(층-1)), 소숫점 버림 (합연산). 런 밖(튜토리얼 등)은 무배율.
+		--   모델 기본 MaxHP가 완전히 적용된 뒤(OnBeginPlay)라 스폰 직후 읽기 레이스가 없다.
+		local floor = 1
+		if _GameStateManager.RunActive then floor = _GameStateManager.CurrentFloor end
+		local scaled = math.floor(self.MaxHP * _GameConstants:EnemyHpMultForFloor(floor))
+		if scaled < 1 then scaled = 1 end
+		self.MaxHP = scaled
 		-- HP를 최대치로 초기화.
 		self.HP = self.MaxHP
-		log("[EnemyHealth] spawned: " .. self.Entity.Name .. " kind=" .. self.EnemyKind .. " HP=" .. tostring(self.HP))
+		log("[EnemyHealth] spawned: " .. self.Entity.Name .. " kind=" .. self.EnemyKind .. " floor=" .. tostring(floor) .. " HP=" .. tostring(self.HP))
 	end
 
 	@ExecSpace("ServerOnly")
