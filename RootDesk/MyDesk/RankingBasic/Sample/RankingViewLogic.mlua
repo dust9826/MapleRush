@@ -1,0 +1,93 @@
+@Logic
+script RankingViewLogic extends Logic
+
+	-- ranking-basic-package에서 순위 계산부(CalculateRanks*)만 발췌. 원본의 Request/Response(샘플 UI 결합) 및
+	-- RequestForceUpdate(AdminLogic 결합)는 미도입 — 조회·등록은 게임 코드가 _RankingDataStorageLogic을 직접 호출한다.
+	-- UpdateDataTable이 CalculateRanks를 호출하므로 이 파일은 필수(존재만 하면 됨).
+
+	method void CalculateRanks(integer rankingMode, table rankingDataList)
+		if rankingMode == _RankingModeEnum.Index then
+			self:CalculateRanks_Index(rankingDataList)
+		elseif rankingMode == _RankingModeEnum.Rank then
+			self:CalculateRanks_Rank(rankingDataList)
+		elseif rankingMode == _RankingModeEnum.DenseRank then
+			self:CalculateRanks_DenseRank(rankingDataList)
+		else
+			self:CalculateRanks_Index(rankingDataList)
+		end
+	end
+
+	method void CalculateRanks_Index(table rankingDataList)
+		-- 데이터 순서대로 1부터 부여.
+		---@type table<RankingData>
+		local dataList = rankingDataList
+		if #dataList == 0 then
+			return
+		end
+
+		for i = 1, #dataList do
+			---@type RankingData
+			local data = dataList[i]
+			data.Rank = i
+		end
+	end
+
+	method void CalculateRanks_Rank(table rankingDataList)
+		-- 동점은 같은 순위, 다음 순위는 건너뜀(gap 있음).
+		---@type table<RankingData>
+		local dataList = rankingDataList
+		if #dataList == 0 then
+			return
+		end
+
+		---@type RankingData
+		local firstRankData = dataList[1]
+		local prevRank = 1
+		local prevScore = firstRankData.Score
+
+		for i = 1, #dataList do
+			---@type RankingData
+			local data = dataList[i]
+			local score = data.Score
+
+			if prevScore == score then
+				data.Rank = prevRank
+				continue
+			end
+
+			prevRank = i
+			data.Rank = prevRank
+			prevScore = score
+		end
+	end
+
+	method void CalculateRanks_DenseRank(table rankingDataList)
+		-- 동점은 같은 순위, gap 없이 다음 순위 연속.
+		---@type table<RankingData>
+		local dataList = rankingDataList
+		if #dataList == 0 then
+			return
+		end
+
+		---@type RankingData
+		local firstRankData = dataList[1]
+		local prevRank = 1
+		local prevScore = firstRankData.Score
+
+		for i = 1, #dataList do
+			---@type RankingData
+			local data = dataList[i]
+			local score = data.Score
+
+			if prevScore == score then
+				data.Rank = prevRank
+				continue
+			end
+
+			prevRank += 1
+			data.Rank = prevRank
+			prevScore = score
+		end
+	end
+
+end

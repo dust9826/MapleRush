@@ -127,7 +127,7 @@ script GameConstants extends Logic
 
 	property integer Floor1NormalStages = 4
 
-	property integer MaxFloors = 2
+	property integer MaxFloors = 3
 
 	property string MapNormal = "map02"
 

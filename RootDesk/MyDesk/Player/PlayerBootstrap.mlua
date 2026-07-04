@@ -11,6 +11,7 @@ script PlayerBootstrap extends Logic
 			return
 		end
 		_MetaProgression:LoadFor(event.UserId)
+		_RecordStorage:LoadFor(event.UserId)
 		self:AttachCombatComponents(player)
 	end
 

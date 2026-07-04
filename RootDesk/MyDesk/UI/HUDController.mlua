@@ -41,6 +41,13 @@ script HUDController extends Component
 
 	property TextComponent groggyText = "f5c7daef-39fb-479f-8af4-df28e5fcb57c"
 
+	-- 런 타이머 (상단중앙) — 현재 경과시간(큰 폰트) + 이전 기록(작은 폰트). 기획서 §5.2: 색변화 없음, 1초 갱신.
+	property TextComponent timerText = "4fb9740f-f8ee-4c83-a4f7-ec8f7b0ae72c"
+
+	property TextComponent timerPrevText = "dc6f01bd-2e5f-42e1-9ee3-38c1d94fb7aa"
+
+	@HideFromInspector property integer prevTimerSecond = -1
+
 	@ExecSpace("ClientOnly")
 	method void OnBeginPlay()
 		-- HUD 컨트롤러 시작 로그 (검증용).
@@ -96,6 +103,42 @@ script HUDController extends Component
 		-- 보스 HP/그로기 오버레이 (보스 스테이지에서만).
 		if isvalid(self.bossOverlay) then
 			self:UpdateBossOverlay(player)
+		end
+
+		-- 런 타이머 (상단중앙): 런 진행 중에만 표시, 초 단위 갱신.
+		self:UpdateTimer()
+	end
+
+	@ExecSpace("ClientOnly")
+	method void UpdateTimer()
+		-- 현재 경과시간(MM:SS) + 이전 기록. 런 미진행 시 숨김. 표시는 초가 바뀔 때만 갱신(§3.4).
+		if isvalid(self.timerText) == false then return end
+		if _RunTimer.Running == false then
+			self.timerText.Text = ""
+			if isvalid(self.timerPrevText) then self.timerPrevText.Text = "" end
+			self.prevTimerSecond = -1
+			return
+		end
+		local now = _RunTimer:ClientElapsed()
+		local sec = math.floor(now)
+		if sec == self.prevTimerSecond then return end
+		self.prevTimerSecond = sec
+		self.timerText.Text = _RecordStorage:FormatClock(now)
+		self:UpdateTimerPrev()
+	end
+
+	@ExecSpace("ClientOnly")
+	method void UpdateTimerPrev()
+		-- 이전 기록 라인: 현재 도달 진행도(층-진행도)의 과거 최고 시간. 없으면 비표시(기획서 §5.2).
+		if isvalid(self.timerPrevText) == false then return end
+		local floor = _GameStateManager.CurrentFloor
+		local progress = _RecordStorage:ComputeStageProgress(_FloorManager.NormalsClearedThisFloor, _FloorManager.ShopDoneThisFloor, false)
+		local key = tostring(floor) .. "-" .. tostring(progress)
+		local prev = _RecordStorage.StageBests[key]
+		if prev ~= nil and prev > 0 then
+			self.timerPrevText.Text = _RecordStorage:FormatBest(prev)
+		else
+			self.timerPrevText.Text = ""
 		end
 	end
 
