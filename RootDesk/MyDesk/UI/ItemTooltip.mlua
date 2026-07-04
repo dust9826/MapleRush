@@ -1,0 +1,133 @@
+@Component
+script ItemTooltip extends Component
+
+	-- 일회용 아이템/능력 아이콘에 마우스 커서를 올리면 커서 우하단에 설명 툴팁을 띄운다(아이콘 위에 있는 한 커서를 계속 따라다님).
+	-- 내용은 기획서(player_design §7 아이템 / ability_design 능력) 기반. UI라 전부 ClientOnly.
+	-- 호버 감지: 이벤트(UITouchEnter)는 버튼이 가로챌 수 있어 불안정 → OnUpdate에서 커서가 아이콘 rect 안인지 매 프레임 폴링.
+
+	-- 툴팁 창(루트=배경 패널 / 제목 / 본문). 바인딩 주입.
+	property Entity tipRoot = "948361e1-d42a-4dea-ac5f-4e6e639e876f"
+
+	property TextComponent tipTitle = "9d96724b-4c97-4de9-96d5-68c5093349a0"
+
+	property TextComponent tipBody = "c2c42b2e-29be-4837-afff-9b094d10b049"
+
+	-- 호버 대상 아이콘 4종(아이템 슬롯 1/2/3 + 능력 버튼). HUD 엔티티 UUID 바인딩 주입.
+	property Entity iconItem1 = "806b1d40-0be5-4407-8f8a-09f2229239e3"
+
+	property Entity iconItem2 = "287c275b-1f56-4a49-83a9-1d383c755f48"
+
+	property Entity iconItem3 = "a4531e18-c11b-4e6a-94ca-112c605f5154"
+
+	property Entity iconAbility = "01e75f7d-0475-4ec7-8e25-4226bbef1e5c"
+
+	-- 커서 기준 툴팁 오프셋(우하단). +x 오른쪽 / -y 아래(UI는 +y가 위).
+	property Vector2 CursorOffset = Vector2(20, -20)
+
+	-- 현재 호버 중인 대상 키 ("" / item1 / item2 / item3 / ability).
+	@HideFromInspector property string hovered = ""
+
+	@ExecSpace("ClientOnly")
+	method void OnBeginPlay()
+		-- 툴팁 숨김. 호버 감지는 OnUpdate 폴링 방식.
+		if isvalid(self.tipRoot) then self.tipRoot.Enable = false end
+		log("[ItemTooltip] OnBeginPlay (poll-based hover)")
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnEndPlay()
+		-- 종료 시 툴팁 숨김.
+		if isvalid(self.tipRoot) then self.tipRoot.Enable = false end
+	end
+
+	method boolean IsCursorOver(Vector2 screen, Entity icon)
+		-- 스크린 커서가 아이콘 UI rect 안에 있는지 판정(피벗 기준 로컬 좌표 비교). 순수 계산.
+		if isvalid(icon) == false then return false end
+		local ut = icon.UITransformComponent
+		if isvalid(ut) == false then return false end
+		local lp = _UILogic:ScreenToLocalUIPosition(screen, ut)
+		local sz = ut.RectSize
+		local pv = ut.Pivot
+		-- rect(로컬): x∈[-pv.x*W, (1-pv.x)*W], y∈[-pv.y*H, (1-pv.y)*H]
+		if lp.x < -pv.x * sz.x then return false end
+		if lp.x > (1 - pv.x) * sz.x then return false end
+		if lp.y < -pv.y * sz.y then return false end
+		if lp.y > (1 - pv.y) * sz.y then return false end
+		return true
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnUpdate(number delta)
+		-- 커서가 어느 아이콘 위인지 매 프레임 폴링 → 툴팁 내용 갱신 + 커서 우하단 추적. 아무 아이콘도 아니면 숨김.
+		local cur = _InputService:GetCursorPosition()
+		local h = ""
+		if self:IsCursorOver(cur, self.iconAbility) then h = "ability"
+		elseif self:IsCursorOver(cur, self.iconItem1) then h = "item1"
+		elseif self:IsCursorOver(cur, self.iconItem2) then h = "item2"
+		elseif self:IsCursorOver(cur, self.iconItem3) then h = "item3"
+		end
+		self.hovered = h
+		if h == "" then
+			if isvalid(self.tipRoot) then self.tipRoot.Enable = false end
+			return
+		end
+		local player = _UserService.LocalPlayer
+		if player == nil then return end
+		local d = nil
+		if h == "ability" then
+			---@type PlayerAbility
+			local ab = player:GetComponent("script.PlayerAbility")
+			local id = ""
+			if ab ~= nil then id = ab.AbilityId end
+			d = self:AbilityDesc(id)
+		else
+			---@type PlayerItems
+			local items = player:GetComponent("script.PlayerItems")
+			local slot = ""
+			if items ~= nil then
+				if h == "item1" then slot = items.Slot1
+				elseif h == "item2" then slot = items.Slot2
+				elseif h == "item3" then slot = items.Slot3 end
+			end
+			d = self:ItemDesc(slot)
+		end
+		if isvalid(self.tipTitle) then self.tipTitle.Text = d.title end
+		if isvalid(self.tipBody) then self.tipBody.Text = d.body end
+		-- 커서 추적: 스크린 커서 → UI 좌표(중심원점) + 우하단 오프셋. 화면 밖으로 안 나가게 클램프.
+		local uiPos = _UILogic:ScreenToUIPosition(cur)
+		if isvalid(self.tipRoot) then
+			local ut = self.tipRoot.UITransformComponent
+			if isvalid(ut) then
+				local sz = ut.RectSize
+				-- Root pivot=좌상단: 우측/하단으로 sz만큼 뻗음. 캔버스 1920×1080(±960/±540) 안으로 클램프.
+				local x = uiPos.x + self.CursorOffset.x
+				local y = uiPos.y + self.CursorOffset.y
+				if x < -960 then x = -960 end
+				if x > 960 - sz.x then x = 960 - sz.x end
+				if y > 540 then y = 540 end
+				if y < -540 + sz.y then y = -540 + sz.y end
+				ut.anchoredPosition = Vector2(x, y)
+			end
+			self.tipRoot.Enable = true
+		end
+	end
+
+	method any ItemDesc(string id)
+		-- 아이템 설명 {title, body} (기획서 player_design §7 / stage §3.2.2 기반).
+		if id == "rock" then return { title = "짱돌", body = "커서 방향으로 돌을 던져 공격력 300%의 피해를 준다.\n(일회용 · 커서 방향 발사)" } end
+		if id == "smoke" then return { title = "연막탄", body = "연막을 터뜨려 반경 3 안에서 5초간 적에게\n발각되지 않는다. (은신)" } end
+		if id == "flash" then return { title = "섬광탄", body = "일반 적을 3초간 기절시키고, 보스의 그로기\n게이지 감소를 5초간 정지시킨다. (즉시 발동)" } end
+		return { title = "빈 슬롯", body = "일회용 아이템을 담는 칸입니다.\n(숫자키 1~3으로 활성화 후 좌클릭 사용)" }
+	end
+
+	method any AbilityDesc(string id)
+		-- 능력 설명 {title, body} (기획서 ability_design 기반).
+		if id == "invincible" then return { title = "임시 무적", body = "발동 후 1초간 모든 피해를 무효화한다.\n(휠 클릭 · 능동)" } end
+		if id == "clearProjectiles" then return { title = "모든 투사체 무효화", body = "화면 내 모든 적 투사체를 즉시 제거한다.\n(휠 클릭 · 즉시 발동)" } end
+		if id == "immovable" then return { title = "부동심 (응급 회생)", body = "8초간 적의 공격 1회를 무효화한다. 무효화 시\n0.5초 무적 + 슬로우 모션. (수동 보험)" } end
+		if id == "manji" then return { title = "만지 일섬", body = "커서 방향으로 돌진(무적)하며 경로의 적에게\n공격력 400% 피해." } end
+		if id == "spin" then return { title = "회전베기", body = "반경 3 원형 광역 공격력 250% + 넉백 + 패링.\n0.2초 지속·무적(이동 불가)." } end
+		return { title = "능력 없음", body = "능력을 획득하면 여기에 표시됩니다.\n(휠 클릭으로 발동)" }
+	end
+
+end
