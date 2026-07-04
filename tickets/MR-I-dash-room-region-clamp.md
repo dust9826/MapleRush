@@ -1,7 +1,7 @@
 ---
 id: MR-I
 title: 대시 방-영역 클램프 (RoomRegion 논리 충돌 + 마커 authoring)
-status: in-progress
+status: done
 owner: dust9826
 area: mixed
 touches:
@@ -209,4 +209,10 @@ updated: 2026-07-04
 - Maker `play` → 대시를 방 경계·바닥 방향으로 쏴서 클램프 정상 + 방 밖 이탈 없음 → `logs` 에러 0. 미authoring 맵 폴백 확인.
 - (완료) 기하/열거/폴백 로직은 execute_script 단위검증으로 통과 + 실제 배치 마커로 클램프 확인.
 - (완료, 2026-06-28) 디버그 기즈모 retained-mode 재작성 + 추종 실측 PASS.
-- **잔여: 멈춤 위치/마진 체감 튜닝(기즈모로 시각화 가능해짐) + item2(도착 겹침 보정/미리보기) + MR-A 다맵 마커 배치.**
+
+## 마감 (2026-07-04, done)
+raycast 블록 클램프 + 방향성 벽 클램프 + 스텝오버 + 도착 스냅 + 기즈모 + breakable 연동(PR #66)까지 완료, 전 맵에 DashBlockRegion 배치·인게임 확인 끝. 잔여 항목은 아래로 승계:
+- **멈춤 위치/마진 체감 튜닝** → 티켓 불필요. 체감 이슈 발생 시 `GameConstants.DashWallMargin`(0.35) / 각 맵 DashBlockRegion 박스만 조정.
+- **item2 (대시 도착 겹침 보정 + 예상 도착 미리보기)** → **MR-H**(대시 도착 지점 표시 개선)가 커버.
+- **다맵 마커 배치** → 이미 전 레벨맵에 배치됨. 신규 수제작 맵의 마커는 **MR-A**(맵 다양화)에서 — MR-A의 blocked-by MR-I는 이제 해제.
+- **디버그 기즈모 제거/게이팅** → **MR-D**(릴리스 정리).
