@@ -43,6 +43,10 @@ script Breakable extends Component
 	-- 투사체도 막을지 (서버). true면 히트박스에 닿은 투사체(Projectile)를 소멸시킨다(원거리 공격이 벽에 막힘).
 	property boolean BlockProjectile = true
 
+	-- 파괴 시 통과시켜줄 하위 DashBlockRegion(대시 불가 존)의 복구 BoxSize. 부서지면 (0,0)로 줄여 대시 통과, 복구 시 이 값으로 되돌린다.
+	-- ★ 자식으로 매단 DashBlockRegion만 대상(맵에서 이 오브젝트 밑에 자식으로 배치). DashBlock 콜라이더 그룹만 골라 조절 → 자기 히트박스는 안 건드림.
+	property Vector2 DashRegionBoxSize = Vector2(0.5, 0.5)
+
 	method void OnUpdate(number delta)
 		-- BlockPlayer/BlockMonster면 히트박스에 겹친 대상을 밖으로 밀어내 솔리드처럼 막는다. 부서지면(IsBroken) 즉시 통과.
 		if self.IsBroken then return end
@@ -171,6 +175,8 @@ script Breakable extends Component
 			self:BackupFootholds(cfc)
 			cfc.edgeLists:Clear()
 		end
+		-- 하위 DashBlockRegion(대시 불가 존)을 열어 대시가 통과하게 한다(서버측). 클라측은 IsBroken 동기화로 OnSyncProperty에서 반영.
+		self:ApplyDashRegions(true)
 		-- ★ Destroy 하지 않는다 — 스테이지 재시작 시 Reset()으로 되살리려면 엔티티가 살아있어야 한다.
 		--   시각 제거는 PlayDebris가 스프라이트를 숨겨 처리, 솔리드 차단은 OnUpdate가 IsBroken=true면 자동 해제.
 		log("[Breakable] " .. self.Entity.Name .. " broke by " .. source)
@@ -184,6 +190,8 @@ script Breakable extends Component
 		self.IsBroken = false
 		local cfc = self.Entity.CustomFootholdComponent
 		if isvalid(cfc) then self:RestoreFootholds(cfc) end
+		-- 하위 DashBlockRegion 복구(서버측). 클라측은 IsBroken 동기화로 OnSyncProperty에서 반영.
+		self:ApplyDashRegions(false)
 		self:ShowSprite()
 		log("[Breakable] " .. self.Entity.Name .. " reset (restored)")
 	end
@@ -194,6 +202,34 @@ script Breakable extends Component
 		if isvalid(self.Entity) == false then return end
 		local sp = self.Entity.SpriteRendererComponent
 		if isvalid(sp) then sp.Enable = true end
+	end
+
+	method void ApplyDashRegions(boolean broken)
+		-- 하위(자식) DashBlock 그룹 TriggerComponent들의 BoxSize를 조절. broken=true면 (0,0)로 대시 통과, false면 DashRegionBoxSize로 복구.
+		-- ★대시 사거리 클램프는 클라에서 평가(PlayerDash → ClampRayToCurrentRoom, ClientOnly)하므로 클라 BoxSize가 실제로 반영돼야 한다.
+		--   이 메서드는 서버(Break/Reset)와 클라(OnSyncProperty 동기화)에서 각각 자기 쪽 TriggerComponent에 적용된다.
+		if isvalid(self.Entity) == false then return end
+		local grp = CollisionGroups[_GameConstants.DashBlockGroup]
+		if grp == nil then return end
+		local triggers = self.Entity:GetChildComponentsByTypeName("MOD.Core.TriggerComponent", true)
+		if triggers == nil then return end
+		for _, tcAny in ipairs(triggers) do
+			---@type TriggerComponent
+			local tc = tcAny
+			if isvalid(tc) and tc.CollisionGroup ~= nil and tc.CollisionGroup.Id == grp.Id then
+				if broken then
+					tc.BoxSize = Vector2(0, 0)
+				else
+					tc.BoxSize = self.DashRegionBoxSize
+				end
+			end
+		end
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnSyncProperty(string name, any value)
+		-- IsBroken 동기화 시 클라의 하위 DashBlockRegion을 실제 파괴 상태에 맞춘다(대시 클램프는 클라 평가 + 뒤늦게 접속/맵 재진입한 클라도 반영).
+		if name == "IsBroken" then self:ApplyDashRegions(value == true) end
 	end
 
 	method void BackupFootholds(any cfc)
