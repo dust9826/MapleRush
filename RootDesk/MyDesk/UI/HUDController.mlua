@@ -242,6 +242,12 @@ script HUDController extends Component
 			label = "무적"
 		elseif id == "clearProjectiles" then
 			label = "투사체 무효"
+		elseif id == "immovable" then
+			label = "부동심"
+		elseif id == "manji" then
+			label = "만지 일섬"
+		elseif id == "spin" then
+			label = "회전베기"
 		elseif id ~= "" then
 			label = id
 		end
