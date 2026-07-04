@@ -105,9 +105,21 @@ script Breakable extends Component
 		if landingOnTop then
 			mc:SetWorldPosition(Vector2(tp.x, hb.cy + hb.hh + thh - tyoff))
 		else
-			local nx = hb.cx - hb.hw - thw
-			if dx >= 0 then nx = hb.cx + hb.hw + thw end
-			mc:SetWorldPosition(Vector2(nx, tp.y))
+			-- 수평 차단. ★매 프레임 SetWorldPosition(nx, tp.y)로 Y까지 고정하면 점프/낙하 속도가 죽어
+			--   공중 박스 옆에서 그대로 "붙어버리는" 버그가 난다(로그: py 고정).
+			--   → (1) 박스로 향하는 수평 입력속도만 상쇄해 침투를 예방하고, (2) 그래도 깊게(빠르게)
+			--   파고든 경우에만 X를 가장자리로 스냅. 가벼운 접촉 프레임엔 순간이동을 안 해 중력/점프가 산다.
+			local rb = target.RigidbodyComponent
+			if isvalid(rb) then
+				local mv = rb.MoveVelocity
+				local intoBox = (dx < 0 and mv.x > 0) or (dx >= 0 and mv.x < 0)
+				if intoBox then rb.MoveVelocity = Vector2(0, mv.y) end
+			end
+			if ox > 0.12 then
+				local nx = hb.cx - hb.hw - thw
+				if dx >= 0 then nx = hb.cx + hb.hw + thw end
+				mc:SetWorldPosition(Vector2(nx, tp.y))
+			end
 		end
 	end
 
