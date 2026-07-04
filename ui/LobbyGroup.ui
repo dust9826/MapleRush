@@ -287,176 +287,17 @@
         }
       },
       {
-        "id": "bd7ad1dd-9203-467e-8faf-dc7cfd928c40",
-        "path": "/ui/LobbyGroup/Root/Sky",
-        "componentNames": "MOD.Core.UITransformComponent,MOD.Core.SpriteGUIRendererComponent,MOD.Core.YoutubePlayerGUIComponent",
+        "id": "1c7f56ac-174d-456b-8436-ea9093b0fc00",
+        "path": "/ui/LobbyGroup/Root/YoutubePlayerGUI",
+        "componentNames": "MOD.Core.UITransformComponent,MOD.Core.YoutubePlayerGUIComponent",
         "jsonString": {
-          "name": "Sky",
-          "path": "/ui/LobbyGroup/Root/Sky",
+          "name": "YoutubePlayerGUI",
+          "path": "/ui/LobbyGroup/Root/YoutubePlayerGUI",
           "nameEditable": true,
           "enable": true,
           "visible": true,
           "localize": true,
           "displayOrder": 0,
-          "pathConstraints": "////",
-          "revision": 0,
-          "origin": {
-            "type": "Model",
-            "entry_id": "UISprite",
-            "sub_entity_id": null,
-            "root_entity_id": null,
-            "replaced_model_id": null
-          },
-          "modelId": "uisprite",
-          "@components": [
-            {
-              "@type": "MOD.Core.UITransformComponent",
-              "ActivePlatform": 255,
-              "AlignmentOption": 15,
-              "AnchorsMax": {
-                "x": 1.0,
-                "y": 1.0
-              },
-              "AnchorsMin": {
-                "x": 0.0,
-                "y": 0.0
-              },
-              "MobileOnly": false,
-              "OffsetMax": {
-                "x": 0.0,
-                "y": 0.0
-              },
-              "OffsetMin": {
-                "x": 0.0,
-                "y": 0.0
-              },
-              "Pivot": {
-                "x": 0.5,
-                "y": 0.5
-              },
-              "RectSize": {
-                "x": 1920.0,
-                "y": 1080.0
-              },
-              "UIMode": 1,
-              "UIScale": {
-                "x": 1.0,
-                "y": 1.0,
-                "z": 1.0
-              },
-              "UIVersion": 2,
-              "anchoredPosition": {
-                "x": 0.0,
-                "y": 0.0
-              },
-              "Position": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0
-              },
-              "QuaternionRotation": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0,
-                "w": 1.0
-              },
-              "Scale": {
-                "x": 1.0,
-                "y": 1.0,
-                "z": 1.0
-              },
-              "Enable": true
-            },
-            {
-              "@type": "MOD.Core.SpriteGUIRendererComponent",
-              "AnimClipPlayType": 0,
-              "EndFrameIndex": 2147483647,
-              "IgnoreMapLayerCheck": false,
-              "ImageRUID": {
-                "DataId": "1705e3c5b2c146ac9a699f96fb067408"
-              },
-              "LocalPosition": {
-                "x": 0.0,
-                "y": 0.0
-              },
-              "LocalScale": {
-                "x": 1.0,
-                "y": 1.0
-              },
-              "MaterialId": "",
-              "OrderInLayer": 0,
-              "OverrideSorting": false,
-              "PlayRate": 1.0,
-              "PreserveSprite": 0,
-              "SortingLayer": "UI",
-              "StartFrameIndex": 0,
-              "Color": {
-                "r": 0.05490196,
-                "g": 0.07058824,
-                "b": 0.1882353,
-                "a": 1.0
-              },
-              "DropShadow": false,
-              "DropShadowAngle": 120.0,
-              "DropShadowColor": {
-                "r": 0.0,
-                "g": 0.0,
-                "b": 0.0,
-                "a": 0.72
-              },
-              "DropShadowDistance": 3.0,
-              "FillAmount": 1.0,
-              "FillCenter": true,
-              "FillClockWise": true,
-              "FillMethod": 0,
-              "FillOrigin": 0,
-              "FlipX": false,
-              "FlipY": false,
-              "FrameColumn": 1,
-              "FrameRate": 0,
-              "FrameRow": 1,
-              "Outline": false,
-              "OutlineColor": {
-                "r": 0.0,
-                "g": 0.0,
-                "b": 0.0,
-                "a": 1.0
-              },
-              "OutlineWidth": 3.0,
-              "RaycastTarget": false,
-              "Type": 0,
-              "Enable": true
-            },
-            {
-              "@type": "MOD.Core.YoutubePlayerGUIComponent",
-              "OrderInLayer": 0,
-              "OverrideSorting": false,
-              "SortingLayer": "UI",
-              "Loop": true,
-              "PlayOnAwake": true,
-              "Shuffle": false,
-              "Urls": [
-                "https://www.youtube.com/watch?v=SbwSxysR9Sk"
-              ],
-              "Volume": 0.0,
-              "Enable": true
-            }
-          ],
-          "@version": 1
-        }
-      },
-      {
-        "id": "87c1ce26-7e00-490c-9fcc-85dd06ed93d4",
-        "path": "/ui/LobbyGroup/Root/Stars",
-        "componentNames": "MOD.Core.UITransformComponent,MOD.Core.UIAreaParticleComponent",
-        "jsonString": {
-          "name": "Stars",
-          "path": "/ui/LobbyGroup/Root/Stars",
-          "nameEditable": true,
-          "enable": true,
-          "visible": true,
-          "localize": true,
-          "displayOrder": 1,
           "pathConstraints": "////",
           "revision": 0,
           "origin": {
@@ -470,7 +311,6 @@
           "@components": [
             {
               "@type": "MOD.Core.UITransformComponent",
-              "ActivePlatform": 255,
               "AlignmentOption": 0,
               "AnchorsMax": {
                 "x": 0.5,
@@ -487,271 +327,7 @@
               },
               "OffsetMin": {
                 "x": -960.0,
-                "y": -440.0
-              },
-              "Pivot": {
-                "x": 0.5,
-                "y": 0.5
-              },
-              "RectSize": {
-                "x": 1920.0,
-                "y": 980.0
-              },
-              "UIMode": 1,
-              "UIScale": {
-                "x": 1.0,
-                "y": 1.0,
-                "z": 1.0
-              },
-              "UIVersion": 2,
-              "anchoredPosition": {
-                "x": 0.0,
-                "y": 50.0
-              },
-              "Position": {
-                "x": 0.0,
-                "y": 50.0,
-                "z": 0.0
-              },
-              "QuaternionRotation": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0,
-                "w": 1.0
-              },
-              "Scale": {
-                "x": 1.0,
-                "y": 1.0,
-                "z": 1.0
-              },
-              "Enable": true
-            },
-            {
-              "@type": "MOD.Core.UIAreaParticleComponent",
-              "AreaOffset": {
-                "x": 0.0,
-                "y": 0.0
-              },
-              "AreaSize": {
-                "x": 1920.0,
-                "y": 980.0
-              },
-              "ParticleType": 2,
-              "AutoRandomSeed": true,
-              "Color": {
-                "r": 1.0,
-                "g": 1.0,
-                "b": 1.0,
-                "a": 1.0
-              },
-              "LocalScale": {
-                "x": 1.0,
-                "y": 1.0
-              },
-              "Loop": true,
-              "NeedMigration": false,
-              "ParticleCount": 1.0,
-              "ParticleLifeTime": 1.0,
-              "ParticleSize": 1.0,
-              "ParticleSpeed": 1.0,
-              "PlayOnEnable": true,
-              "PlaySpeed": 1.0,
-              "Prewarm": false,
-              "RandomSeed": 3024240756,
-              "Enable": true
-            }
-          ],
-          "@version": 1
-        }
-      },
-      {
-        "id": "42eea59a-dffd-4d38-98eb-ce4e7bdc29b9",
-        "path": "/ui/LobbyGroup/Root/Town",
-        "componentNames": "MOD.Core.UITransformComponent,MOD.Core.SpriteGUIRendererComponent",
-        "jsonString": {
-          "name": "Town",
-          "path": "/ui/LobbyGroup/Root/Town",
-          "nameEditable": true,
-          "enable": true,
-          "visible": true,
-          "localize": true,
-          "displayOrder": 2,
-          "pathConstraints": "////",
-          "revision": 0,
-          "origin": {
-            "type": "Model",
-            "entry_id": "UISprite",
-            "sub_entity_id": null,
-            "root_entity_id": null,
-            "replaced_model_id": null
-          },
-          "modelId": "uisprite",
-          "@components": [
-            {
-              "@type": "MOD.Core.UITransformComponent",
-              "ActivePlatform": 255,
-              "AlignmentOption": 6,
-              "AnchorsMax": {
-                "x": 0.5,
-                "y": 0.0
-              },
-              "AnchorsMin": {
-                "x": 0.5,
-                "y": 0.0
-              },
-              "MobileOnly": false,
-              "OffsetMax": {
-                "x": 960.0,
-                "y": 575.0
-              },
-              "OffsetMin": {
-                "x": -960.0,
-                "y": 0.0
-              },
-              "Pivot": {
-                "x": 0.5,
-                "y": 0.0
-              },
-              "RectSize": {
-                "x": 1920.0,
-                "y": 575.0
-              },
-              "UIMode": 1,
-              "UIScale": {
-                "x": 1.0,
-                "y": 1.0,
-                "z": 1.0
-              },
-              "UIVersion": 2,
-              "anchoredPosition": {
-                "x": 0.0,
-                "y": 0.0
-              },
-              "Position": {
-                "x": 0.0,
-                "y": -540.0,
-                "z": 0.0
-              },
-              "QuaternionRotation": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0,
-                "w": 1.0
-              },
-              "Scale": {
-                "x": 1.0,
-                "y": 1.0,
-                "z": 1.0
-              },
-              "Enable": true
-            },
-            {
-              "@type": "MOD.Core.SpriteGUIRendererComponent",
-              "AnimClipPlayType": 0,
-              "EndFrameIndex": 2147483647,
-              "IgnoreMapLayerCheck": false,
-              "ImageRUID": {
-                "DataId": "44f644813243433b8d625d71a083678d"
-              },
-              "LocalPosition": {
-                "x": 0.0,
-                "y": 0.0
-              },
-              "LocalScale": {
-                "x": 1.0,
-                "y": 1.0
-              },
-              "MaterialId": "",
-              "OrderInLayer": 0,
-              "OverrideSorting": false,
-              "PlayRate": 1.0,
-              "PreserveSprite": 0,
-              "SortingLayer": "UI",
-              "StartFrameIndex": 0,
-              "Color": {
-                "r": 1.0,
-                "g": 1.0,
-                "b": 1.0,
-                "a": 1.0
-              },
-              "DropShadow": false,
-              "DropShadowAngle": 120.0,
-              "DropShadowColor": {
-                "r": 0.0,
-                "g": 0.0,
-                "b": 0.0,
-                "a": 0.72
-              },
-              "DropShadowDistance": 3.0,
-              "FillAmount": 1.0,
-              "FillCenter": true,
-              "FillClockWise": true,
-              "FillMethod": 0,
-              "FillOrigin": 0,
-              "FlipX": false,
-              "FlipY": false,
-              "FrameColumn": 1,
-              "FrameRate": 0,
-              "FrameRow": 1,
-              "Outline": false,
-              "OutlineColor": {
-                "r": 0.0,
-                "g": 0.0,
-                "b": 0.0,
-                "a": 1.0
-              },
-              "OutlineWidth": 3.0,
-              "RaycastTarget": false,
-              "Type": 0,
-              "Enable": true
-            }
-          ],
-          "@version": 1
-        }
-      },
-      {
-        "id": "6ac172dc-2adf-4bb4-86dd-9c62520c4ae1",
-        "path": "/ui/LobbyGroup/Root/Scrim",
-        "componentNames": "MOD.Core.UITransformComponent,MOD.Core.SpriteGUIRendererComponent",
-        "jsonString": {
-          "name": "Scrim",
-          "path": "/ui/LobbyGroup/Root/Scrim",
-          "nameEditable": true,
-          "enable": true,
-          "visible": true,
-          "localize": true,
-          "displayOrder": 3,
-          "pathConstraints": "////",
-          "revision": 0,
-          "origin": {
-            "type": "Model",
-            "entry_id": "UISprite",
-            "sub_entity_id": null,
-            "root_entity_id": null,
-            "replaced_model_id": null
-          },
-          "modelId": "uisprite",
-          "@components": [
-            {
-              "@type": "MOD.Core.UITransformComponent",
-              "ActivePlatform": 255,
-              "AlignmentOption": 15,
-              "AnchorsMax": {
-                "x": 1.0,
-                "y": 1.0
-              },
-              "AnchorsMin": {
-                "x": 0.0,
-                "y": 0.0
-              },
-              "MobileOnly": false,
-              "OffsetMax": {
-                "x": 0.0,
-                "y": 0.0
-              },
-              "OffsetMin": {
-                "x": 0.0,
-                "y": 0.0
+                "y": -540.0
               },
               "Pivot": {
                 "x": 0.5,
@@ -772,6 +348,11 @@
                 "x": 0.0,
                 "y": 0.0
               },
+              "Rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+              },
               "Position": {
                 "x": 0.0,
                 "y": 0.0,
@@ -781,73 +362,25 @@
                 "x": 0.0,
                 "y": 0.0,
                 "z": 0.0,
-                "w": 1.0
+                "w": -1.0
               },
               "Scale": {
                 "x": 1.0,
                 "y": 1.0,
                 "z": 1.0
               },
+              "ZRotation": 0.0,
               "Enable": true
             },
             {
-              "@type": "MOD.Core.SpriteGUIRendererComponent",
-              "AnimClipPlayType": 0,
-              "EndFrameIndex": 2147483647,
-              "IgnoreMapLayerCheck": false,
-              "ImageRUID": {
-                "DataId": "1705e3c5b2c146ac9a699f96fb067408"
-              },
-              "LocalPosition": {
-                "x": 0.0,
-                "y": 0.0
-              },
-              "LocalScale": {
-                "x": 1.0,
-                "y": 1.0
-              },
-              "MaterialId": "",
-              "OrderInLayer": 0,
+              "@type": "MOD.Core.YoutubePlayerGUIComponent",
               "OverrideSorting": false,
-              "PlayRate": 1.0,
-              "PreserveSprite": 0,
-              "SortingLayer": "UI",
-              "StartFrameIndex": 0,
-              "Color": {
-                "r": 0.0196078438,
-                "g": 0.0117647061,
-                "b": 0.05882353,
-                "a": 0.28
-              },
-              "DropShadow": false,
-              "DropShadowAngle": 120.0,
-              "DropShadowColor": {
-                "r": 0.0,
-                "g": 0.0,
-                "b": 0.0,
-                "a": 0.72
-              },
-              "DropShadowDistance": 3.0,
-              "FillAmount": 1.0,
-              "FillCenter": true,
-              "FillClockWise": true,
-              "FillMethod": 0,
-              "FillOrigin": 0,
-              "FlipX": false,
-              "FlipY": false,
-              "FrameColumn": 1,
-              "FrameRate": 0,
-              "FrameRow": 1,
-              "Outline": false,
-              "OutlineColor": {
-                "r": 0.0,
-                "g": 0.0,
-                "b": 0.0,
-                "a": 1.0
-              },
-              "OutlineWidth": 3.0,
-              "RaycastTarget": false,
-              "Type": 0,
+              "Loop": true,
+              "PlayOnAwake": true,
+              "Shuffle": true,
+              "Urls": [
+                "https://www.youtube.com/watch?v=SbwSxysR9Sk"
+              ],
               "Enable": true
             }
           ],
@@ -865,7 +398,7 @@
           "enable": true,
           "visible": true,
           "localize": true,
-          "displayOrder": 4,
+          "displayOrder": 1,
           "pathConstraints": "////",
           "revision": 0,
           "origin": {
@@ -1067,7 +600,7 @@
           "enable": true,
           "visible": true,
           "localize": true,
-          "displayOrder": 5,
+          "displayOrder": 2,
           "pathConstraints": "////",
           "revision": 0,
           "origin": {
@@ -1319,7 +852,7 @@
           "enable": true,
           "visible": true,
           "localize": true,
-          "displayOrder": 6,
+          "displayOrder": 3,
           "pathConstraints": "////",
           "revision": 0,
           "origin": {
@@ -1572,7 +1105,7 @@
           "enable": true,
           "visible": true,
           "localize": true,
-          "displayOrder": 7,
+          "displayOrder": 4,
           "pathConstraints": "////",
           "revision": 0,
           "origin": {
@@ -1824,7 +1357,7 @@
           "enable": true,
           "visible": true,
           "localize": true,
-          "displayOrder": 8,
+          "displayOrder": 5,
           "pathConstraints": "////",
           "revision": 0,
           "origin": {
@@ -2076,7 +1609,7 @@
           "enable": false,
           "visible": true,
           "localize": true,
-          "displayOrder": 9,
+          "displayOrder": 6,
           "pathConstraints": "////",
           "revision": 0,
           "origin": {
@@ -3192,7 +2725,7 @@
           "enable": true,
           "visible": true,
           "localize": true,
-          "displayOrder": 10,
+          "displayOrder": 7,
           "pathConstraints": "////",
           "revision": 0,
           "origin": {
