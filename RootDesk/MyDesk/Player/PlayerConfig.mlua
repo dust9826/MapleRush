@@ -67,6 +67,12 @@ script PlayerConfig extends Logic
 
 	property number SpinDmgPct = 2.5
 
+	-- 회전베기 넉백 거리(world unit). 기획 §4.2: 명중 적을 플레이어 반대 방향으로 밀어냄. 사이드뷰라 수평 밀어냄.
+	property number SpinKnockback = 1.0
+
+	-- 능력 쿨타임(초): 이전 능력 시전이 끝난 뒤 이 시간이 지나야 다시 능력 사용 가능. 시전시간(즉발0/만지·회전=지속)에 가산.
+	property number AbilityCooldown = 0.5
+
 	property boolean EnableDownJump = false
 
 	property string KeyLeft = "A"

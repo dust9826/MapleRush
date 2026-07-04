@@ -30,6 +30,11 @@ script HUDController extends Component
 
 	property TextComponent itemText3 = "a4531e18-c11b-4e6a-94ca-112c605f5154"
 
+	-- 슬롯4·5는 itemcap 메타 강화로 해금. 잠금 상태면 어둡게 표시. UUID는 UIBuilder가 주입.
+	property TextComponent itemText4 = "9b9cc82d-0f9c-4a17-a365-7c70da225439"
+
+	property TextComponent itemText5 = "87fd433f-08cd-4256-a050-a3391ad5a282"
+
 	-- 보스 오버레이 (보스 스테이지에서만 노출) — MR-K.
 	property Entity bossOverlay = "8f921fca-6809-47ee-a002-b0f053bff0d8"
 
@@ -91,13 +96,16 @@ script HUDController extends Component
 			self:UpdateAbility(ability)
 		end
 
-		-- 아이템: 3개 카드 라벨 + 활성 슬롯은 카드 색으로 강조.
+		-- 아이템: 최대 5개 카드 라벨 + 활성 슬롯 강조. 최대치 초과 슬롯(itemcap 미해금)은 잠금 표시.
 		---@type PlayerItems
 		local items = player:GetComponent("script.PlayerItems")
 		if items ~= nil then
-			self:UpdateItemCard(self.itemText1, items.Slot1, items.ActiveSlot == 1)
-			self:UpdateItemCard(self.itemText2, items.Slot2, items.ActiveSlot == 2)
-			self:UpdateItemCard(self.itemText3, items.Slot3, items.ActiveSlot == 3)
+			local maxItems = items:MaxItems()
+			self:UpdateItemCard(self.itemText1, items.Slot1, items.ActiveSlot == 1, 1 <= maxItems)
+			self:UpdateItemCard(self.itemText2, items.Slot2, items.ActiveSlot == 2, 2 <= maxItems)
+			self:UpdateItemCard(self.itemText3, items.Slot3, items.ActiveSlot == 3, 3 <= maxItems)
+			self:UpdateItemCard(self.itemText4, items.Slot4, items.ActiveSlot == 4, 4 <= maxItems)
+			self:UpdateItemCard(self.itemText5, items.Slot5, items.ActiveSlot == 5, 5 <= maxItems)
 		end
 
 		-- 보스 HP/그로기 오버레이 (보스 스테이지에서만).
@@ -296,11 +304,18 @@ script HUDController extends Component
 	end
 
 	@ExecSpace("ClientOnly")
-	method void UpdateItemCard(TextComponent text, string itemId, boolean active)
-		-- 아이템 카드 1칸 갱신: 라벨 + 활성 슬롯은 카드 배경을 금색으로 강조(▶ 문자 대신).
+	method void UpdateItemCard(TextComponent text, string itemId, boolean active, boolean visible)
+		-- 아이템 카드 1칸 갱신: 라벨 + 활성 슬롯은 카드 배경을 금색으로 강조.
+		-- 현재 최대 보관 수(itemcap)를 넘는 슬롯은 카드 자체를 미노출(잠금 표시 X).
 		if isvalid(text) == false then return end
+		local card = text.Entity
+		if visible == false then
+			if isvalid(card) then card.Enable = false end
+			return
+		end
+		if isvalid(card) then card.Enable = true end
 		text.Text = self:ItemLabel(itemId)
-		local sprite = text.Entity.SpriteGUIRendererComponent
+		local sprite = card.SpriteGUIRendererComponent
 		if isvalid(sprite) then
 			if active then
 				-- 활성(사용될 슬롯): 슬롯 이미지를 금색으로 틴트 + 대비용 어두운 글자.

@@ -5,7 +5,7 @@ attack,e87714e7b6d74841a677b25fd5d40c37,1,0,-1,180,0,0,1,1.2,기본 공격 이�
 ability_invincible_effect,a95a6b448de941a79c89611929a161d4,1,0,-1,0,0,0,1,,금강불괴 - effect(발동 버스트),TRUE
 ability_invincible_affected,51ecdf202d4d4c1f89704665df7be67d,1,0,-1,0,0,0,1,,금강불괴 - affected(피격 오버레이),TRUE
 ability_invincible_repeat,5fc73ad528a8460c8ad527b9e187e10d,1,0,-1,0,0,0,1,,금강불괴 - repeat(지속 루프),TRUE
-ability_clear,979ddd63cbcf419f9056cb653b0014af,1,0,-1,0,0,0,1,,참공(전 투사체 제거·카메라중심 대형),TRUE
+ability_clear,f3dfc25086f64623b31374ffd2b5a653,1,0,-1,0,0,0,1,,참공(전 투사체 제거·카메라중심 대형),TRUE
 ability_immovable,cc89658b5e734441b2b209a70cb96767,1,0,-1,0,0,0,1,,부동심(보호막),TRUE
 ability_manji,b84c3c28e8284104b68d16b5cf0524b2,1,0,-1,0,0,0,1,,만지 일섬,TRUE
 ability_spin,0ccf46e988084f9480546814d0e3b8f1,1,0,-1,0,0,-1,1,,회전베기,TRUE

@@ -61,6 +61,12 @@ script GameConstants extends Logic
 
 	property number FlashPeakAlpha = 0.9
 
+	-- 참공(모든 투사체 무효화) 제거 범위 = 플레이어 중심 뷰포트 박스 반너비/반높이(월드유닛).
+	-- 화면 실측 12.8×7.2(PC) → 반값 6.4×3.6. 기획 ability_design §3.2 "화면(뷰포트) 내" 판정. 카메라 오프셋 보정은 값 조정으로.
+	property number ClearViewHalfW = 6.4
+
+	property number ClearViewHalfH = 3.6
+
 	property string SmokeEffectLoopClip = "8e5ca7e1fdae4e059db8aaf65fa14df1"
 
 	property number SmokeEffectScale = 1.05
