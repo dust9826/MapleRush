@@ -121,7 +121,7 @@ script EnemyChaser extends Component
 			---@type PlayerHit
 			local hitComp = player:GetComponent("script.PlayerHit")
 			if hitComp ~= nil then
-				hitComp:RequestHit(self.HitSource .. ":" .. self.Entity.Name)
+				hitComp:RequestHit(self.HitSource .. ":" .. self.Entity.Name, self.Entity)
 			end
 		end
 
