@@ -1,7 +1,7 @@
 ---
 id: MR-AC
 title: 능력 보상 풀 2종→5종 (버그픽스)
-status: review
+status: done
 owner: D4LGONA
 area: script
 touches: [RootDesk/MyDesk/Stage/RewardManager.mlua, RootDesk/MyDesk/UI/HUDController.mlua]
