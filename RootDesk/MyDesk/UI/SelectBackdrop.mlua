@@ -1,0 +1,77 @@
+@Logic
+script SelectBackdrop extends Logic
+
+	-- 로딩화면(선택/전환 커버) 데이터 허브: 스토리 일러스트 풀 + TIP 풀 + 로딩 오버레이 토글.
+	-- 흐름: 테마/노드 선택이 뜨기 직전 ShowLoading() → 로딩 일러스트+TIP가 맵/HUD 위(선택팝업 아래)를 덮음
+	--   → 그 위에서 맵 전환 + 테마/스테이지 선택 진행 → 스테이지 준비 완료(ClientStageReset)에 HideLoading().
+	-- 목적: 선택/전환 중 뒤로 게임 맵이 비치는 것을 막고 몰입 유지 + 힌트 제공.
+
+	property any illusts = nil
+
+	property any tips = nil
+
+	-- 클라: 로딩 오버레이(LoadingOverlay) 참조. 등록은 LoadingOverlay.OnBeginPlay.
+	@HideFromInspector property any overlay = nil
+
+	method void EnsurePools()
+		-- 풀 1회 빌드(순수 데이터, 클라/서버 공통). 일러스트는 인트로 컷씬 7장 재활용.
+		if self.illusts ~= nil then return end
+		self.illusts = {
+			"ba75a198e091494ca6e59e1c881cfaeb",
+			"e93907fe1b3f47408b34762857f39ddd",
+			"bdbd146911ef4525a498f69db02accf0",
+			"7b80db4e4f954ec0becde63190147f95",
+			"3e2de5ba7dba4a4787014788faf789a7",
+			"846e0351d5274dc7a872e6618529eac6",
+			"d5afe4b5f99d454da07c866d6261d05e",
+		}
+		self.tips = {
+			"공격 받기 직전에 대시를 사용하면 슬로우 모션이 발생합니다.",
+			"슬로우 모션이 발생할 때 대시를 사용하면 대시가 1회 강화되며, 대시 횟수를 소모하지 않습니다.",
+			"대시를 사용하면 잠시 무적이 됩니다.",
+			"적의 노란색 공격은 기본 공격과 대시로 되받아칠 수 있습니다.",
+			"적의 빨간색 공격은 어떤 방법으로든 되받아칠 수 없습니다.",
+			"부딪히는 것으로 공격하는 적도 존재합니다.",
+			"일회용 아이템은 사용하고 목숨이 사라져도, 복구되지 않습니다.",
+			"능력은 스테이지마다 사용 횟수가 정해져 있습니다.",
+			"능력은 공격적, 방어적 유형으로 나뉩니다.",
+			"적의 공격을 되받아치면, 잠시 멈춥니다.",
+			"노아를 구출하는 과정에서 영구적으로 강해지게 하는 능력치 강화가 존재합니다.",
+			"빠르게 앞으로 나아가, 최강임을 입증하세요.",
+		}
+	end
+
+	method void OnBeginPlay()
+		-- 풀 사전 빌드.
+		self:EnsurePools()
+	end
+
+	method string RandomIllust()
+		-- 랜덤 스토리 일러스트 RUID.
+		self:EnsurePools()
+		return self.illusts[_UtilLogic:RandomIntegerRange(1, #self.illusts)]
+	end
+
+	method string RandomTip()
+		-- 랜덤 TIP 문자열.
+		self:EnsurePools()
+		return self.tips[_UtilLogic:RandomIntegerRange(1, #self.tips)]
+	end
+
+	@ExecSpace("ClientOnly")
+	method void ShowLoading(boolean showTip)
+		-- 배경 표시. showTip=true(선택/전환 로딩화면) / false(로비 배경, 일러스트만).
+		if self.overlay ~= nil and isvalid(self.overlay) then
+			self.overlay:Show(showTip)
+		end
+	end
+
+	@ExecSpace("ClientOnly")
+	method void HideLoading()
+		-- 로딩화면 숨김(스테이지 준비 완료).
+		if self.overlay ~= nil and isvalid(self.overlay) then
+			self.overlay:Hide()
+		end
+	end
+
+end

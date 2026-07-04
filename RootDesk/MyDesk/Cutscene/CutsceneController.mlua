@@ -130,6 +130,8 @@ script CutsceneController extends Component
 			self.escHandler = nil
 		end
 		if isvalid(self.lobbyRoot) then self.lobbyRoot.Enable = true end
+		-- 로비 배경으로 스토리 일러스트 깔기(TIP 없이). 선택/전투로 넘어가며 자연히 교체·숨김.
+		_SelectBackdrop:ShowLoading(false)
 		_SoundManager:PlayBGMKey("bgm_title")
 		_InputRouter:SetContext("Lobby")
 		if isvalid(self.cutsceneRoot) then self.cutsceneRoot.Enable = false end

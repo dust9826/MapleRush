@@ -616,6 +616,8 @@ script StageManager extends Logic
 		end
 		_UtilLogic:SetClientTimeScale(1.0)
 		_InputRouter:SetContext("Combat")
+		-- 스테이지 준비 완료 → 로딩화면 숨김(선택/전환 커버 종료).
+		_SelectBackdrop:HideLoading()
 	end
 
 	@ExecSpace("Client")
