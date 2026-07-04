@@ -31,9 +31,9 @@ script HUDController extends Component
 	property TextComponent itemText3 = "a4531e18-c11b-4e6a-94ca-112c605f5154"
 
 	-- 슬롯4·5는 itemcap 메타 강화로 해금. 잠금 상태면 어둡게 표시. UUID는 UIBuilder가 주입.
-	property TextComponent itemText4 = "e78de5e4-febb-497b-aa0f-f49eb6fe17bd"
+	property TextComponent itemText4 = "9b9cc82d-0f9c-4a17-a365-7c70da225439"
 
-	property TextComponent itemText5 = "9fa77fd4-31fd-423b-af57-923e9af161a2"
+	property TextComponent itemText5 = "87fd433f-08cd-4256-a050-a3391ad5a282"
 
 	-- 보스 오버레이 (보스 스테이지에서만 노출) — MR-K.
 	property Entity bossOverlay = "8f921fca-6809-47ee-a002-b0f053bff0d8"
@@ -86,7 +86,7 @@ script HUDController extends Component
 
 		-- 메소: 우상단 (코인 아이콘 옆).
 		if isvalid(self.mesoText) then
-			self.mesoText.Text = "보유 메소: " .. tostring(math.floor(_GameStateManager.Meso))
+			self.mesoText.Text = tostring(math.floor(_GameStateManager.Meso)) .. " 메소"
 		end
 
 		-- 능력: 우측 버튼 라벨 + 사용 시 중앙 플래시.
@@ -150,9 +150,14 @@ script HUDController extends Component
 		end
 	end
 
+	-- 대시 셰브런 이미지(충전=on / 미충전=off). 캐릭터관련 에셋.
+	property string dashOnRuid = "24e870107838488581f6764822a3e0e6"
+
+	property string dashOffRuid = "1655c911993b4321a60029d048732845"
+
 	@ExecSpace("ClientOnly")
 	method void UpdateDashPip(SpriteGUIRendererComponent pip, integer idx, integer count, integer max)
-		-- 대시 pip 1칸 갱신: MaxDash 초과 칸은 비활성(숨김), 그 이내에서 충전=노랑 / 미충전=배경색.
+		-- 대시 pip 1칸 갱신: MaxDash 초과 칸은 비활성(숨김), 그 이내에서 충전=on 셰브런 / 미충전=off 셰브런.
 		if isvalid(pip) == false then return end
 		if idx > max then
 			-- 최대 대시 개수를 넘는 칸은 아예 비활성화(렌더 숨김).
@@ -160,12 +165,12 @@ script HUDController extends Component
 			return
 		end
 		pip.Enable = true
-		if idx <= count then
-			-- 현재 대시 개수만큼 노랑색으로 채움.
-			pip.Color = Color(0.96, 0.78, 0.20, 1)
-		else
-			-- 충전 안 된 칸은 배경색(빈 슬롯).
-			pip.Color = Color(0.16, 0.20, 0.26, 1)
+		pip.Color = Color(1, 1, 1, 1)
+		-- 충전 여부에 따라 on/off 이미지 스왑(값 바뀔 때만 — 매 프레임 재로드 방지).
+		local want = self.dashOffRuid
+		if idx <= count then want = self.dashOnRuid end
+		if pip.ImageRUID == nil or pip.ImageRUID.DataId ~= want then
+			pip.ImageRUID = DataRef(want)
 		end
 	end
 
@@ -191,6 +196,8 @@ script HUDController extends Component
 				if isvalid(self.bossHpText) then
 					self.bossHpText.Text = tostring(math.floor(comp.HP)) .. " / " .. tostring(math.floor(comp.MaxHP))
 				end
+				-- 보스별 HP바 프레임(초상화+라벨 포함) 스왑 — BossKind로 선택.
+				self:UpdateBossFrame(comp.Entity)
 				-- 그로기 게이지 + 상태 연출.
 				---@type GroggyGauge
 				local gg = comp.Entity:GetComponent("script.GroggyGauge")
@@ -200,6 +207,28 @@ script HUDController extends Component
 		end
 		-- 보스 없음: 오버레이 숨김.
 		self.bossOverlay.Enable = false
+	end
+
+	@ExecSpace("ClientOnly")
+	method void UpdateBossFrame(Entity bossEntity)
+		-- 보스별 HP바 프레임 이미지 스왑(BossKind → RUID). 값 바뀔 때만 갱신.
+		if isvalid(self.bossOverlay) == false then return end
+		---@type BossController
+		local bc = bossEntity:GetComponent("script.BossController")
+		if bc == nil then return end
+		local want = ""
+		if bc.BossKind == "zakum" then
+			want = "399ade3ce39c410aaa2ca2c48c6bb99c"
+		elseif bc.BossKind == "elija" then
+			want = "8829c8420c7c4b6096663de0fcb81050"
+		elseif bc.BossKind == "snowman" then
+			want = "d5bfc98793be4affa511375becd46741"
+		end
+		if want == "" then return end
+		local rend = self.bossOverlay.SpriteGUIRendererComponent
+		if isvalid(rend) and (rend.ImageRUID == nil or rend.ImageRUID.DataId ~= want) then
+			rend.ImageRUID = DataRef(want)
+		end
 	end
 
 	@ExecSpace("ClientOnly")
@@ -241,37 +270,26 @@ script HUDController extends Component
 
 	@ExecSpace("ClientOnly")
 	method void UpdateAbility(PlayerAbility ability)
-		-- 능력 라벨 갱신 + 사용 감지 시 중앙 "⚡ 능력명 사용!" 플래시 (1.2s). #6(MR-I) 이식.
+		-- 능력을 텍스트 대신 아이콘으로 표시(사용 가능=기본 / 사용횟수 0=비활성 아이콘). 능력 없으면 아이콘 숨김.
 		local id = ability.AbilityId
 		local uses = ability.UsesLeft
-		-- 표시명.
-		local label = "능력 없음"
-		if id == "invincible" then
-			label = "무적"
-		elseif id == "clearProjectiles" then
-			label = "투사체 무효"
-		elseif id == "immovable" then
-			label = "부동심"
-		elseif id == "manji" then
-			label = "만지 일섬"
-		elseif id == "spin" then
-			label = "회전베기"
-		elseif id ~= "" then
-			label = id
-		end
 		self.prevAbilityUses = uses
-		-- 우측 버튼 라벨.
-		if isvalid(self.abilityBtnText) then
-			if id == "" then
-				self.abilityBtnText.Text = "능력 없음"
-			else
-				self.abilityBtnText.Text = label .. " (" .. tostring(uses) .. ")"
-			end
+		-- 라벨 텍스트 제거(아이콘으로 대체).
+		if isvalid(self.abilityBtnText) then self.abilityBtnText.Text = "" end
+		if isvalid(self.abilityCenterText) then self.abilityCenterText.Text = "" end
+		-- 능력 버튼 아이콘 갱신.
+		if isvalid(self.abilityBtnText) == false then return end
+		local ico = self.abilityBtnText.Entity:GetChildByName("Ico")
+		if isvalid(ico) == false then return end
+		if id == "" then
+			ico.Enable = false
+			return
 		end
-		-- 능력 사용 중앙 "⚡ 능력명 사용!" 플래시 제거(사용자 요청) — 항상 빈 텍스트 유지.
-		if isvalid(self.abilityCenterText) then
-			self.abilityCenterText.Text = ""
-		end
+		ico.Enable = true
+		local ir = self:AbilityIcon(id, uses > 0)
+		if ir == "" then return end
+		local isr = ico.SpriteGUIRendererComponent
+		if isvalid(isr) and (isr.ImageRUID == nil or isr.ImageRUID.DataId ~= ir) then isr.ImageRUID = DataRef(ir) end
 	end
 
 	@ExecSpace("ClientOnly")
@@ -285,16 +303,28 @@ script HUDController extends Component
 			return
 		end
 		if isvalid(card) then card.Enable = true end
-		text.Text = self:ItemLabel(itemId)
+		-- 라벨 텍스트 대신 아이템 아이콘 표시. 빈 슬롯이면 아이콘 숨김.
+		text.Text = ""
+		local ico = card:GetChildByName("Ico")
+		if isvalid(ico) then
+			local ir = self:ItemIcon(itemId)
+			if ir == "" then
+				ico.Enable = false
+			else
+				ico.Enable = true
+				local isr = ico.SpriteGUIRendererComponent
+				if isvalid(isr) and (isr.ImageRUID == nil or isr.ImageRUID.DataId ~= ir) then isr.ImageRUID = DataRef(ir) end
+			end
+		end
 		local sprite = card.SpriteGUIRendererComponent
 		if isvalid(sprite) then
 			if active then
-				-- 활성(사용될 슬롯): 금색 배경 + 대비용 어두운 글자.
+				-- 활성(사용될 슬롯): 슬롯 이미지를 금색으로 틴트 + 대비용 어두운 글자.
 				sprite.Color = Color(0.96, 0.78, 0.20, 1)
 				text.FontColor = Color(0.10, 0.10, 0.12, 1)
 			else
-				-- 비활성: 기본 배경 + 흰 글자.
-				sprite.Color = Color(0.16, 0.20, 0.28, 0.95)
+				-- 비활성: 슬롯 이미지 원색(흰 틴트) + 흰 글자.
+				sprite.Color = Color(1, 1, 1, 1)
 				text.FontColor = Color(1, 1, 1, 1)
 			end
 		end
@@ -308,6 +338,34 @@ script HUDController extends Component
 		elseif itemId == "flash" then return "섬광"
 		end
 		return "-"
+	end
+
+	@ExecSpace("ClientOnly")
+	method string ItemIcon(string itemId)
+		-- 아이템 종류별 아이콘 RUID. 빈 슬롯("")은 "" 반환 → 아이콘 숨김.
+		if itemId == "rock" then return "9f317ee0b97d44dba5f85fb352aee093"
+		elseif itemId == "flash" then return "bb183c305c274a1da619165665255b9f"
+		elseif itemId == "smoke" then return "dbdbb1b56ae54672ae68ac6882fff6a2"
+		end
+		return ""
+	end
+
+	@ExecSpace("ClientOnly")
+	method string AbilityIcon(string id, boolean usable)
+		-- 능력별 아이콘 RUID. usable=true→기본, false(사용횟수 0 등)→비활성 아이콘.
+		if id == "invincible" then
+			if usable then return "c1ad0196beed412cad77cce63d75fea8" else return "cd268905acec4ed4a7ba988c1c890245" end
+		elseif id == "clearProjectiles" then
+			-- 참공: 기본 아이콘 미제공 → 마우스오버 아이콘을 기본으로 대용.
+			if usable then return "8bf6011177e7458fb4e536ccc312104d" else return "440b5586b8ff4062b1d7cb04c4c53ab4" end
+		elseif id == "immovable" then
+			if usable then return "4b190775131740bfa2def611eb34c3f5" else return "b9779b8a88a1421bb83d4c357fea47ff" end
+		elseif id == "manji" then
+			if usable then return "4c316227ade8479eb7cb1c03566f2676" else return "72e38d824ac04a75ac053e92612cb36b" end
+		elseif id == "spin" then
+			if usable then return "55aadc0ec19b4124a0cca1eb7a4056fa" else return "2e815a776c4a4a28974c0bd9208d8c75" end
+		end
+		return ""
 	end
 
 end

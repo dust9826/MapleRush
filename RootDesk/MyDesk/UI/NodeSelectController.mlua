@@ -1,4 +1,4 @@
-﻿@Component
+@Component
 script NodeSelectController extends Component
 
 	property Entity nodeRoot = "5c6a85af-6513-443a-92fa-5c55f98eb97d"
@@ -6,26 +6,17 @@ script NodeSelectController extends Component
 	-- 타이틀은 이미지, 서브타이틀 텍스트만 동적("스테이지(X/Y)").
 	property TextComponent subtitleText = "1f7329ab-df25-4572-b22f-064953a715e2"
 
+	-- 1슬롯만 선택 가능(버튼). 2·3슬롯은 이미지 전용(선택 불가) — 스크립트 미연결.
 	property ButtonComponent btnNode1 = "143548d7-20f6-44e2-a88f-f1b5901056c1"
-
-	property ButtonComponent btnNode2 = "c1111f36-9180-418f-9435-24b2a2f057cf"
-
-	property ButtonComponent btnNode3 = "38d86f7d-9f18-4c55-8c18-e42ba8a6b41e"
 
 	property any hNode1 = nil
 
-	property any hNode2 = nil
-
-	property any hNode3 = nil
-
 	@ExecSpace("ClientOnly")
 	method void OnBeginPlay()
-		-- FloorManager에 등록 + 숨김 + 버튼 연결.
+		-- FloorManager에 등록 + 숨김 + 1슬롯 버튼만 연결.
 		_FloorManager.nodeUI = self
 		if isvalid(self.nodeRoot) then self.nodeRoot.Enable = false end
 		self.hNode1 = self.btnNode1.Entity:ConnectEvent(ButtonClickEvent, self.OnNode1Click)
-		self.hNode2 = self.btnNode2.Entity:ConnectEvent(ButtonClickEvent, self.OnNode2Click)
-		self.hNode3 = self.btnNode3.Entity:ConnectEvent(ButtonClickEvent, self.OnNode3Click)
 		log("[NodeSelectController] registered")
 	end
 
@@ -33,13 +24,11 @@ script NodeSelectController extends Component
 	method void OnEndPlay()
 		-- 버튼 해제.
 		if self.hNode1 ~= nil then self.btnNode1.Entity:DisconnectEvent(ButtonClickEvent, self.hNode1) end
-		if self.hNode2 ~= nil then self.btnNode2.Entity:DisconnectEvent(ButtonClickEvent, self.hNode2) end
-		if self.hNode3 ~= nil then self.btnNode3.Entity:DisconnectEvent(ButtonClickEvent, self.hNode3) end
 	end
 
 	@ExecSpace("ClientOnly")
 	method void Open(integer stageNo, integer totalStages)
-		-- 3분기 노드 선택 (현재 전부 일반 스테이지 — stage_design §2.2.3).
+		-- 3분기 노드 선택 (현재 전부 일반 스테이지 — stage_design §2.2.3). 1슬롯만 선택 가능.
 		self.nodeRoot.Enable = true
 		if isvalid(self.subtitleText) then self.subtitleText.Text = "스테이지(" .. tostring(stageNo) .. "/" .. tostring(totalStages) .. ")" end
 		log("[NodeSelectController] opened " .. tostring(stageNo) .. "/" .. tostring(totalStages))
@@ -47,20 +36,8 @@ script NodeSelectController extends Component
 
 	@ExecSpace("ClientOnly")
 	method void OnNode1Click(ButtonClickEvent event)
-		-- 분기 1.
+		-- 분기 1 (유일한 선택지).
 		self:SelectNode(1)
-	end
-
-	@ExecSpace("ClientOnly")
-	method void OnNode2Click(ButtonClickEvent event)
-		-- 분기 2.
-		self:SelectNode(2)
-	end
-
-	@ExecSpace("ClientOnly")
-	method void OnNode3Click(ButtonClickEvent event)
-		-- 분기 3.
-		self:SelectNode(3)
 	end
 
 	@ExecSpace("ClientOnly")

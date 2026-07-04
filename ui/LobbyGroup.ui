@@ -1410,20 +1410,20 @@
               },
               "MobileOnly": false,
               "OffsetMax": {
-                "x": 301.101,
-                "y": -114.8905
+                "x": 397.601,
+                "y": -116.8905
               },
               "OffsetMin": {
-                "x": -258.899,
-                "y": -214.8905
+                "x": -355.399,
+                "y": -212.8905
               },
               "Pivot": {
                 "x": 0.5,
                 "y": 0.5
               },
               "RectSize": {
-                "x": 560.0,
-                "y": 100.0
+                "x": 753.0,
+                "y": 96.0
               },
               "UIMode": 1,
               "UIScale": {
@@ -1460,7 +1460,7 @@
               "EndFrameIndex": 2147483647,
               "IgnoreMapLayerCheck": false,
               "ImageRUID": {
-                "DataId": "1705e3c5b2c146ac9a699f96fb067408"
+                "DataId": "15d96648a32d48cf9438cbbfe55f92c9"
               },
               "LocalPosition": {
                 "x": 0.0,
@@ -1474,13 +1474,13 @@
               "OrderInLayer": 0,
               "OverrideSorting": false,
               "PlayRate": 1.0,
-              "PreserveSprite": 0,
+              "PreserveSprite": 2,
               "SortingLayer": "UI",
               "StartFrameIndex": 0,
               "Color": {
-                "r": 0.24,
-                "g": 0.42,
-                "b": 0.55,
+                "r": 1.0,
+                "g": 1.0,
+                "b": 1.0,
                 "a": 1.0
               },
               "DropShadow": false,
@@ -1552,16 +1552,24 @@
               },
               "IgnoreMapLayerCheck": false,
               "ImageRUIDs": {
-                "HighlightedSprite": null,
-                "PressedSprite": null,
-                "SelectedSprite": null,
-                "DisabledSprite": null
+                "HighlightedSprite": {
+                  "DataId": "b4c0317a53f5416492704857bf219086"
+                },
+                "PressedSprite": {
+                  "DataId": "b4c0317a53f5416492704857bf219086"
+                },
+                "SelectedSprite": {
+                  "DataId": "b4c0317a53f5416492704857bf219086"
+                },
+                "DisabledSprite": {
+                  "DataId": "15d96648a32d48cf9438cbbfe55f92c9"
+                }
               },
               "KeyCode": 0,
               "OrderInLayer": 0,
               "OverrideSorting": false,
               "SortingLayer": "UI",
-              "Transition": 1,
+              "Transition": 2,
               "Enable": true
             },
             {
@@ -1615,7 +1623,7 @@
               },
               "SizeFit": false,
               "SortingLayer": "UI",
-              "Text": "튜토리얼",
+              "Text": "",
               "UseConstraintX": false,
               "UseConstraintY": false,
               "UseOutLine": false,

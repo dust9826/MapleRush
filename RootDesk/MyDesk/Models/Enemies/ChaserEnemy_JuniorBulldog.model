@@ -26,7 +26,7 @@
         "MOD.Core.MovementComponent",
         "MOD.Core.HitComponent",
         "script.EnemyAnimSet",
-        "script.EnemyChaser"
+        "script.EnemyMelee"
       ],
       "Properties": [],
       "Values": [
@@ -311,15 +311,6 @@
           "Value": "d85130ec7e2740b6815b457e4c3ffb67"
         },
         {
-          "TargetType": "script.EnemyChaser",
-          "Name": "Enable",
-          "ValueType": {
-            "$type": "MODNativeType",
-            "type": "System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
-          },
-          "Value": true
-        },
-        {
           "TargetType": "MOD.Core.SpriteRendererComponent",
           "Name": "EndFrameIndex",
           "ValueType": {
@@ -345,15 +336,6 @@
             "type": "System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
           },
           "Value": true
-        },
-        {
-          "TargetType": "script.EnemyChaser",
-          "Name": "mapKindCache",
-          "ValueType": {
-            "$type": "MODNativeType",
-            "type": "System.Int64, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
-          },
-          "Value": 0
         },
         {
           "TargetType": "script.EnemyHealth",
@@ -408,9 +390,9 @@
                 },
                 "Value": {
                   "$type": "MOD.Core.MODVector3, MOD.Core",
-                  "x": 0.0,
+                  "x": 0,
                   "y": 0.5,
-                  "z": 0.0
+                  "z": 0
                 }
               },
               {
@@ -422,10 +404,10 @@
                 },
                 "Value": {
                   "$type": "MOD.Core.MODQuaternion, MOD.Core",
-                  "x": 0.0,
-                  "y": 0.0,
-                  "z": 0.0,
-                  "w": 1.0
+                  "x": 0,
+                  "y": 0,
+                  "z": 0,
+                  "w": 1
                 }
               },
               {

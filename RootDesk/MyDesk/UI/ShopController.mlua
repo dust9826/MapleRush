@@ -23,6 +23,15 @@ script ShopController extends Component
 
 	property TextComponent txtItem = "c805d657-545b-4b51-82b7-b017f645c696"
 
+	-- 행 배경에 박힌 코인 오른쪽에 표시되는 가격("N 메소") 텍스트 — 상품명과 분리.
+	property TextComponent txtMaxLifePrice = "c22ad015-5aed-4555-a25f-78c6e924099d"
+
+	property TextComponent txtStatPrice = "ce45925b-0204-422d-8419-1988df3d40d2"
+
+	property TextComponent txtAbilityPrice = "7c9ff7c0-0f4c-4a8f-a3a3-0ec0400bbb36"
+
+	property TextComponent txtItemPrice = "f73408aa-b2b3-4010-8744-fabbfe7c6021"
+
 	property any hMaxLife = nil
 
 	property any hStat = nil
@@ -71,12 +80,17 @@ script ShopController extends Component
 		-- 가격/메소 실시간 갱신 (@Sync 가격 폴링).
 		if self.isOpen == false then return end
 		if isvalid(self.mesoText) then
-			self.mesoText.Text = "보유 메소: " .. tostring(math.floor(_GameStateManager.Meso))
+			self.mesoText.Text = tostring(math.floor(_GameStateManager.Meso)) .. " 메소"
 		end
-		if isvalid(self.txtMaxLife) then self.txtMaxLife.Text = "최대 목숨 +1 — " .. tostring(_ShopManager.PriceMaxLife) .. " 메소" end
-		if isvalid(self.txtStat) then self.txtStat.Text = "공격력 강화 +2 — " .. tostring(_ShopManager.PriceStat) .. " 메소" end
-		if isvalid(self.txtAbility) then self.txtAbility.Text = "능력 획득/교체 — " .. tostring(_ShopManager.PriceAbility) .. " 메소" end
-		if isvalid(self.txtItem) then self.txtItem.Text = "일회성 아이템 — " .. tostring(_ShopManager.PriceItem) .. " 메소" end
+		-- 상품명(좌) / 가격(코인 우측) 분리 표시.
+		if isvalid(self.txtMaxLife) then self.txtMaxLife.Text = "최대 목숨 +1" end
+		if isvalid(self.txtMaxLifePrice) then self.txtMaxLifePrice.Text = tostring(_ShopManager.PriceMaxLife) .. " 메소" end
+		if isvalid(self.txtStat) then self.txtStat.Text = "공격력 강화 +2" end
+		if isvalid(self.txtStatPrice) then self.txtStatPrice.Text = tostring(_ShopManager.PriceStat) .. " 메소" end
+		if isvalid(self.txtAbility) then self.txtAbility.Text = "능력 획득/교체" end
+		if isvalid(self.txtAbilityPrice) then self.txtAbilityPrice.Text = tostring(_ShopManager.PriceAbility) .. " 메소" end
+		if isvalid(self.txtItem) then self.txtItem.Text = "일회성 아이템" end
+		if isvalid(self.txtItemPrice) then self.txtItemPrice.Text = tostring(_ShopManager.PriceItem) .. " 메소" end
 	end
 
 	@ExecSpace("ClientOnly")
