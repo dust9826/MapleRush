@@ -613,20 +613,20 @@
               },
               "MobileOnly": false,
               "OffsetMax": {
-                "x": 300.0,
-                "y": 162.0
+                "x": 59.5,
+                "y": 159.0
               },
               "OffsetMin": {
-                "x": -300.0,
-                "y": 98.0
+                "x": -59.5,
+                "y": 101.0
               },
               "Pivot": {
                 "x": 0.5,
                 "y": 0.5
               },
               "RectSize": {
-                "x": 600.0,
-                "y": 64.0
+                "x": 119.0,
+                "y": 58.0
               },
               "UIMode": 1,
               "UIScale": {
@@ -663,7 +663,7 @@
               "EndFrameIndex": 2147483647,
               "IgnoreMapLayerCheck": false,
               "ImageRUID": {
-                "DataId": ""
+                "DataId": "489542f224f44224aa2a15c3ecd65639"
               },
               "LocalPosition": {
                 "x": 0.0,
@@ -684,7 +684,7 @@
                 "r": 1.0,
                 "g": 1.0,
                 "b": 1.0,
-                "a": 0.0
+                "a": 1.0
               },
               "DropShadow": false,
               "DropShadowAngle": 120.0,
@@ -768,7 +768,7 @@
               },
               "SizeFit": false,
               "SortingLayer": "UI",
-              "Text": "설정",
+              "Text": "",
               "UseConstraintX": false,
               "UseConstraintY": false,
               "UseOutLine": false,
@@ -815,20 +815,20 @@
               },
               "MobileOnly": false,
               "OffsetMax": {
-                "x": -98.0,
-                "y": 21.0
+                "x": -136.0,
+                "y": 6.0
               },
               "OffsetMin": {
-                "x": -278.0,
-                "y": -29.0
+                "x": -264.0,
+                "y": -14.0
               },
               "Pivot": {
                 "x": 0.5,
                 "y": 0.5
               },
               "RectSize": {
-                "x": 180.0,
-                "y": 50.0
+                "x": 128.0,
+                "y": 20.0
               },
               "UIMode": 1,
               "UIScale": {
@@ -838,11 +838,11 @@
               },
               "UIVersion": 2,
               "anchoredPosition": {
-                "x": -188.0,
+                "x": -200.0,
                 "y": -4.0
               },
               "Position": {
-                "x": -188.0,
+                "x": -200.0,
                 "y": -4.0,
                 "z": 0.0
               },
@@ -865,7 +865,7 @@
               "EndFrameIndex": 2147483647,
               "IgnoreMapLayerCheck": false,
               "ImageRUID": {
-                "DataId": ""
+                "DataId": "09160964f5aa48fe96f0377d01fd0818"
               },
               "LocalPosition": {
                 "x": 0.0,
@@ -886,7 +886,7 @@
                 "r": 1.0,
                 "g": 1.0,
                 "b": 1.0,
-                "a": 0.0
+                "a": 1.0
               },
               "DropShadow": false,
               "DropShadowAngle": 120.0,
@@ -1412,20 +1412,20 @@
               },
               "MobileOnly": false,
               "OffsetMax": {
-                "x": -98.0,
-                "y": 82.0
+                "x": -136.0,
+                "y": 67.0
               },
               "OffsetMin": {
-                "x": -278.0,
-                "y": 32.0
+                "x": -264.0,
+                "y": 47.0
               },
               "Pivot": {
                 "x": 0.5,
                 "y": 0.5
               },
               "RectSize": {
-                "x": 180.0,
-                "y": 50.0
+                "x": 128.0,
+                "y": 20.0
               },
               "UIMode": 1,
               "UIScale": {
@@ -1435,11 +1435,11 @@
               },
               "UIVersion": 2,
               "anchoredPosition": {
-                "x": -188.0,
+                "x": -200.0,
                 "y": 57.0
               },
               "Position": {
-                "x": -188.0,
+                "x": -200.0,
                 "y": 57.0,
                 "z": 0.0
               },
@@ -1462,7 +1462,7 @@
               "EndFrameIndex": 2147483647,
               "IgnoreMapLayerCheck": false,
               "ImageRUID": {
-                "DataId": ""
+                "DataId": "09160964f5aa48fe96f0377d01fd0818"
               },
               "LocalPosition": {
                 "x": 0.0,
@@ -1483,7 +1483,7 @@
                 "r": 1.0,
                 "g": 1.0,
                 "b": 1.0,
-                "a": 0.0
+                "a": 1.0
               },
               "DropShadow": false,
               "DropShadowAngle": 120.0,

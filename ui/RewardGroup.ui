@@ -5250,7 +5250,7 @@
           "name": "Confirm",
           "path": "/ui/RewardGroup/Root/Confirm",
           "nameEditable": true,
-          "enable": true,
+          "enable": false,
           "visible": true,
           "localize": true,
           "displayOrder": 2,
