@@ -1,7 +1,7 @@
 ---
 id: MR-AE
 title: 죽음→회귀 연출 (묘비 낙하 + 비네팅 전환 + 회귀 씬)
-status: in-progress
+status: review
 owner: dust9826
 area: mixed
 touches:
@@ -36,12 +36,24 @@ updated: 2026-07-04
 - [ ] 각 비트 `log()` 증거 + play 스크린샷 검증
 
 ## Subtasks
-- [ ] 회귀 이미지 RUID 렌더 확인 + 방사형 비네팅 텍스처(msw-painter) 생성·업로드·RUID 확보
-- [ ] `ui/RegressionGroup.ui` (UIBuilder): Illust/BlackFill/Vignette 3레이어 풀스크린, 최상위 displayOrder
-- [ ] `RegressionOverlay.mlua`: 자기등록 + `Play(mode)` + OnUpdate 5비트 상태머신(openness 구동)
-- [ ] GameConstants 튜너블(블링크/홀드 시간, 비네팅 scale, 이미지 RUID)
-- [ ] 4개 버튼 핸들러 배선(즉시 액션 → 오버레이 Play, nil 가드 폴백) + 로드/컨텍스트 오버레이로 이관
-- [ ] play 검증 (각 비트 로그+스크린샷: 암전→회귀→암전→목적지)
+- [x] 회귀 이미지 RUID 렌더 확인(fullscreen OK) + 방사형 비네팅 텍스처 생성(msw-painter)
+- [x] `ui/RegressionGroup.ui` (UIBuilder): Illust/BlackFill/Vignette 3레이어 풀스크린, 최상위 displayOrder
+- [x] `RegressionOverlay.mlua`: 자기등록 + `Play(mode)` + OnUpdate 5비트 상태머신(openness 구동)
+- [x] GameConstants 튜너블(블링크/홀드 시간, 비네팅 scale, 이미지 RUID)
+- [x] 4개 버튼 핸들러 배선(즉시 액션 → 오버레이 Play, nil 가드 폴백) + 로드/컨텍스트 오버레이로 이관
+- [~] play 검증: 오버레이 등록·회귀 이미지 fullscreen·BlackFill 검정·빌드/런타임 에러0 확인. **비네팅 텍스처만 미검증**(아래 핸드오프)
+
+## Handoff — 비네팅 텍스처만 남음 (다른 PC에서 마무리)
+
+⛔ **MCP 업로드 스프라이트 런타임 unavailable 트랩 확정**: 계정업로드(`asset_create_account_...`)→런타임 blank quad, 그룹업로드(`asset_create_group_...`)→완료콜 MCP 에러. 둘 다 막힘.
+
+**남은 단계 (Maker 에디터에서 수동 임포트):**
+1. `docs/superpowers/assets/regression-vignette.png`(중앙 투명→가장자리 검정 방사형)를 Maker 리소스 매니저에 **sprite로 임포트** → RUID 확보.
+2. 그 RUID로 교체 2곳:
+   - `ui/RegressionGroup.ui`의 `Vignette` 스프라이트 `ImageRUID` (UIBuilder `patchComponent("RegressionGroup/Vignette", "MOD.Core.SpriteGUIRendererComponent", { ImageRUID: { DataId: "<RUID>" } })`). **현재 값 = `dad51dc592424ed68a29ca205a41f4aa`(계정업로드, 런타임 안뜸)**.
+   - `GameConstants.RegressionVignetteRUID` (현재 미사용 상수지만 동기화).
+3. refresh → play → 검증: `_StageManager.regressionOverlay:ApplyOpenness(0.35)` + `illust:SetAlpha(1)`로 방사형 비네팅이 이미지 위에 조여드는지 스크린샷. `Play("lobby")`로 풀 시퀀스 로그(close1/open1/hold/close2/DoLoad/open2/finished) 확인.
+- 참고: 오버레이는 `Vignette` sprite의 alpha(1-openness)+`UITransformComponent.UIScale`(closed→open)만 구동. 텍스처 RUID만 바꾸면 즉시 동작.
 
 ## Notes / decisions
 - **재사용**: `StageManager.OnPlayerDeath`(hold→ToBlack→ResetStage→FromBlack 체인 이미 존재), `FadeOverlay`(ToBlack/FromBlack, ScreenFadeDuration), `CutsceneController`(회귀 씬 패턴, 인트로 7씬이 이미 "회귀가 시작된다").
