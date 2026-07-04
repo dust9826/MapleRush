@@ -81,7 +81,7 @@ script HUDController extends Component
 
 		-- 메소: 우상단 (코인 아이콘 옆).
 		if isvalid(self.mesoText) then
-			self.mesoText.Text = "보유 메소: " .. tostring(math.floor(_GameStateManager.Meso))
+			self.mesoText.Text = tostring(math.floor(_GameStateManager.Meso)) .. " 메소"
 		end
 
 		-- 능력: 우측 버튼 라벨 + 사용 시 중앙 플래시.
@@ -142,9 +142,14 @@ script HUDController extends Component
 		end
 	end
 
+	-- 대시 셰브런 이미지(충전=on / 미충전=off). 캐릭터관련 에셋.
+	property string dashOnRuid = "24e870107838488581f6764822a3e0e6"
+
+	property string dashOffRuid = "1655c911993b4321a60029d048732845"
+
 	@ExecSpace("ClientOnly")
 	method void UpdateDashPip(SpriteGUIRendererComponent pip, integer idx, integer count, integer max)
-		-- 대시 pip 1칸 갱신: MaxDash 초과 칸은 비활성(숨김), 그 이내에서 충전=노랑 / 미충전=배경색.
+		-- 대시 pip 1칸 갱신: MaxDash 초과 칸은 비활성(숨김), 그 이내에서 충전=on 셰브런 / 미충전=off 셰브런.
 		if isvalid(pip) == false then return end
 		if idx > max then
 			-- 최대 대시 개수를 넘는 칸은 아예 비활성화(렌더 숨김).
@@ -152,12 +157,12 @@ script HUDController extends Component
 			return
 		end
 		pip.Enable = true
-		if idx <= count then
-			-- 현재 대시 개수만큼 노랑색으로 채움.
-			pip.Color = Color(0.96, 0.78, 0.20, 1)
-		else
-			-- 충전 안 된 칸은 배경색(빈 슬롯).
-			pip.Color = Color(0.16, 0.20, 0.26, 1)
+		pip.Color = Color(1, 1, 1, 1)
+		-- 충전 여부에 따라 on/off 이미지 스왑(값 바뀔 때만 — 매 프레임 재로드 방지).
+		local want = self.dashOffRuid
+		if idx <= count then want = self.dashOnRuid end
+		if pip.ImageRUID == nil or pip.ImageRUID.DataId ~= want then
+			pip.ImageRUID = DataRef(want)
 		end
 	end
 
@@ -183,6 +188,8 @@ script HUDController extends Component
 				if isvalid(self.bossHpText) then
 					self.bossHpText.Text = tostring(math.floor(comp.HP)) .. " / " .. tostring(math.floor(comp.MaxHP))
 				end
+				-- 보스별 HP바 프레임(초상화+라벨 포함) 스왑 — BossKind로 선택.
+				self:UpdateBossFrame(comp.Entity)
 				-- 그로기 게이지 + 상태 연출.
 				---@type GroggyGauge
 				local gg = comp.Entity:GetComponent("script.GroggyGauge")
@@ -192,6 +199,28 @@ script HUDController extends Component
 		end
 		-- 보스 없음: 오버레이 숨김.
 		self.bossOverlay.Enable = false
+	end
+
+	@ExecSpace("ClientOnly")
+	method void UpdateBossFrame(Entity bossEntity)
+		-- 보스별 HP바 프레임 이미지 스왑(BossKind → RUID). 값 바뀔 때만 갱신.
+		if isvalid(self.bossOverlay) == false then return end
+		---@type BossController
+		local bc = bossEntity:GetComponent("script.BossController")
+		if bc == nil then return end
+		local want = ""
+		if bc.BossKind == "zakum" then
+			want = "399ade3ce39c410aaa2ca2c48c6bb99c"
+		elseif bc.BossKind == "elija" then
+			want = "8829c8420c7c4b6096663de0fcb81050"
+		elseif bc.BossKind == "snowman" then
+			want = "d5bfc98793be4affa511375becd46741"
+		end
+		if want == "" then return end
+		local rend = self.bossOverlay.SpriteGUIRendererComponent
+		if isvalid(rend) and (rend.ImageRUID == nil or rend.ImageRUID.DataId ~= want) then
+			rend.ImageRUID = DataRef(want)
+		end
 	end
 
 	@ExecSpace("ClientOnly")
@@ -274,12 +303,12 @@ script HUDController extends Component
 		local sprite = text.Entity.SpriteGUIRendererComponent
 		if isvalid(sprite) then
 			if active then
-				-- 활성(사용될 슬롯): 금색 배경 + 대비용 어두운 글자.
+				-- 활성(사용될 슬롯): 슬롯 이미지를 금색으로 틴트 + 대비용 어두운 글자.
 				sprite.Color = Color(0.96, 0.78, 0.20, 1)
 				text.FontColor = Color(0.10, 0.10, 0.12, 1)
 			else
-				-- 비활성: 기본 배경 + 흰 글자.
-				sprite.Color = Color(0.16, 0.20, 0.28, 0.95)
+				-- 비활성: 슬롯 이미지 원색(흰 틴트) + 흰 글자.
+				sprite.Color = Color(1, 1, 1, 1)
 				text.FontColor = Color(1, 1, 1, 1)
 			end
 		end
