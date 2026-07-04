@@ -24,6 +24,9 @@ script PlayerAbility extends Component
 	-- 클라: 부동심 보호막 루프 이펙트 serial(0=없음). 흡수/스테이지전환 시 FxImmovableStop이 조기 제거. 각 클라 로컬 값.
 	@HideFromInspector property integer immovableFxSerial = 0
 
+	-- 클라: 능력 쿨타임 종료 시각(Now 기준). 이전 시전 종료 + AbilityCooldown. 이 시각 전엔 능력 발동 차단.
+	@HideFromInspector property number abilityCdUntil = -999.0
+
 	property any routerHandler = nil
 
 	@ExecSpace("ClientOnly")
@@ -70,6 +73,19 @@ script PlayerAbility extends Component
 			log("[PlayerAbility] no uses left this stage")
 			return
 		end
+		-- 능력 쿨타임: 이전 시전이 끝나고 AbilityCooldown(0.5s) 지나야 재사용 가능.
+		if _WallClock:Now() < self.abilityCdUntil then
+			log("[PlayerAbility] on cooldown (" .. string.format("%.2f", self.abilityCdUntil - _WallClock:Now()) .. "s left)")
+			return
+		end
+		-- 쿨타임 시작점 = 시전 종료. 즉발(임시무적/투사체무효화/부동심)=0, 만지=돌진 0.1s, 회전=지속 0.2s.
+		local castDur = 0.0
+		if self.AbilityId == "manji" then
+			castDur = _PlayerConfig.ManjiDashDuration
+		elseif self.AbilityId == "spin" then
+			castDur = _PlayerConfig.SpinDuration
+		end
+		self.abilityCdUntil = _WallClock:Now() + castDur + _PlayerConfig.AbilityCooldown
 		-- 만지/회전은 클라 이동·이동잠금을 동반하므로 전용 클라 시작 경로. 나머지(임시무적/투사체무효화/부동심)는 서버 즉발.
 		if self.AbilityId == "manji" then
 			self:StartManji()
@@ -96,21 +112,28 @@ script PlayerAbility extends Component
 			self:FxInvincible(invDur)
 			log("[PlayerAbility] INVINCIBLE for " .. tostring(invDur) .. "s (base+금강불괴 meta, left=" .. tostring(self.UsesLeft) .. ")")
 		elseif self.AbilityId == "clearProjectiles" then
+			-- 화면(뷰포트) 내 적 투사체만 제거 (ability_design §3.2). 뷰포트 = 플레이어 중심 박스(GameConstants.ClearViewHalfW/H).
 			local map = self.Entity.CurrentMap
 			local removed = 0
 			if isvalid(map) then
+				local center = self.Entity.TransformComponent.WorldPosition
+				local hw = _GameConstants.ClearViewHalfW
+				local hh = _GameConstants.ClearViewHalfH
 				local projs = map:GetChildComponentsByTypeName("script.Projectile", true)
 				for _, compAny in ipairs(projs) do
 					---@type Projectile
 					local comp = compAny
 					if isvalid(comp.Entity) and comp.OwnerSide == "enemy" then
-						comp.Entity:Destroy()
-						removed += 1
+						local pp = comp.Entity.TransformComponent.WorldPosition
+						if math.abs(pp.x - center.x) <= hw and math.abs(pp.y - center.y) <= hh then
+							comp.Entity:Destroy()
+							removed += 1
+						end
 					end
 				end
 			end
 			self:FxClear()
-			log("[PlayerAbility] CLEAR PROJECTILES: removed=" .. tostring(removed) .. " (left=" .. tostring(self.UsesLeft) .. ")")
+			log("[PlayerAbility] CLEAR PROJECTILES (viewport): removed=" .. tostring(removed) .. " (left=" .. tostring(self.UsesLeft) .. ")")
 		elseif self.AbilityId == "immovable" then
 			-- 부동심: 보험 창 개시 + 흡수 횟수 충전(1 + 메타). 창 안에서 피격 시 PlayerHit이 TryConsumeImmovable로 소모.
 			self.immovableUntil = _WallClock:ServerNow() + _PlayerConfig.ImmovableWindow
@@ -198,10 +221,12 @@ script PlayerAbility extends Component
 		local radius = _PlayerConfig.SpinRadius + _MetaProgression:GetSpinBonus()
 		local damage = _GameStateManager.AttackStat * _PlayerConfig.SpinDmgPct
 		local hitCount = _CombatPrimitives:DamageEnemiesInCircle(map, center, radius, damage, "spin")
+		-- 넉백: 명중해 살아남은 적을 플레이어 반대 방향으로 밀어냄(투사체 제외, ability_design §4.2).
+		local knockCount = _CombatPrimitives:KnockbackEnemiesInCircle(map, center, radius, _PlayerConfig.SpinKnockback)
 		-- 회전베기 전용 패링: 원형 범위를 정사각 박스로 근사해 근접 노란공격 취소 + 노란투사체 반사(ability_design §4.2).
 		local reflectDamage = _GameStateManager.AttackStat * _PlayerConfig.DmgReflectPct
 		local parryCount = _CombatPrimitives:TryParry(map, center, radius, radius, reflectDamage)
-		log("[PlayerAbility] SPIN: hit=" .. tostring(hitCount) .. " parry=" .. tostring(parryCount) .. " r=" .. string.format("%.2f", radius) .. " (left=" .. tostring(self.UsesLeft) .. ")")
+		log("[PlayerAbility] SPIN: hit=" .. tostring(hitCount) .. " knock=" .. tostring(knockCount) .. " parry=" .. tostring(parryCount) .. " r=" .. string.format("%.2f", radius) .. " (left=" .. tostring(self.UsesLeft) .. ")")
 	end
 
 	@ExecSpace("ClientOnly")

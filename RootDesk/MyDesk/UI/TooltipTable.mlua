@@ -1,0 +1,47 @@
+@Logic
+script TooltipTable extends Logic
+
+	-- 아이템/능력 툴팁 텍스트(제목·본문)를 코드 하드코딩 대신 데이터셋(TooltipTable.csv)으로 관리하는 조회 계층.
+	-- 기획자가 CSV만 편집하면 ItemTooltip 표시가 자동 반영. EffectTable/SoundTable과 동일 패턴.
+	-- key -> { title, body }. body 셀의 "\n"(리터럴 2글자)은 로드 시 실제 줄바꿈으로 변환한다.
+	-- key 규칙: 아이템=rock/smoke/flash/item_empty, 능력=invincible/clearProjectiles/immovable/manji/spin/ability_empty.
+	@HideFromInspector property any rows = nil
+
+	method void OnBeginPlay()
+		-- 툴팁 테이블 로드(클라 UI에서 조회하지만 서버/클라 공용 로드로 무해). 이후 _TooltipTable:Get(key)로 조회.
+		self:Reload()
+	end
+
+	method void Reload()
+		-- TooltipTable 데이터셋 → { key = {title, body} } 캐시 구축. 데이터셋 없거나 빈 key는 스킵.
+		self.rows = {}
+		local ds = _DataService:GetTable("TooltipTable")
+		if ds == nil then
+			log_error("[TooltipTable] dataset 'TooltipTable' not found — 툴팁 조회 불가 (Maker refresh 필요할 수 있음)")
+			return
+		end
+		local n = ds:GetRowCount()
+		local loaded = 0
+		local i = 1
+		while i <= n do
+			local key = ds:GetCell(i, "key")
+			if key ~= nil and key ~= "" then
+				local title = ds:GetCell(i, "title") or ""
+				local bodyRaw = ds:GetCell(i, "body") or ""
+				-- CSV 셀의 "\n" 리터럴(역슬래시+n)을 실제 줄바꿈으로 치환. gsub의 2반환(문자열, 치환수)을 모두 받아 arity 경고 회피.
+				local body, cnt = string.gsub(bodyRaw, "\\n", "\n")
+				self.rows[key] = { title = title, body = body }
+				loaded += 1
+			end
+			i += 1
+		end
+		log("[TooltipTable] loaded " .. tostring(loaded) .. "/" .. tostring(n) .. " tooltips")
+	end
+
+	method any Get(string key)
+		-- key -> {title, body}. 미등록/미로드 시 nil 반환(호출부가 폴백 처리).
+		if self.rows == nil then return nil end
+		return self.rows[key]
+	end
+
+end
