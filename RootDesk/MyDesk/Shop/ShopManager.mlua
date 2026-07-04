@@ -62,7 +62,18 @@ script ShopManager extends Logic
 
 	@ExecSpace("Server")
 	method void RequestBuyItem()
-		-- 일회성 아이템 (랜덤) 구입.
+		-- 일회성 아이템 (랜덤) 구입. ★ 가방 가득이면 메소 차감 전에 차단(아이템 소실 방지) + 요청 클라에 안내.
+		--   지급 대상(ClaimItemReward→FindRequester)과 동일하게 _StageManager:GetPlayer()로 판정해 검사·지급 대상을 일치시킨다.
+		local player = _StageManager:GetPlayer()
+		if isvalid(player) then
+			---@type PlayerItems
+			local items = player:GetComponent("script.PlayerItems")
+			if items ~= nil and items:HasFreeSlot() == false then
+				log("[ShopManager] item buy blocked: inventory full")
+				self:NotifyInventoryFull(senderUserId)
+				return
+			end
+		end
 		if _GameStateManager:SpendMeso(self.PriceItem) == false then
 			log("[ShopManager] not enough meso for item (" .. tostring(self.PriceItem) .. ")")
 			return
@@ -70,6 +81,12 @@ script ShopManager extends Logic
 		_RewardManager:ClaimItemReward()
 		self.PriceItem = math.floor(math.min(self.PriceItem * 2, _GameConstants.MesoCap))
 		log("[ShopManager] item bought (next price " .. tostring(self.PriceItem) .. ")")
+	end
+
+	@ExecSpace("Client")
+	method void NotifyInventoryFull()
+		-- 서버 → 요청 클라: 가방 가득 안내 토스트(클라 프리체크를 우회/레이스로 서버 차단이 걸린 드문 경우 피드백).
+		_UIToast:ShowMessage("가방이 가득 찼습니다", false)
 	end
 
 end

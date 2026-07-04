@@ -129,7 +129,16 @@ script ShopController extends Component
 
 	@ExecSpace("ClientOnly")
 	method void OnItemClick(ButtonClickEvent event)
-		-- 아이템 구입: 확인 팝업 경유.
+		-- 아이템 구입: 가방 가득이면 즉시 차단(확인 팝업·메소 차감 없음), 아니면 확인 팝업 경유.
+		local player = _UserService.LocalPlayer
+		if isvalid(player) then
+			---@type PlayerItems
+			local items = player:GetComponent("script.PlayerItems")
+			if items ~= nil and items:HasFreeSlot() == false then
+				_UIPopup:Open("일회성 아이템 획득\n가방이 가득 찼습니다.", nil, nil)
+				return
+			end
+		end
 		self:TryBuy("일회성 아이템 획득", _ShopManager.PriceItem, function() _ShopManager:RequestBuyItem() end)
 	end
 

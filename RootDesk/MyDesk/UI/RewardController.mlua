@@ -189,13 +189,14 @@ script RewardController extends Component
 
 	@ExecSpace("ClientOnly")
 	method boolean IsInventoryFull()
-		-- 로컬 플레이어 아이템 슬롯 3칸이 모두 찼는지 (@Sync 슬롯 조회).
+		-- 현재 최대 보관 수(MaxItems, itemcap 해금 슬롯 포함) 안에 빈 칸이 하나도 없는지.
+		-- ★ 슬롯 1~3만 하드코딩하던 버그 수정: PlayerItems.HasFreeSlot(단일 진실원)로 통일.
 		local player = _UserService.LocalPlayer
 		if isvalid(player) == false then return false end
 		---@type PlayerItems
 		local items = player:GetComponent("script.PlayerItems")
 		if items == nil then return false end
-		return items.Slot1 ~= "" and items.Slot2 ~= "" and items.Slot3 ~= ""
+		return items:HasFreeSlot() == false
 	end
 
 	@ExecSpace("ClientOnly")
