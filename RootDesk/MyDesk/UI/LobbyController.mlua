@@ -1,7 +1,7 @@
 @Component
 script LobbyController extends Component
 
-	-- 로비 루트 (전체 토글) + 4개 메뉴 버튼.
+	-- 로비 루트 (전체 토글) + 3개 메뉴 버튼 + 튜토리얼.
 	property Entity lobbyRoot = "7bbdf71d-969c-4536-b939-4bd242c7b528"
 
 	property ButtonComponent btnStart = "775dac4e-ef17-4c0e-b16f-28a680298ed0"
@@ -11,17 +11,10 @@ script LobbyController extends Component
 
 	property ButtonComponent btnSettings = "e5f542ab-23f3-4958-9fcd-33ab9f6e74e2"
 
-	property ButtonComponent btnRest = "c2e314d1-0dad-426e-8feb-8af03dc5931a"
-
 	-- "능력치 강화" 버튼 → 메타 강화 화면(MetaUpgradeGroup) 오버레이 열기.
 	property ButtonComponent btnUpgrade = "1c7f5999-d5ac-4c72-8a0c-44f01c0742be"
 
 	property MetaUpgradeController metaCtrl = "6287c883-1d96-47f8-ac0a-cbabb609d0ed"
-
-	-- "잠시 휴식하기" 팝업: MSW엔 스크립트 종료 API가 없어 ESC/시스템 메뉴 안내만 표시.
-	property Entity restConfirm = "208f2c5e-e60b-423d-b1a7-235eac9c19dd"
-
-	property ButtonComponent btnRestOk = "0caff84b-c10a-41d0-9f6d-c2a342f626d1"
 
 	property any hStart = nil
 
@@ -29,23 +22,16 @@ script LobbyController extends Component
 
 	property any hSettings = nil
 
-	property any hRest = nil
-
 	property any hUpgrade = nil
-
-	property any hRestOk = nil
 
 	@ExecSpace("ClientOnly")
 	method void OnBeginPlay()
-		-- 메인 로비: 부팅 시 서브팝업 숨김 + 버튼 연결. 로비 표시·bgm_title·입력 컨텍스트(Lobby)는 컷씬 종료 시 CutsceneController가 담당.
-		if isvalid(self.restConfirm) then self.restConfirm.Enable = false end
+		-- 메인 로비: 부팅 시 버튼 연결. 로비 표시·bgm_title·입력 컨텍스트(Lobby)는 컷씬 종료 시 CutsceneController가 담당.
 		if isvalid(self.lobbyRoot) then self.lobbyRoot.Enable = false end
 		self.hStart = self.btnStart.Entity:ConnectEvent(ButtonClickEvent, self.OnStartClick)
 		self.hTutorial = self.btnTutorial.Entity:ConnectEvent(ButtonClickEvent, self.OnTutorialClick)
 		self.hSettings = self.btnSettings.Entity:ConnectEvent(ButtonClickEvent, self.OnSettingsClick)
-		self.hRest = self.btnRest.Entity:ConnectEvent(ButtonClickEvent, self.OnRestClick)
 		self.hUpgrade = self.btnUpgrade.Entity:ConnectEvent(ButtonClickEvent, self.OnUpgradeClick)
-		self.hRestOk = self.btnRestOk.Entity:ConnectEvent(ButtonClickEvent, self.OnRestOk)
 		log("[LobbyController] init (hidden; cutscene will reveal lobby)")
 	end
 
@@ -55,9 +41,7 @@ script LobbyController extends Component
 		if self.hStart ~= nil then self.btnStart.Entity:DisconnectEvent(ButtonClickEvent, self.hStart) end
 		if self.hTutorial ~= nil then self.btnTutorial.Entity:DisconnectEvent(ButtonClickEvent, self.hTutorial) end
 		if self.hSettings ~= nil then self.btnSettings.Entity:DisconnectEvent(ButtonClickEvent, self.hSettings) end
-		if self.hRest ~= nil then self.btnRest.Entity:DisconnectEvent(ButtonClickEvent, self.hRest) end
 		if self.hUpgrade ~= nil then self.btnUpgrade.Entity:DisconnectEvent(ButtonClickEvent, self.hUpgrade) end
-		if self.hRestOk ~= nil then self.btnRestOk.Entity:DisconnectEvent(ButtonClickEvent, self.hRestOk) end
 	end
 
 	@ExecSpace("ClientOnly")
@@ -94,19 +78,6 @@ script LobbyController extends Component
 		else
 			log_error("[LobbyController] metaCtrl not bound")
 		end
-	end
-
-	@ExecSpace("ClientOnly")
-	method void OnRestClick(ButtonClickEvent event)
-		-- "잠시 휴식하기": MSW엔 스크립트 종료 API가 없어 ESC/시스템 메뉴 안내 팝업만 표시.
-		self.restConfirm.Enable = true
-		log("[LobbyController] exit guide opened")
-	end
-
-	@ExecSpace("ClientOnly")
-	method void OnRestOk(ButtonClickEvent event)
-		-- 안내 확인 → 팝업 닫기 (실제 종료는 ESC / 우상단 시스템 메뉴 담당).
-		self.restConfirm.Enable = false
 	end
 
 end

@@ -16,6 +16,11 @@ script MetaUpgradeController extends Component
 
 	property ButtonComponent btnClose = "09092287-3869-44ea-b8a6-8b5daaf6c07b"
 
+	-- 탭 선택/비선택 이미지 (셀렉티드 / 언셀렉티드).
+	property string selectedTabRuid = "1e1dcb92d35040d9a313eac557fe1e86"
+
+	property string unselectedTabRuid = "b1498dfdd8914b999b27ea050e2e9d58"
+
 	property any rows = nil
 
 	property any handlers = nil
@@ -121,9 +126,9 @@ script MetaUpgradeController extends Component
 
 	@ExecSpace("ClientOnly")
 	method void RefreshScore()
-		-- 상단 강화 점수 텍스트 갱신.
+		-- 강화 점수 박스 숫자 갱신 (라벨은 별도 정적 텍스트).
 		if isvalid(self.scoreText) then
-			self.scoreText.Text = "강화 점수: " .. tostring(_MetaProgression.MetaScore)
+			self.scoreText.Text = tostring(_MetaProgression.MetaScore)
 		end
 	end
 
@@ -147,14 +152,15 @@ script MetaUpgradeController extends Component
 
 	@ExecSpace("ClientOnly")
 	method void SetTabColor(ButtonComponent btn, boolean active)
-		-- 탭 버튼 배경색 (활성=크림슨 / 비활성=다크).
+		-- 탭 버튼 이미지 스왑 (활성=셀렉티드 / 비활성=언셀렉티드).
 		if not isvalid(btn) then return end
 		local r = btn.Entity.SpriteGUIRendererComponent
 		if not isvalid(r) then return end
+		r.Color = Color(1.0, 1.0, 1.0, 1.0)
 		if active then
-			r.Color = Color(0.72, 0.18, 0.20, 1.0)
+			r.ImageRUID = DataRef(self.selectedTabRuid)
 		else
-			r.Color = Color(0.16, 0.19, 0.29, 1.0)
+			r.ImageRUID = DataRef(self.unselectedTabRuid)
 		end
 	end
 
