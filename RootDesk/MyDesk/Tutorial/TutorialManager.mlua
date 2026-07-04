@@ -18,6 +18,14 @@ script TutorialManager extends Logic
 
 	property integer spawnSerial = 0
 
+	-- 서버: 튜토리얼 진입 전 기존 로드아웃 저장(나갈 때 복원). hasSavedLoadout으로 중복저장 가드.
+	@HideFromInspector property string savedSlot1 = ""
+	@HideFromInspector property string savedSlot2 = ""
+	@HideFromInspector property string savedSlot3 = ""
+	@HideFromInspector property string savedAbilityId = ""
+	@HideFromInspector property integer savedAbilityUses = 0
+	@HideFromInspector property boolean hasSavedLoadout = false
+
 	@ExecSpace("Server")
 	method void RequestStartTutorial()
 		-- 로비 "튜토리얼" 버튼 → 튜토리얼 시작: 무적 on + 튜토리얼 맵으로 이동(도착은 OnUpdate 폴링).
@@ -72,6 +80,7 @@ script TutorialManager extends Logic
 		self:RespawnEnemies(map)
 		local player = _StageManager:GetPlayer()
 		if player ~= nil and player.PlayerComponent ~= nil then
+			self:GrantTutorialLoadout(player)
 			self:ClientTutorialReady(player.PlayerComponent.UserId)
 		end
 	end
@@ -138,6 +147,8 @@ script TutorialManager extends Logic
 			end
 		end
 		local player = _StageManager:GetPlayer()
+		-- 기존 로드아웃 복원(플레이어 유효할 때). ClientReturnToTitle 전에.
+		self:RestoreLoadout(player)
 		if player ~= nil and player.PlayerComponent ~= nil then
 			self:ClientReturnToTitle(reason, player.PlayerComponent.UserId)
 		end
@@ -148,6 +159,71 @@ script TutorialManager extends Logic
 	method void RequestEndTutorial()
 		-- 클라 ESC → 튜토리얼 중단(타이틀 복귀).
 		self:EndTutorial("esc")
+	end
+
+	@ExecSpace("ServerOnly")
+	method void GrantTutorialLoadout(Entity player)
+		-- 튜토리얼 연습용 로드아웃: 기존 아이템/능력을 1회 저장한 뒤 아이템 3개(짱돌/연막/섬광) + 랜덤 능력 지급.
+		if player == nil or isvalid(player) == false then return end
+		---@type PlayerItems
+		local items = player:GetComponent("script.PlayerItems")
+		---@type PlayerAbility
+		local ability = player:GetComponent("script.PlayerAbility")
+		-- 기존 상태 저장(중복 진입 대비 hasSavedLoadout 가드 — 튜토 로드아웃을 "기존"으로 덮어쓰지 않게).
+		if self.hasSavedLoadout == false then
+			if items ~= nil then
+				self.savedSlot1 = items.Slot1
+				self.savedSlot2 = items.Slot2
+				self.savedSlot3 = items.Slot3
+			end
+			if ability ~= nil then
+				self.savedAbilityId = ability.AbilityId
+				self.savedAbilityUses = ability.UsesLeft
+			end
+			self.hasSavedLoadout = true
+			log("[TutorialManager] loadout saved (items='" .. self.savedSlot1 .. "/" .. self.savedSlot2 .. "/" .. self.savedSlot3 .. "' ability='" .. self.savedAbilityId .. "')")
+		end
+		-- 아이템 3개(전 슬롯).
+		if items ~= nil then
+			items.Slot1 = "rock"
+			items.Slot2 = "smoke"
+			items.Slot3 = "flash"
+		end
+		-- 랜덤 능력 1개(5종) + 넉넉한 사용횟수(연습용).
+		if ability ~= nil then
+			local pool = { "invincible", "clearProjectiles", "immovable", "manji", "spin" }
+			local id = pool[_UtilLogic:RandomIntegerRange(1, #pool)]
+			ability:GrantAbility(id)
+			ability:ResetUses("normal")
+			ability.UsesLeft = 9
+			log("[TutorialManager] tutorial loadout granted (rock/smoke/flash + " .. id .. ")")
+		end
+	end
+
+	@ExecSpace("ServerOnly")
+	method void RestoreLoadout(Entity player)
+		-- 튜토리얼 종료: 저장해둔 기존 아이템/능력으로 복원 + 진행 중 능력효과 해제.
+		if self.hasSavedLoadout == false then return end
+		if player ~= nil and isvalid(player) then
+			---@type PlayerItems
+			local items = player:GetComponent("script.PlayerItems")
+			if items ~= nil then
+				items.Slot1 = self.savedSlot1
+				items.Slot2 = self.savedSlot2
+				items.Slot3 = self.savedSlot3
+			end
+			---@type PlayerAbility
+			local ability = player:GetComponent("script.PlayerAbility")
+			if ability ~= nil then
+				ability:GrantAbility(self.savedAbilityId)
+				ability.UsesLeft = self.savedAbilityUses
+				ability.abilityInvincibleUntil = -999.0
+				ability.immovableUntil = -999.0
+				ability.immovableCharges = 0
+			end
+		end
+		self.hasSavedLoadout = false
+		log("[TutorialManager] loadout restored")
 	end
 
 	@ExecSpace("Client")
