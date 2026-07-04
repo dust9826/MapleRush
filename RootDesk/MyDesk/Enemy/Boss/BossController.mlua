@@ -417,7 +417,9 @@ script BossController extends Component
 		if clip == "" then return end
 		local sc = _EffectTable:Scale(key)
 		local fo = _EffectTable:Offset(key)
-		_EffectService:PlayEffect(clip, map, Vector3(cx + fo.x, cy + fo.y, 0), _EffectTable:Rot(key), Vector3(sc.x, sc.y, 1), false, _EffectTable:Options(key))
+		-- instigator=맵이라 보스 파괴 후에도 재생이 이어짐 → 시리얼 추적(스테이지 리셋 때 일괄 제거).
+		local serial = _EffectService:PlayEffect(clip, map, Vector3(cx + fo.x, cy + fo.y, 0), _EffectTable:Rot(key), Vector3(sc.x, sc.y, 1), false, _EffectTable:Options(key))
+		_EffectTable:Track(serial)
 	end
 
 	@ExecSpace("Client")
@@ -432,7 +434,9 @@ script BossController extends Component
 		local pos = Vector3(cx + sgn * _BossConfig.BossZakumBeamOffsetX + fo.x, cy + fo.y, 0)
 		local options = _EffectTable:Options("boss_zakum_beam")
 		options["FlipX"] = sgn < 0
-		_EffectService:PlayEffect(clip, map, pos, _EffectTable:Rot("boss_zakum_beam"), Vector3(sc.x, sc.y, 1), false, options)
+		-- instigator=맵 이펙트 → 시리얼 추적(스테이지 리셋 때 일괄 제거).
+		local serial = _EffectService:PlayEffect(clip, map, pos, _EffectTable:Rot("boss_zakum_beam"), Vector3(sc.x, sc.y, 1), false, options)
+		_EffectTable:Track(serial)
 		log("[BossController] zakum beam fx (sgn=" .. tostring(sgn) .. ")")
 	end
 
