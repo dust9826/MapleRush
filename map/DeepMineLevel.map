@@ -67425,7 +67425,7 @@
       {
         "id": "9fe03a53-c8e9-4255-986b-253c2fa78ae5",
         "path": "/maps/DeepMineLevel/Stage1/object-13800_1",
-        "componentNames": "MOD.Core.TransformComponent,MOD.Core.SpriteRendererComponent",
+        "componentNames": "MOD.Core.TransformComponent,MOD.Core.SpriteRendererComponent,script.Breakable",
         "jsonString": {
           "name": "object-13800_1",
           "path": "/maps/DeepMineLevel/Stage1/object-13800_1",
@@ -67474,6 +67474,70 @@
               "SpriteRUID": "425c2c653da54435806d5b8a1178d891",
               "StartFrameIndex": 0,
               "Enable": true
+            },
+            {
+              "@type": "script.Breakable",
+              "Enable": true
+            }
+          ],
+          "@version": 1
+        }
+      },
+      {
+        "id": "91a33175-f015-439a-972d-6d9dec5cdc2c",
+        "path": "/maps/DeepMineLevel/Stage1/object-13800_1/DashBlockRegion",
+        "componentNames": "MOD.Core.TransformComponent,MOD.Core.TriggerComponent",
+        "jsonString": {
+          "name": "DashBlockRegion",
+          "path": "/maps/DeepMineLevel/Stage1/object-13800_1/DashBlockRegion",
+          "nameEditable": true,
+          "enable": true,
+          "visible": true,
+          "localize": false,
+          "displayOrder": 0,
+          "pathConstraints": "/////",
+          "revision": 1,
+          "origin": {
+            "type": "Model",
+            "entry_id": "dashblockregion",
+            "sub_entity_id": null,
+            "root_entity_id": "86b7423c-d99c-406d-ab71-a13f8d2d3117",
+            "replaced_model_id": null
+          },
+          "modelId": "dashblockregion",
+          "@components": [
+            {
+              "@type": "MOD.Core.TransformComponent",
+              "Position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+              },
+              "QuaternionRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+              },
+              "Scale": {
+                "x": 1.79,
+                "y": 3.28,
+                "z": 1.0
+              },
+              "Enable": true
+            },
+            {
+              "@type": "MOD.Core.TriggerComponent",
+              "BoxSize": {
+                "x": 0.5,
+                "y": 0.5
+              },
+              "ColliderOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "IsLegacy": false,
+              "Enable": true
             }
           ],
           "@version": 1
@@ -67482,7 +67546,7 @@
       {
         "id": "0315669a-e5af-4685-a806-b9a98ac4e9e5",
         "path": "/maps/DeepMineLevel/Stage1/object-13800",
-        "componentNames": "MOD.Core.TransformComponent,MOD.Core.SpriteRendererComponent",
+        "componentNames": "MOD.Core.TransformComponent,MOD.Core.SpriteRendererComponent,script.Breakable",
         "jsonString": {
           "name": "object-13800",
           "path": "/maps/DeepMineLevel/Stage1/object-13800",
@@ -67530,6 +67594,70 @@
               "SortingLayer": "MapLayer0",
               "SpriteRUID": "425c2c653da54435806d5b8a1178d891",
               "StartFrameIndex": 0,
+              "Enable": true
+            },
+            {
+              "@type": "script.Breakable",
+              "Enable": true
+            }
+          ],
+          "@version": 1
+        }
+      },
+      {
+        "id": "86b7423c-d99c-406d-ab71-a13f8d2d3117",
+        "path": "/maps/DeepMineLevel/Stage1/object-13800/DashBlockRegion",
+        "componentNames": "MOD.Core.TransformComponent,MOD.Core.TriggerComponent",
+        "jsonString": {
+          "name": "DashBlockRegion",
+          "path": "/maps/DeepMineLevel/Stage1/object-13800/DashBlockRegion",
+          "nameEditable": true,
+          "enable": true,
+          "visible": true,
+          "localize": false,
+          "displayOrder": 0,
+          "pathConstraints": "/////",
+          "revision": 1,
+          "origin": {
+            "type": "Model",
+            "entry_id": "dashblockregion",
+            "sub_entity_id": null,
+            "root_entity_id": "86b7423c-d99c-406d-ab71-a13f8d2d3117",
+            "replaced_model_id": null
+          },
+          "modelId": "dashblockregion",
+          "@components": [
+            {
+              "@type": "MOD.Core.TransformComponent",
+              "Position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+              },
+              "QuaternionRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+              },
+              "Scale": {
+                "x": 1.79,
+                "y": 3.28,
+                "z": 1.0
+              },
+              "Enable": true
+            },
+            {
+              "@type": "MOD.Core.TriggerComponent",
+              "BoxSize": {
+                "x": 0.5,
+                "y": 0.5
+              },
+              "ColliderOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "IsLegacy": false,
               "Enable": true
             }
           ],
@@ -67763,7 +67891,7 @@
       {
         "id": "c1e376ed-cf2a-4abc-8ba6-a829adfefce6",
         "path": "/maps/DeepMineLevel/Stage1/object-13800_2",
-        "componentNames": "MOD.Core.TransformComponent,MOD.Core.SpriteRendererComponent",
+        "componentNames": "MOD.Core.TransformComponent,MOD.Core.SpriteRendererComponent,script.Breakable",
         "jsonString": {
           "name": "object-13800_2",
           "path": "/maps/DeepMineLevel/Stage1/object-13800_2",
@@ -67811,6 +67939,70 @@
               "SortingLayer": "MapLayer0",
               "SpriteRUID": "425c2c653da54435806d5b8a1178d891",
               "StartFrameIndex": 0,
+              "Enable": true
+            },
+            {
+              "@type": "script.Breakable",
+              "Enable": true
+            }
+          ],
+          "@version": 1
+        }
+      },
+      {
+        "id": "9c9b0c25-6a6d-4999-beff-92af98776203",
+        "path": "/maps/DeepMineLevel/Stage1/object-13800_2/DashBlockRegion",
+        "componentNames": "MOD.Core.TransformComponent,MOD.Core.TriggerComponent",
+        "jsonString": {
+          "name": "DashBlockRegion",
+          "path": "/maps/DeepMineLevel/Stage1/object-13800_2/DashBlockRegion",
+          "nameEditable": true,
+          "enable": true,
+          "visible": true,
+          "localize": false,
+          "displayOrder": 0,
+          "pathConstraints": "/////",
+          "revision": 1,
+          "origin": {
+            "type": "Model",
+            "entry_id": "dashblockregion",
+            "sub_entity_id": null,
+            "root_entity_id": "86b7423c-d99c-406d-ab71-a13f8d2d3117",
+            "replaced_model_id": null
+          },
+          "modelId": "dashblockregion",
+          "@components": [
+            {
+              "@type": "MOD.Core.TransformComponent",
+              "Position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+              },
+              "QuaternionRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+              },
+              "Scale": {
+                "x": 1.79,
+                "y": 3.28,
+                "z": 1.0
+              },
+              "Enable": true
+            },
+            {
+              "@type": "MOD.Core.TriggerComponent",
+              "BoxSize": {
+                "x": 0.5,
+                "y": 0.5
+              },
+              "ColliderOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "IsLegacy": false,
               "Enable": true
             }
           ],
@@ -68714,6 +68906,7 @@
             {
               "@type": "script.EnemyMelee",
               "Enable": true,
+              "telegraphId": 0,
               "mapKindCache": 0
             },
             {
@@ -68811,6 +69004,7 @@
             {
               "@type": "script.EnemyRanged",
               "Enable": true,
+              "telegraphId": 0,
               "mapKindCache": 0
             },
             {
@@ -68908,6 +69102,7 @@
             {
               "@type": "script.EnemyMelee",
               "Enable": true,
+              "telegraphId": 0,
               "mapKindCache": 0
             },
             {
@@ -69005,6 +69200,7 @@
             {
               "@type": "script.EnemyRanged",
               "Enable": true,
+              "telegraphId": 0,
               "mapKindCache": 0
             },
             {
@@ -69702,6 +69898,7 @@
             {
               "@type": "script.EnemyMelee",
               "Enable": true,
+              "telegraphId": 0,
               "mapKindCache": 0
             },
             {
@@ -69732,7 +69929,7 @@
       {
         "id": "6011fb41-1ffb-4206-b497-2525c5e83e96",
         "path": "/maps/DeepMineLevel/Stage2/object-13800_3",
-        "componentNames": "MOD.Core.TransformComponent,MOD.Core.SpriteRendererComponent",
+        "componentNames": "MOD.Core.TransformComponent,MOD.Core.SpriteRendererComponent,script.Breakable",
         "jsonString": {
           "name": "object-13800_3",
           "path": "/maps/DeepMineLevel/Stage2/object-13800_3",
@@ -69780,6 +69977,70 @@
               "SortingLayer": "MapLayer0",
               "SpriteRUID": "425c2c653da54435806d5b8a1178d891",
               "StartFrameIndex": 0,
+              "Enable": true
+            },
+            {
+              "@type": "script.Breakable",
+              "Enable": true
+            }
+          ],
+          "@version": 1
+        }
+      },
+      {
+        "id": "302c3eb6-68d0-417b-8710-d8b574eb882a",
+        "path": "/maps/DeepMineLevel/Stage2/object-13800_3/DashBlockRegion",
+        "componentNames": "MOD.Core.TransformComponent,MOD.Core.TriggerComponent",
+        "jsonString": {
+          "name": "DashBlockRegion",
+          "path": "/maps/DeepMineLevel/Stage2/object-13800_3/DashBlockRegion",
+          "nameEditable": true,
+          "enable": true,
+          "visible": true,
+          "localize": false,
+          "displayOrder": 0,
+          "pathConstraints": "/////",
+          "revision": 1,
+          "origin": {
+            "type": "Model",
+            "entry_id": "dashblockregion",
+            "sub_entity_id": null,
+            "root_entity_id": "86b7423c-d99c-406d-ab71-a13f8d2d3117",
+            "replaced_model_id": null
+          },
+          "modelId": "dashblockregion",
+          "@components": [
+            {
+              "@type": "MOD.Core.TransformComponent",
+              "Position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+              },
+              "QuaternionRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+              },
+              "Scale": {
+                "x": 1.79,
+                "y": 3.28,
+                "z": 1.0
+              },
+              "Enable": true
+            },
+            {
+              "@type": "MOD.Core.TriggerComponent",
+              "BoxSize": {
+                "x": 0.5,
+                "y": 0.5
+              },
+              "ColliderOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "IsLegacy": false,
               "Enable": true
             }
           ],
@@ -69843,7 +70104,7 @@
       {
         "id": "07c23915-193d-4b9e-9cba-6cf7b0fc36c0",
         "path": "/maps/DeepMineLevel/Stage2/object-13800_5",
-        "componentNames": "MOD.Core.TransformComponent,MOD.Core.SpriteRendererComponent",
+        "componentNames": "MOD.Core.TransformComponent,MOD.Core.SpriteRendererComponent,script.Breakable",
         "jsonString": {
           "name": "object-13800_5",
           "path": "/maps/DeepMineLevel/Stage2/object-13800_5",
@@ -69891,6 +70152,70 @@
               "SortingLayer": "MapLayer0",
               "SpriteRUID": "425c2c653da54435806d5b8a1178d891",
               "StartFrameIndex": 0,
+              "Enable": true
+            },
+            {
+              "@type": "script.Breakable",
+              "Enable": true
+            }
+          ],
+          "@version": 1
+        }
+      },
+      {
+        "id": "8e773d76-ec4b-4237-97c1-d163200efa12",
+        "path": "/maps/DeepMineLevel/Stage2/object-13800_5/DashBlockRegion",
+        "componentNames": "MOD.Core.TransformComponent,MOD.Core.TriggerComponent",
+        "jsonString": {
+          "name": "DashBlockRegion",
+          "path": "/maps/DeepMineLevel/Stage2/object-13800_5/DashBlockRegion",
+          "nameEditable": true,
+          "enable": true,
+          "visible": true,
+          "localize": false,
+          "displayOrder": 0,
+          "pathConstraints": "/////",
+          "revision": 1,
+          "origin": {
+            "type": "Model",
+            "entry_id": "dashblockregion",
+            "sub_entity_id": null,
+            "root_entity_id": "86b7423c-d99c-406d-ab71-a13f8d2d3117",
+            "replaced_model_id": null
+          },
+          "modelId": "dashblockregion",
+          "@components": [
+            {
+              "@type": "MOD.Core.TransformComponent",
+              "Position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+              },
+              "QuaternionRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+              },
+              "Scale": {
+                "x": 1.79,
+                "y": 3.28,
+                "z": 1.0
+              },
+              "Enable": true
+            },
+            {
+              "@type": "MOD.Core.TriggerComponent",
+              "BoxSize": {
+                "x": 0.5,
+                "y": 0.5
+              },
+              "ColliderOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "IsLegacy": false,
               "Enable": true
             }
           ],
@@ -69965,6 +70290,7 @@
             {
               "@type": "script.EnemyMelee",
               "Enable": true,
+              "telegraphId": 0,
               "mapKindCache": 0
             },
             {
@@ -70060,6 +70386,7 @@
             {
               "@type": "script.EnemyMelee",
               "Enable": true,
+              "telegraphId": 0,
               "mapKindCache": 0
             },
             {
@@ -70155,6 +70482,7 @@
             {
               "@type": "script.EnemyRanged",
               "Enable": true,
+              "telegraphId": 0,
               "mapKindCache": 0
             },
             {
@@ -70250,6 +70578,7 @@
             {
               "@type": "script.EnemyRanged",
               "Enable": true,
+              "telegraphId": 0,
               "mapKindCache": 0
             },
             {
@@ -71132,11 +71461,6 @@
           "@components": [
             {
               "@type": "MOD.Core.TransformComponent",
-              "Rotation": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0
-              },
               "Position": {
                 "x": 0.0,
                 "y": 0.0,
@@ -71146,14 +71470,13 @@
                 "x": 0.0,
                 "y": 0.0,
                 "z": 0.0,
-                "w": -1.0
+                "w": 1.0
               },
               "Scale": {
                 "x": 1.0,
                 "y": 1.0,
                 "z": 1.0
               },
-              "ZRotation": 0.0,
               "Enable": true
             }
           ],
@@ -71185,11 +71508,6 @@
           "@components": [
             {
               "@type": "MOD.Core.TransformComponent",
-              "Rotation": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0
-              },
               "Position": {
                 "x": -10.2733,
                 "y": 1.7585,
@@ -71199,14 +71517,13 @@
                 "x": 0.0,
                 "y": 0.0,
                 "z": 0.0,
-                "w": -1.0
+                "w": 1.0
               },
               "Scale": {
                 "x": 1.0,
                 "y": 1.0,
                 "z": 1.0
               },
-              "ZRotation": 0.0,
               "Enable": true
             },
             {
@@ -71248,11 +71565,6 @@
           "@components": [
             {
               "@type": "MOD.Core.TransformComponent",
-              "Rotation": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0
-              },
               "Position": {
                 "x": 2.63,
                 "y": -3.37,
@@ -71262,14 +71574,13 @@
                 "x": 0.0,
                 "y": 0.0,
                 "z": 0.0,
-                "w": -1.0
+                "w": 1.0
               },
               "Scale": {
                 "x": 1.5,
                 "y": 1.5,
                 "z": 1.0
               },
-              "ZRotation": 0.0,
               "Enable": true
             },
             {
@@ -71311,11 +71622,6 @@
           "@components": [
             {
               "@type": "MOD.Core.TransformComponent",
-              "Rotation": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0
-              },
               "Position": {
                 "x": 9.5126,
                 "y": 1.5105,
@@ -71325,14 +71631,13 @@
                 "x": 0.0,
                 "y": 0.0,
                 "z": 0.0,
-                "w": -1.0
+                "w": 1.0
               },
               "Scale": {
                 "x": 1.5,
                 "y": 1.5,
                 "z": 1.0
               },
-              "ZRotation": 0.0,
               "Enable": true
             },
             {
@@ -71374,11 +71679,6 @@
           "@components": [
             {
               "@type": "MOD.Core.TransformComponent",
-              "Rotation": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0
-              },
               "Position": {
                 "x": 8.9333,
                 "y": -3.7038,
@@ -71388,14 +71688,13 @@
                 "x": 0.0,
                 "y": 0.0,
                 "z": 0.0,
-                "w": -1.0
+                "w": 1.0
               },
               "Scale": {
                 "x": 1.0,
                 "y": 1.0,
                 "z": 1.0
               },
-              "ZRotation": 0.0,
               "Enable": true
             },
             {
@@ -71437,11 +71736,6 @@
           "@components": [
             {
               "@type": "MOD.Core.TransformComponent",
-              "Rotation": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0
-              },
               "Position": {
                 "x": 7.8268,
                 "y": -4.0694,
@@ -71451,14 +71745,13 @@
                 "x": 0.0,
                 "y": 0.0,
                 "z": 0.0,
-                "w": -1.0
+                "w": 1.0
               },
               "Scale": {
                 "x": 1.5,
                 "y": 1.5,
                 "z": 1.0
               },
-              "ZRotation": 0.0,
               "Enable": true
             },
             {
@@ -71500,11 +71793,6 @@
           "@components": [
             {
               "@type": "MOD.Core.TransformComponent",
-              "Rotation": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0
-              },
               "Position": {
                 "x": -8.21,
                 "y": -3.6344,
@@ -71514,14 +71802,13 @@
                 "x": 0.0,
                 "y": 0.0,
                 "z": 0.0,
-                "w": -1.0
+                "w": 1.0
               },
               "Scale": {
                 "x": 1.0,
                 "y": 1.0,
                 "z": 1.0
               },
-              "ZRotation": 0.0,
               "Enable": true
             },
             {
@@ -71564,11 +71851,6 @@
           "@components": [
             {
               "@type": "MOD.Core.TransformComponent",
-              "Rotation": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0
-              },
               "Position": {
                 "x": -0.8222,
                 "y": -2.755,
@@ -71578,14 +71860,13 @@
                 "x": 0.0,
                 "y": 0.0,
                 "z": 0.0,
-                "w": -1.0
+                "w": 1.0
               },
               "Scale": {
                 "x": 1.0,
                 "y": 1.0,
                 "z": 1.0
               },
-              "ZRotation": 0.0,
               "Enable": true
             },
             {
@@ -71712,6 +71993,7 @@
             {
               "@type": "script.EnemyRanged",
               "Enable": true,
+              "telegraphId": 0,
               "mapKindCache": 0
             },
             {
@@ -71742,7 +72024,7 @@
       {
         "id": "0b2a0b40-3312-4fbd-a452-8eece187a05d",
         "path": "/maps/DeepMineLevel/Stage3/object-13800_6",
-        "componentNames": "MOD.Core.TransformComponent,MOD.Core.SpriteRendererComponent",
+        "componentNames": "MOD.Core.TransformComponent,MOD.Core.SpriteRendererComponent,script.Breakable",
         "jsonString": {
           "name": "object-13800_6",
           "path": "/maps/DeepMineLevel/Stage3/object-13800_6",
@@ -71790,6 +72072,70 @@
               "SortingLayer": "MapLayer0",
               "SpriteRUID": "425c2c653da54435806d5b8a1178d891",
               "StartFrameIndex": 0,
+              "Enable": true
+            },
+            {
+              "@type": "script.Breakable",
+              "Enable": true
+            }
+          ],
+          "@version": 1
+        }
+      },
+      {
+        "id": "1d87ecdf-3848-4a1a-b407-9f7920a0d87a",
+        "path": "/maps/DeepMineLevel/Stage3/object-13800_6/DashBlockRegion",
+        "componentNames": "MOD.Core.TransformComponent,MOD.Core.TriggerComponent",
+        "jsonString": {
+          "name": "DashBlockRegion",
+          "path": "/maps/DeepMineLevel/Stage3/object-13800_6/DashBlockRegion",
+          "nameEditable": true,
+          "enable": true,
+          "visible": true,
+          "localize": false,
+          "displayOrder": 0,
+          "pathConstraints": "/////",
+          "revision": 1,
+          "origin": {
+            "type": "Model",
+            "entry_id": "dashblockregion",
+            "sub_entity_id": null,
+            "root_entity_id": "86b7423c-d99c-406d-ab71-a13f8d2d3117",
+            "replaced_model_id": null
+          },
+          "modelId": "dashblockregion",
+          "@components": [
+            {
+              "@type": "MOD.Core.TransformComponent",
+              "Position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+              },
+              "QuaternionRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+              },
+              "Scale": {
+                "x": 1.79,
+                "y": 3.28,
+                "z": 1.0
+              },
+              "Enable": true
+            },
+            {
+              "@type": "MOD.Core.TriggerComponent",
+              "BoxSize": {
+                "x": 0.5,
+                "y": 0.5
+              },
+              "ColliderOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "IsLegacy": false,
               "Enable": true
             }
           ],
@@ -71864,6 +72210,7 @@
             {
               "@type": "script.EnemyMelee",
               "Enable": true,
+              "telegraphId": 0,
               "mapKindCache": 0
             },
             {
@@ -71959,6 +72306,7 @@
             {
               "@type": "script.EnemyRanged",
               "Enable": true,
+              "telegraphId": 0,
               "mapKindCache": 0
             },
             {
@@ -72054,6 +72402,7 @@
             {
               "@type": "script.EnemyMelee",
               "Enable": true,
+              "telegraphId": 0,
               "mapKindCache": 0
             },
             {
@@ -72138,7 +72487,7 @@
       {
         "id": "d333b245-a1fc-400d-a421-6708bf7f5876",
         "path": "/maps/DeepMineLevel/Stage3/object-13800_4",
-        "componentNames": "MOD.Core.TransformComponent,MOD.Core.SpriteRendererComponent",
+        "componentNames": "MOD.Core.TransformComponent,MOD.Core.SpriteRendererComponent,script.Breakable",
         "jsonString": {
           "name": "object-13800_4",
           "path": "/maps/DeepMineLevel/Stage3/object-13800_4",
@@ -72186,6 +72535,70 @@
               "SortingLayer": "MapLayer0",
               "SpriteRUID": "425c2c653da54435806d5b8a1178d891",
               "StartFrameIndex": 0,
+              "Enable": true
+            },
+            {
+              "@type": "script.Breakable",
+              "Enable": true
+            }
+          ],
+          "@version": 1
+        }
+      },
+      {
+        "id": "39856486-0f6e-4529-97c3-651e4c167b88",
+        "path": "/maps/DeepMineLevel/Stage3/object-13800_4/DashBlockRegion",
+        "componentNames": "MOD.Core.TransformComponent,MOD.Core.TriggerComponent",
+        "jsonString": {
+          "name": "DashBlockRegion",
+          "path": "/maps/DeepMineLevel/Stage3/object-13800_4/DashBlockRegion",
+          "nameEditable": true,
+          "enable": true,
+          "visible": true,
+          "localize": false,
+          "displayOrder": 0,
+          "pathConstraints": "/////",
+          "revision": 1,
+          "origin": {
+            "type": "Model",
+            "entry_id": "dashblockregion",
+            "sub_entity_id": null,
+            "root_entity_id": "86b7423c-d99c-406d-ab71-a13f8d2d3117",
+            "replaced_model_id": null
+          },
+          "modelId": "dashblockregion",
+          "@components": [
+            {
+              "@type": "MOD.Core.TransformComponent",
+              "Position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+              },
+              "QuaternionRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+              },
+              "Scale": {
+                "x": 1.79,
+                "y": 3.28,
+                "z": 1.0
+              },
+              "Enable": true
+            },
+            {
+              "@type": "MOD.Core.TriggerComponent",
+              "BoxSize": {
+                "x": 0.5,
+                "y": 0.5
+              },
+              "ColliderOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "IsLegacy": false,
               "Enable": true
             }
           ],
@@ -72260,6 +72673,7 @@
             {
               "@type": "script.EnemyMelee",
               "Enable": true,
+              "telegraphId": 0,
               "mapKindCache": 0
             },
             {
@@ -73660,6 +74074,11 @@
           "@components": [
             {
               "@type": "MOD.Core.TransformComponent",
+              "Rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+              },
               "Position": {
                 "x": 0.0,
                 "y": 0.57,
@@ -73671,6 +74090,7 @@
                 "z": 0.0,
                 "w": 1.0
               },
+              "ZRotation": 0.0,
               "Enable": true
             },
             {
@@ -73722,6 +74142,11 @@
           "@components": [
             {
               "@type": "MOD.Core.TransformComponent",
+              "Rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+              },
               "Position": {
                 "x": 0.0,
                 "y": -0.55,
@@ -73733,6 +74158,7 @@
                 "z": 0.0,
                 "w": 1.0
               },
+              "ZRotation": 0.0,
               "Enable": true
             },
             {
@@ -73876,6 +74302,7 @@
             {
               "@type": "script.EnemyMelee",
               "Enable": true,
+              "telegraphId": 0,
               "mapKindCache": 0
             },
             {
@@ -73971,6 +74398,7 @@
             {
               "@type": "script.EnemyRanged",
               "Enable": true,
+              "telegraphId": 0,
               "mapKindCache": 0
             },
             {
@@ -74120,6 +74548,7 @@
             {
               "@type": "script.EnemyMelee",
               "Enable": true,
+              "telegraphId": 0,
               "mapKindCache": 0
             },
             {
@@ -74215,6 +74644,7 @@
             {
               "@type": "script.EnemyRanged",
               "Enable": true,
+              "telegraphId": 0,
               "mapKindCache": 0
             },
             {
@@ -74310,6 +74740,7 @@
             {
               "@type": "script.EnemyMelee",
               "Enable": true,
+              "telegraphId": 0,
               "mapKindCache": 0
             },
             {
@@ -75738,11 +76169,6 @@
           "@components": [
             {
               "@type": "MOD.Core.TransformComponent",
-              "Rotation": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0
-              },
               "Position": {
                 "x": -5.794,
                 "y": 1.9138,
@@ -75752,14 +76178,13 @@
                 "x": 0.0,
                 "y": 0.0,
                 "z": 0.0,
-                "w": -1.0
+                "w": 1.0
               },
               "Scale": {
                 "x": 1.0,
                 "y": 1.0,
                 "z": 1.0
               },
-              "ZRotation": 0.0,
               "Enable": true
             },
             {
@@ -75960,6 +76385,7 @@
             {
               "@type": "script.EnemyRanged",
               "Enable": true,
+              "telegraphId": 0,
               "mapKindCache": 0
             },
             {
@@ -76055,6 +76481,7 @@
             {
               "@type": "script.EnemyMelee",
               "Enable": true,
+              "telegraphId": 0,
               "mapKindCache": 0
             },
             {
@@ -76085,7 +76512,7 @@
       {
         "id": "435298b6-6f5f-4e4a-bcf6-413b675cf3ec",
         "path": "/maps/DeepMineLevel/Stage5/object-13800_7",
-        "componentNames": "MOD.Core.TransformComponent,MOD.Core.SpriteRendererComponent",
+        "componentNames": "MOD.Core.TransformComponent,MOD.Core.SpriteRendererComponent,script.Breakable",
         "jsonString": {
           "name": "object-13800_7",
           "path": "/maps/DeepMineLevel/Stage5/object-13800_7",
@@ -76133,6 +76560,70 @@
               "SortingLayer": "MapLayer0",
               "SpriteRUID": "425c2c653da54435806d5b8a1178d891",
               "StartFrameIndex": 0,
+              "Enable": true
+            },
+            {
+              "@type": "script.Breakable",
+              "Enable": true
+            }
+          ],
+          "@version": 1
+        }
+      },
+      {
+        "id": "8a8ff759-d5de-4313-a07d-b00bfc938a8c",
+        "path": "/maps/DeepMineLevel/Stage5/object-13800_7/DashBlockRegion",
+        "componentNames": "MOD.Core.TransformComponent,MOD.Core.TriggerComponent",
+        "jsonString": {
+          "name": "DashBlockRegion",
+          "path": "/maps/DeepMineLevel/Stage5/object-13800_7/DashBlockRegion",
+          "nameEditable": true,
+          "enable": true,
+          "visible": true,
+          "localize": false,
+          "displayOrder": 0,
+          "pathConstraints": "/////",
+          "revision": 1,
+          "origin": {
+            "type": "Model",
+            "entry_id": "dashblockregion",
+            "sub_entity_id": null,
+            "root_entity_id": "86b7423c-d99c-406d-ab71-a13f8d2d3117",
+            "replaced_model_id": null
+          },
+          "modelId": "dashblockregion",
+          "@components": [
+            {
+              "@type": "MOD.Core.TransformComponent",
+              "Position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+              },
+              "QuaternionRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+              },
+              "Scale": {
+                "x": 1.79,
+                "y": 3.28,
+                "z": 1.0
+              },
+              "Enable": true
+            },
+            {
+              "@type": "MOD.Core.TriggerComponent",
+              "BoxSize": {
+                "x": 0.5,
+                "y": 0.5
+              },
+              "ColliderOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "IsLegacy": false,
               "Enable": true
             }
           ],
@@ -76261,6 +76752,7 @@
             {
               "@type": "script.EnemyMelee",
               "Enable": true,
+              "telegraphId": 0,
               "mapKindCache": 0
             },
             {
@@ -76356,6 +76848,7 @@
             {
               "@type": "script.EnemyRanged",
               "Enable": true,
+              "telegraphId": 0,
               "mapKindCache": 0
             },
             {
@@ -76451,6 +76944,7 @@
             {
               "@type": "script.EnemyMelee",
               "Enable": true,
+              "telegraphId": 0,
               "mapKindCache": 0
             },
             {
@@ -78158,11 +78652,6 @@
           "@components": [
             {
               "@type": "MOD.Core.TransformComponent",
-              "Rotation": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0
-              },
               "Position": {
                 "x": 0.0025,
                 "y": 0.4242,
@@ -78172,14 +78661,13 @@
                 "x": 0.0,
                 "y": 0.0,
                 "z": 0.0,
-                "w": -1.0
+                "w": 1.0
               },
               "Scale": {
                 "x": 1.0,
                 "y": 1.0,
                 "z": 1.0
               },
-              "ZRotation": 0.0,
               "Enable": true
             },
             {
@@ -78678,6 +79166,7 @@
             {
               "@type": "script.EnemyMelee",
               "Enable": true,
+              "telegraphId": 0,
               "mapKindCache": 0
             },
             {
@@ -78773,6 +79262,7 @@
             {
               "@type": "script.EnemyMelee",
               "Enable": true,
+              "telegraphId": 0,
               "mapKindCache": 0
             },
             {
@@ -78868,6 +79358,7 @@
             {
               "@type": "script.EnemyMelee",
               "Enable": true,
+              "telegraphId": 0,
               "mapKindCache": 0
             },
             {
@@ -78963,6 +79454,7 @@
             {
               "@type": "script.EnemyRanged",
               "Enable": true,
+              "telegraphId": 0,
               "mapKindCache": 0
             },
             {
@@ -79058,6 +79550,7 @@
             {
               "@type": "script.EnemyRanged",
               "Enable": true,
+              "telegraphId": 0,
               "mapKindCache": 0
             },
             {
@@ -82029,6 +82522,7 @@
             {
               "@type": "script.EnemyRanged",
               "Enable": true,
+              "telegraphId": 0,
               "mapKindCache": 0
             },
             {
@@ -82124,6 +82618,7 @@
             {
               "@type": "script.EnemyMelee",
               "Enable": true,
+              "telegraphId": 0,
               "mapKindCache": 0
             },
             {
@@ -82219,6 +82714,7 @@
             {
               "@type": "script.EnemyRanged",
               "Enable": true,
+              "telegraphId": 0,
               "mapKindCache": 0
             },
             {
@@ -82314,6 +82810,7 @@
             {
               "@type": "script.EnemyMelee",
               "Enable": true,
+              "telegraphId": 0,
               "mapKindCache": 0
             },
             {
@@ -82409,6 +82906,7 @@
             {
               "@type": "script.EnemyMelee",
               "Enable": true,
+              "telegraphId": 0,
               "mapKindCache": 0
             },
             {
@@ -83818,7 +84316,7 @@
       {
         "id": "50749c4a-04fb-42de-a1c8-cae81ec1413a",
         "path": "/maps/DeepMineLevel/Stage7/Decoration_1/object-13800",
-        "componentNames": "MOD.Core.TransformComponent,MOD.Core.SpriteRendererComponent",
+        "componentNames": "MOD.Core.TransformComponent,MOD.Core.SpriteRendererComponent,script.Breakable",
         "jsonString": {
           "name": "object-13800",
           "path": "/maps/DeepMineLevel/Stage7/Decoration_1/object-13800",
@@ -83866,6 +84364,70 @@
               "SortingLayer": "MapLayer0",
               "SpriteRUID": "425c2c653da54435806d5b8a1178d891",
               "StartFrameIndex": 0,
+              "Enable": true
+            },
+            {
+              "@type": "script.Breakable",
+              "Enable": true
+            }
+          ],
+          "@version": 1
+        }
+      },
+      {
+        "id": "bf8a4e8e-d34e-48ee-9677-a44884b9d5e6",
+        "path": "/maps/DeepMineLevel/Stage7/Decoration_1/object-13800/DashBlockRegion",
+        "componentNames": "MOD.Core.TransformComponent,MOD.Core.TriggerComponent",
+        "jsonString": {
+          "name": "DashBlockRegion",
+          "path": "/maps/DeepMineLevel/Stage7/Decoration_1/object-13800/DashBlockRegion",
+          "nameEditable": true,
+          "enable": true,
+          "visible": true,
+          "localize": false,
+          "displayOrder": 0,
+          "pathConstraints": "//////",
+          "revision": 1,
+          "origin": {
+            "type": "Model",
+            "entry_id": "dashblockregion",
+            "sub_entity_id": null,
+            "root_entity_id": "86b7423c-d99c-406d-ab71-a13f8d2d3117",
+            "replaced_model_id": null
+          },
+          "modelId": "dashblockregion",
+          "@components": [
+            {
+              "@type": "MOD.Core.TransformComponent",
+              "Position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+              },
+              "QuaternionRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+              },
+              "Scale": {
+                "x": 2.685,
+                "y": 2.69,
+                "z": 1.0
+              },
+              "Enable": true
+            },
+            {
+              "@type": "MOD.Core.TriggerComponent",
+              "BoxSize": {
+                "x": 0.5,
+                "y": 0.5
+              },
+              "ColliderOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "IsLegacy": false,
               "Enable": true
             }
           ],
