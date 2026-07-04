@@ -1,7 +1,7 @@
 ---
 id: MR-AA
 title: 로딩창 (풀스크린 일러스트 + TIP)
-status: review
+status: done
 owner: D4LGONA
 area: mixed
 touches: [ui/, RootDesk/MyDesk/UI/, RootDesk/MyDesk/Stage/StageManager.mlua]
