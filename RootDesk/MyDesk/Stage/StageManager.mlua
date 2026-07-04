@@ -419,6 +419,13 @@ script StageManager extends Logic
 			local comp = compAny
 			if isvalid(comp.Entity) then comp.Entity:Destroy() end
 		end
+		-- (2.5) 파괴된 오브젝트(Breakable: 구름/나뭇가지 등) 복구 — 재시작/진입 시 파괴 전 상태로 초기화.
+		local breakables = map:GetChildComponentsByTypeName("script.Breakable", true)
+		for _, compAny in ipairs(breakables) do
+			---@type Breakable
+			local comp = compAny
+			if isvalid(comp.Entity) then comp:Reset() end
+		end
 		-- (3) 슬로우 모션 + 전장 효과 강제 해제
 		_SlowMotion:ClearAllServer()
 		_BattlefieldFx:ClearAllServer()

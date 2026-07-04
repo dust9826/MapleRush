@@ -402,6 +402,47 @@ script CombatPrimitives extends Logic
 		return hitCount
 	end
 
+	method integer BreakBreakablesInBox(Entity mapEntity, Vector2 boxCenter, number hw, number hh, string source)
+		-- 박스 범위 내 파괴 가능 오브젝트(script.Breakable)를 부순다. 부순 수 반환. ★기본공격 전용 — 서버 메서드에서 호출할 것.
+		if mapEntity == nil then return 0 end
+		local list = mapEntity:GetChildComponentsByTypeName("script.Breakable", true)
+		local count = 0
+		for _, compAny in ipairs(list) do
+			---@type Breakable
+			local comp = compAny
+			local e = comp.Entity
+			if isvalid(e) and comp.IsBroken == false then
+				-- 박스 콜라이더에 자동 핏된 히트박스 (없으면 컴포넌트가 폴백값 반환).
+				local hb = comp:GetHitbox()
+				if self:BoxBoxOverlap(boxCenter, hw, hh, Vector2(hb.cx, hb.cy), hb.hw, hb.hh) then
+					comp:Break(source)
+					count += 1
+				end
+			end
+		end
+		return count
+	end
+
+	method integer BreakBreakablesInOBB(Entity mapEntity, number cx, number cy, number hw, number hh, number angRad, string source)
+		-- 회전 박스(OBB) 범위 내 파괴 가능 오브젝트(script.Breakable)를 부순다. BreakBreakablesInBox(PR#56)의 커서 방향 회전 버전(기본공격 전용).
+		if mapEntity == nil then return 0 end
+		local list = mapEntity:GetChildComponentsByTypeName("script.Breakable", true)
+		local count = 0
+		for _, compAny in ipairs(list) do
+			---@type Breakable
+			local comp = compAny
+			local e = comp.Entity
+			if isvalid(e) and comp.IsBroken == false then
+				local hb = comp:GetHitbox()
+				if self:OBBAABBOverlap(cx, cy, hw, hh, angRad, hb.cx, hb.cy, hb.hw, hb.hh) then
+					comp:Break(source)
+					count += 1
+				end
+			end
+		end
+		return count
+	end
+
 	method integer DamageEnemiesAlongPath(Entity mapEntity, Vector2 pathStart, Vector2 pathEnd, number pathRadius, number damage, string source)
 		-- 대시 이동 경로(선분 + 반경) 위의 모든 적에 데미지. 명중 수 반환. 서버 메서드에서 호출할 것.
 		if mapEntity == nil then return 0 end

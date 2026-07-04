@@ -137,7 +137,9 @@ script PlayerCombat extends Component
 			local pc2 = self.Entity.PlayerComponent
 			if isvalid(pc2) then self:PlayParryBurst(cx, cy, pos.z, pc2.UserId) end
 		end
-		log("[PlayerCombat] server attack resolved: hit=" .. tostring(hitCount) .. " parried=" .. tostring(parried) .. " dmg=" .. tostring(damage))
+		-- 기본 공격으로 파괴 가능 장식 오브젝트(구름/나뭇가지 등) 파괴. ★기본공격 전용 훅(대시/아이템/투사체로는 안 부서짐). 회전 박스(OBB)로 판정.
+		local broke = _CombatPrimitives:BreakBreakablesInOBB(self.Entity.CurrentMap, cx, cy, hw, hh, ang, "attack")
+		log("[PlayerCombat] server attack resolved: hit=" .. tostring(hitCount) .. " parried=" .. tostring(parried) .. " broke=" .. tostring(broke) .. " dmg=" .. tostring(damage))
 	end
 
 	@ExecSpace("Client")

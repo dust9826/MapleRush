@@ -1,0 +1,241 @@
+@Component
+script Breakable extends Component
+
+	-- 기본 공격 1대에 파괴되는 장식 오브젝트(오르비스 구름 / 폐광 나뭇가지 등). 파괴 시 자기 스프라이트를 파편으로 흩뿌린다.
+	-- ★ 파괴 트리거는 PlayerCombat 기본공격 박스뿐(CombatPrimitives:BreakBreakablesInBox). 대시/아이템/투사체로는 안 부서진다.
+	--
+	-- 히트박스: 엔티티에 붙은 '박스 콜라이더'에 자동으로 맞춘다 (수동 수치 튜닝 불필요).
+	--   우선순위 (1) TriggerComponent(박스콜라이더) → (2) HitComponent(박스) → (3) 콜라이더 없으면 아래 수동값 폴백.
+	--   콜라이더 박스는 IsLegacy=false면 BoxSize×Scale+ColliderOffset로 오브젝트 크기에 딱 맞는다 → Maker에서 오브젝트에 맞춰 그리면 끝.
+
+	-- 이미 파괴됐는지 (중복 파괴/판정 방지). @Sync — 클라도 상태 참조 가능.
+	@Sync
+	property boolean IsBroken = false
+
+	-- 폴백 판정 박스(콜라이더가 없을 때만 사용). 반폭/반높이(월드유닛). 0 이하면 0.5.
+	property number FallbackHW = 0.5
+
+	property number FallbackHH = 0.5
+
+	-- 폴백 박스 중심 Y 오프셋(콜라이더 없을 때만).
+	property number FallbackYOffset = 0.0
+
+	-- 파편 파티클 스프라이트: 비우면 자기 SpriteRUID 사용(자기 조각이 흩날림 — 권장). 지정 시 그 스프라이트로.
+	property string DebrisSprite = ""
+
+	-- 파편 스케일.
+	property number DebrisScale = 1.0
+
+	-- 파괴 연출이 보이도록 엔티티 소멸을 이만큼 지연(초). 스프라이트는 즉시 숨김.
+	-- ※ 스테이지 재시작 복구를 위해 이제 엔티티를 삭제하지 않는다(숨김만) → 이 값은 현재 미사용(호환용 유지).
+	property number DestroyDelay = 0.2
+
+	-- 서버: 파괴 시 비운 CustomFoothold edge 백업(재시작 복구용). CFC 없는 오브젝트면 계속 nil.
+	@HideFromInspector property any footholdBackup = nil
+
+	-- 플레이어를 막을지 (솔리드). true면 히트박스에 들어온 로컬 플레이어를 매 프레임 밖으로 밀어낸다(걷기·점프·대시 전부 차단). 부서지면 자동 해제.
+	-- ★ MapleTile 풋홀드 벽은 "지형 체인에 연결"돼야 걷기를 막는데 그건 런타임 생성이 안 됨 → 스크립트 밀어내기로 확실히 막는다.
+	property boolean BlockPlayer = true
+
+	-- 몬스터도 막을지 (서버측 밀어내기). true면 히트박스에 겹친 적(EnemyHealth)을 좌우로 밀어내 벽 통과를 막는다.
+	property boolean BlockMonster = true
+
+	-- 투사체도 막을지 (서버). true면 히트박스에 닿은 투사체(Projectile)를 소멸시킨다(원거리 공격이 벽에 막힘).
+	property boolean BlockProjectile = true
+
+	method void OnUpdate(number delta)
+		-- BlockPlayer/BlockMonster면 히트박스에 겹친 대상을 밖으로 밀어내 솔리드처럼 막는다. 부서지면(IsBroken) 즉시 통과.
+		if self.IsBroken then return end
+		if isvalid(self.Entity) == false then return end
+		local hb = self:GetHitbox()
+		-- 로컬 플레이어(클라): 최소침투 밀어내기 (좌우 벽 + 위에서 내려오면 윗면=발판).
+		if self.BlockPlayer and self:IsClient() then
+			local player = _UserService.LocalPlayer
+			if player ~= nil and isvalid(player) then
+				self:PushOut(player, hb, _GameConstants.PlayerHboxHW, _GameConstants.PlayerHboxHH, _GameConstants.PlayerCenterYOffset, true)
+			end
+		end
+		-- 서버: 몬스터 밀어내기 + 투사체 소멸.
+		if self:IsServer() then
+			local map = self.Entity.CurrentMap
+			if isvalid(map) then
+				-- 몬스터: 좌우로 밀어내 벽 통과 방지.
+				if self.BlockMonster then
+					local enemies = map:GetChildComponentsByTypeName("script.EnemyHealth", true)
+					for _, hcAny in ipairs(enemies) do
+						local e = hcAny.Entity
+						if isvalid(e) then
+							self:PushOut(e, hb, _GameConstants.EnemyHboxHW, _GameConstants.EnemyHboxHH, 0.5, false)
+						end
+					end
+				end
+				-- 투사체: 히트박스에 닿으면 소멸(원거리 공격이 벽에 막힘).
+				if self.BlockProjectile then
+					local projs = map:GetChildComponentsByTypeName("script.Projectile", true)
+					for _, pAny in ipairs(projs) do
+						local pe = pAny.Entity
+						if isvalid(pe) then
+							---@type Projectile
+							local pc = pAny
+							local pp = pe.TransformComponent.WorldPosition
+							if _CombatPrimitives:BoxCircleOverlap(Vector2(hb.cx, hb.cy), hb.hw, hb.hh, Vector2(pp.x, pp.y), pc.HitRadius) then
+								pe:Destroy()
+							end
+						end
+					end
+				end
+			end
+		end
+	end
+
+	method void PushOut(Entity target, any hb, number thw, number thh, number tyoff, boolean allowTop)
+		-- 대상이 히트박스 hb에 겹치면 밖으로 밀어낸다. allowTop=true면 "위에서 내려온" 경우에만 윗면에 올려세움(발판). ★아래로는 절대 안 밈.
+		local mc = target.MovementComponent
+		if isvalid(mc) == false then return end
+		local tp = target.TransformComponent.WorldPosition
+		local dx = tp.x - hb.cx
+		local dy = (tp.y + tyoff) - hb.cy
+		local ox = (hb.hw + thw) - math.abs(dx)
+		local oy = (hb.hh + thh) - math.abs(dy)
+		if ox <= 0 or oy <= 0 then return end
+		-- 윗면 안착은 "발이 박스 상단 위"일 때만 (위에서 내려온 착지). 측면에서 밀 때(발이 상단보다 아래)는 무조건 수평 차단
+		-- → 공중 박스 측면을 밀 때 위로 튕겨 올라가 붙는 버그 방지. feetY = 중심 - 반높이, boxTop = hb.cy + hb.hh.
+		local feetY = (tp.y + tyoff) - thh
+		local landingOnTop = allowTop and dy > 0 and feetY >= (hb.cy + hb.hh - 0.15)
+		if landingOnTop then
+			mc:SetWorldPosition(Vector2(tp.x, hb.cy + hb.hh + thh - tyoff))
+		else
+			-- 수평 차단. ★매 프레임 SetWorldPosition(nx, tp.y)로 Y까지 고정하면 점프/낙하 속도가 죽어
+			--   공중 박스 옆에서 그대로 "붙어버리는" 버그가 난다(로그: py 고정).
+			--   → (1) 박스로 향하는 수평 입력속도만 상쇄해 침투를 예방하고, (2) 그래도 깊게(빠르게)
+			--   파고든 경우에만 X를 가장자리로 스냅. 가벼운 접촉 프레임엔 순간이동을 안 해 중력/점프가 산다.
+			local rb = target.RigidbodyComponent
+			if isvalid(rb) then
+				local mv = rb.MoveVelocity
+				local intoBox = (dx < 0 and mv.x > 0) or (dx >= 0 and mv.x < 0)
+				if intoBox then rb.MoveVelocity = Vector2(0, mv.y) end
+			end
+			if ox > 0.12 then
+				local nx = hb.cx - hb.hw - thw
+				if dx >= 0 then nx = hb.cx + hb.hw + thw end
+				mc:SetWorldPosition(Vector2(nx, tp.y))
+			end
+		end
+	end
+
+	method any GetHitbox()
+		-- 파괴 판정 박스 {cx,cy,hw,hh}. 박스 콜라이더에 자동 핏 → 없으면 수동 폴백. (서버/클라 공용 순수 계산)
+		local e = self.Entity
+		local tf = e.TransformComponent
+		local p = tf.WorldPosition
+		local sc = tf.Scale
+		-- (1) TriggerComponent = 박스콜라이더. BoxSize>0이면 오브젝트에 맞춰 그린 박스 그대로 사용.
+		local tc = e.TriggerComponent
+		if isvalid(tc) and tc.BoxSize.x > 0 and tc.BoxSize.y > 0 then
+			local bs = tc.BoxSize
+			local off = tc.ColliderOffset
+			return { cx = p.x + off.x * sc.x, cy = p.y + off.y * sc.y, hw = bs.x * math.abs(sc.x) * 0.5, hh = bs.y * math.abs(sc.y) * 0.5 }
+		end
+		-- (2) HitComponent(박스). 전투용 콜라이더를 그대로 히트박스로.
+		local hc = e.HitComponent
+		if isvalid(hc) and hc.BoxSize.x > 0 and hc.BoxSize.y > 0 then
+			local bs = hc.BoxSize
+			local off = hc.ColliderOffset
+			return { cx = p.x + off.x * sc.x, cy = p.y + off.y * sc.y, hw = bs.x * math.abs(sc.x) * 0.5, hh = bs.y * math.abs(sc.y) * 0.5 }
+		end
+		-- (3) 폴백: 수동값 (콜라이더 미부착 오브젝트).
+		local bhw = self.FallbackHW
+		local bhh = self.FallbackHH
+		if bhw <= 0 then bhw = 0.5 end
+		if bhh <= 0 then bhh = 0.5 end
+		return { cx = p.x, cy = p.y + self.FallbackYOffset, hw = bhw, hh = bhh }
+	end
+
+	@ExecSpace("ServerOnly")
+	method void Break(string source)
+		-- 서버 권위 파괴: 중복 방지 → 파편 연출 브로드캐스트(히트박스 중심) → 소멸.
+		if self.IsBroken then return end
+		if isvalid(self.Entity) == false then return end
+		self.IsBroken = true
+		local hb = self:GetHitbox()
+		local z = self.Entity.TransformComponent.WorldPosition.z
+		local ruid = self.DebrisSprite
+		if ruid == "" then
+			local sp = self.Entity.SpriteRendererComponent
+			if isvalid(sp) then ruid = sp.SpriteRUID end
+		end
+		self:PlayDebris(Vector3(hb.cx, hb.cy, z), ruid)
+		-- 파괴 가능 벽: CustomFootholdComponent가 있으면 edge를 백업 후 비워 길을 연다(재시작 시 복구).
+		local cfc = self.Entity.CustomFootholdComponent
+		if isvalid(cfc) then
+			self:BackupFootholds(cfc)
+			cfc.edgeLists:Clear()
+		end
+		-- ★ Destroy 하지 않는다 — 스테이지 재시작 시 Reset()으로 되살리려면 엔티티가 살아있어야 한다.
+		--   시각 제거는 PlayDebris가 스프라이트를 숨겨 처리, 솔리드 차단은 OnUpdate가 IsBroken=true면 자동 해제.
+		log("[Breakable] " .. self.Entity.Name .. " broke by " .. source)
+	end
+
+	@ExecSpace("ServerOnly")
+	method void Reset()
+		-- 스테이지 재시작/진입 시 파괴 상태 복구: 다시 파괴 가능 + 솔리드 차단 부활(OnUpdate) + 스프라이트 재표시 + 풋홀드 복원.
+		if isvalid(self.Entity) == false then return end
+		if self.IsBroken == false then return end
+		self.IsBroken = false
+		local cfc = self.Entity.CustomFootholdComponent
+		if isvalid(cfc) then self:RestoreFootholds(cfc) end
+		self:ShowSprite()
+		log("[Breakable] " .. self.Entity.Name .. " reset (restored)")
+	end
+
+	@ExecSpace("Multicast")
+	method void ShowSprite()
+		-- 전 클라: 파괴 때 숨겼던 스프라이트를 다시 표시.
+		if isvalid(self.Entity) == false then return end
+		local sp = self.Entity.SpriteRendererComponent
+		if isvalid(sp) then sp.Enable = true end
+	end
+
+	method void BackupFootholds(any cfc)
+		-- edgeLists(풋홀드 세그먼트)를 순수 테이블로 1회 백업 (재시작 복원용).
+		if self.footholdBackup ~= nil then return end
+		local backup = {}
+		local segs = cfc.edgeLists:ToTable()
+		for _, seg in ipairs(segs) do
+			local pts = seg:ToTable()
+			if #pts >= 2 then table.insert(backup, { pts[1], pts[2] }) end
+		end
+		self.footholdBackup = backup
+	end
+
+	method void RestoreFootholds(any cfc)
+		-- 백업된 풋홀드 세그먼트를 edgeLists에 재삽입 (현재 비어있을 때만).
+		if self.footholdBackup == nil then return end
+		if cfc.edgeLists.Count > 0 then return end
+		for _, seg in ipairs(self.footholdBackup) do
+			cfc.edgeLists:Add({ seg[1], seg[2] })
+		end
+	end
+
+	@ExecSpace("Multicast")
+	method void PlayDebris(Vector3 pos, string spriteRuid)
+		-- 전 클라: 파괴 지점에 파편 파티클(자기 스프라이트 조각 흩뿌림) + 스프라이트 즉시 숨김.
+		local instigator = nil
+		if isvalid(self.Entity) then
+			-- 파티클 수명이 이 엔티티 소멸(DestroyDelay)에 끊기지 않도록 instigator는 맵으로.
+			instigator = self.Entity.CurrentMap
+			-- 즉시 시각 제거(실제 엔티티 소멸은 서버가 DestroyDelay 후 처리).
+			local sp = self.Entity.SpriteRendererComponent
+			if isvalid(sp) then sp.Enable = false end
+		end
+		if instigator == nil or isvalid(instigator) == false then return end
+		local sc = self.DebrisScale
+		local options = {}
+		if spriteRuid ~= nil and spriteRuid ~= "" then
+			_ParticleService:PlaySpriteParticle(SpriteParticleType.Burst, spriteRuid, instigator, pos, 0, Vector3(sc, sc, 1), false, options)
+		else
+			_ParticleService:PlayBasicParticle(BasicParticleType.DustExplosion, instigator, pos, 0, Vector3(sc, sc, 1), false, options)
+		end
+	end
+
+end
