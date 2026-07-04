@@ -165,7 +165,10 @@ script EnemyMelee extends Component
 				self.aiState = "idle"
 			end
 		else
-			if dist <= self.AttackRadius then
+			-- 근접 LOS: 적↔플레이어 사이에 온전한 솔리드(DashBlock 콜라이더=벽/브레이커블)가 있으면 공격 불가(벽 뒤 타격 방지).
+			--   막혔으면 windup을 안 열고 접근(chase)으로 흘려보낸다 — 이동은 벽에서 밀려 멈추므로 자연스럽게 "벽에 막혀 못 때림".
+			local losBlocked = _CombatPrimitives:SegmentHitsBlocker(self.Entity.CurrentMap, myCenter, playerCenter)
+			if dist <= self.AttackRadius and losBlocked == false then
 				-- 공격 개시: 텔레그래프 등록 (슬로우 트리거/패링 대상)
 				self.aiState = "windup"
 				-- 판정(RequestHit)은 패링 후행창(Trail)이 닫힌 뒤(hitAt+Trail)에 해소. 텔레그래프/명중시점(hitAt=windup)은

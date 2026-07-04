@@ -24,6 +24,9 @@ script PlayerBootstrap extends Logic
 		if player:GetComponent("script.PlayerDash") == nil then
 			player:AddComponent("PlayerDash")
 		end
+		if player:GetComponent("script.PlayerSolid") == nil then
+			player:AddComponent("PlayerSolid")
+		end
 		if player:GetComponent("script.PlayerInputSetup") == nil then
 			player:AddComponent("PlayerInputSetup")
 		end
