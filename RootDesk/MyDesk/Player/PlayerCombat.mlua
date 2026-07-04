@@ -6,6 +6,10 @@ script PlayerCombat extends Component
 	-- 마지막 평타의 커서 좌/우 방향(+1 우 / -1 좌). 클라 기즈모가 평타 박스 그릴 때 사용. @Sync 불필요(로컬 클라 내 쓰기/읽기).
 	property number lastAttackFacingX = 1
 
+	-- 마지막 평타의 커서 방향 벡터(정규화). 클라 기즈모가 회전 평타 박스(OBB)를 그릴 때 사용. @Sync 불필요.
+	property number lastAttackDirX = 1
+	property number lastAttackDirY = 0
+
 	property any routerHandler = nil
 
 	@ExecSpace("ClientOnly")
@@ -56,10 +60,33 @@ script PlayerCombat extends Component
 		local pos = self.Entity.TransformComponent.WorldPosition
 		local dir = _CombatPrimitives:DirectionTo(Vector2(pos.x, pos.y), targetWorldPos)
 		log("[PlayerCombat] attack! dir=(" .. string.format("%.2f", dir.x) .. "," .. string.format("%.2f", dir.y) .. ")")
+		self:PlayAttackMotion(dir)
 		self:PlayAttackEffect(dir, pos)
 		_SoundManager:PlaySFXKey("sfx_attack")
 		if dir.x < 0 then self.lastAttackFacingX = -1 else self.lastAttackFacingX = 1 end
+		self.lastAttackDirX = dir.x
+		self.lastAttackDirY = dir.y
 		self:RequestAttack(dir.x, dir.y)
+	end
+
+	@ExecSpace("ClientOnly")
+	method void PlayAttackMotion(Vector2 dir)
+		-- 좌클릭 공격 모션: 네이티브 공격 액션(ActionAttack)을 호출해 아바타 공격 스윙을 재생한다.
+		-- Ctrl 공격과 동일 경로라 컨트롤러가 ATTACK→ATTACK_WAIT→IDLE 복귀를 관리(별도 원복 불필요).
+		-- 데미지는 우리 커스텀 전투(RequestAttack)가 담당 — ActionAttack이 emit하는 PlayerActionEvent는 핸들러가 없어 무해.
+		-- 로컬 플레이어 전용(TryAttack 게이트 통과분만 호출).
+		local pc = self.Entity.PlayerControllerComponent
+		if isvalid(pc) == false then
+			log("[PlayerCombat] no PlayerControllerComponent — attack motion skipped")
+			return
+		end
+		-- 스윙 방향을 커서 좌/우에 맞춤(가로 성분이 유의미할 때만; 수직 조준은 현재 facing 유지).
+		if dir.x > 0.05 then
+			pc.LookDirectionX = 1
+		elseif dir.x < -0.05 then
+			pc.LookDirectionX = -1
+		end
+		pc:ActionAttack()
 	end
 
 	@ExecSpace("ClientOnly")
@@ -88,21 +115,38 @@ script PlayerCombat extends Component
 
 	@ExecSpace("Server")
 	method void RequestAttack(number dirX, number dirY)
-		-- 서버 권위 평타 판정: 플레이어 중심 반지름 2 원형, ATK×100% + 자동 패링 (노란 공격 무효화/투사체 반사).
+		-- 서버 권위 평타 판정: 커서 방향으로 회전한 전방 박스(OBB, 이펙트와 동일 방향). ATK×100% + 자동 패링(무효화/투사체 반사).
 		local pos = self.Entity.TransformComponent.WorldPosition
-		local facingX = 1
-		if dirX < 0 then facingX = -1 end
 		local f = _PlayerConfig.PlayerAttackBoxForward
-		local boxCenter = Vector2(pos.x + facingX * f * 0.5, pos.y + _GameConstants.PlayerCenterYOffset)
-		local hw = f * 0.5
-		local hh = _PlayerConfig.PlayerAttackBoxHeight * 0.5
+		local hw = f * 0.5                                     -- 로컬X(전방 길이) 반폭
+		local hh = _PlayerConfig.PlayerAttackBoxHeight * 0.5   -- 로컬Y(두께) 반높이
+		-- 방향 정규화(0벡터 방어) + 커서 각도. 박스 중심 = 플레이어 중심에서 방향으로 hw만큼 전방(플레이어→전방 hw*2 도달, 기존 리치 유지).
+		local dlen = math.sqrt(dirX * dirX + dirY * dirY)
+		local nx = 1.0
+		local ny = 0.0
+		if dlen > 0.0001 then nx = dirX / dlen ny = dirY / dlen end
+		local ang = math.atan(ny, nx)
+		local cx = pos.x + nx * hw
+		local cy = pos.y + _GameConstants.PlayerCenterYOffset + ny * hw
 		local damage = _GameStateManager.AttackStat * _PlayerConfig.DmgAttackPct
-		local hitCount = _CombatPrimitives:DamageEnemiesInBox(self.Entity.CurrentMap, boxCenter, hw, hh, damage, "attack")
+		local hitCount = _CombatPrimitives:DamageEnemiesInOBB(self.Entity.CurrentMap, cx, cy, hw, hh, ang, damage, "attack")
 		local reflectDamage = _GameStateManager.AttackStat * _PlayerConfig.DmgReflectPct
-		local parried = _CombatPrimitives:TryParry(self.Entity.CurrentMap, boxCenter, hw, hh, reflectDamage)
-		-- 기본 공격으로 파괴 가능 장식 오브젝트(구름/나뭇가지 등) 파괴. ★이 훅은 기본공격에만 있음 → 대시/아이템/투사체로는 안 부서짐.
-		local broke = _CombatPrimitives:BreakBreakablesInBox(self.Entity.CurrentMap, boxCenter, hw, hh, "attack")
+		local parried = _CombatPrimitives:TryParryOBB(self.Entity.CurrentMap, cx, cy, hw, hh, ang, reflectDamage)
+		-- 패링 성공(근접 무효화/투사체 반사) 시 공격 위치에 CircleBurst 파티클 1회 — 요청 클라에만.
+		if parried > 0 then
+			local pc2 = self.Entity.PlayerComponent
+			if isvalid(pc2) then self:PlayParryBurst(cx, cy, pos.z, pc2.UserId) end
+		end
+		-- 기본 공격으로 파괴 가능 장식 오브젝트(구름/나뭇가지 등) 파괴. ★기본공격 전용 훅(대시/아이템/투사체로는 안 부서짐). 회전 박스(OBB)로 판정.
+		local broke = _CombatPrimitives:BreakBreakablesInOBB(self.Entity.CurrentMap, cx, cy, hw, hh, ang, "attack")
 		log("[PlayerCombat] server attack resolved: hit=" .. tostring(hitCount) .. " parried=" .. tostring(parried) .. " broke=" .. tostring(broke) .. " dmg=" .. tostring(damage))
+	end
+
+	@ExecSpace("Client")
+	method void PlayParryBurst(number x, number y, number z)
+		-- 패링 성공 연출: 공격 위치에 BasicParticle CircleBurst 1회(비루프=자동 소멸). 클라 비주얼.
+		-- (targetUserId는 호출부 마지막 인자로 전달 — 선언 파라미터 아님.)
+		_ParticleService:PlayBasicParticle(BasicParticleType.CircleBurst, self.Entity, Vector3(x, y, z), 0, Vector3(1, 1, 1), false)
 	end
 
 end

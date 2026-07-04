@@ -48,9 +48,23 @@ script PlayerBootstrap extends Logic
 		end
 		log("[PlayerBootstrap] combat components attached to " .. player.Name)
 		self:ApplyCostume(player, false)
+		self:SetAttackAnimSpeed(player)
 		self:EnsureDashPreview(player)
 		_StageManager:OnPlayerReady(player)
 		self:GrantDebugItems(player)
+	end
+
+	@ExecSpace("ServerOnly")
+	method void SetAttackAnimSpeed(Entity player)
+		-- 좌클릭 공격 모션 속도 2배: ATTACK 상태 매핑의 PlayRate를 기본(1.33)의 2배(2.66)로 세팅.
+		-- StateToAvatarBodyActionSheet는 @Sync라 서버에서 세팅해야 전 클라 반영. 절대값이라 재입장에도 멱등.
+		local asac = player.AvatarStateAnimationComponent
+		if isvalid(asac) == false then
+			log_warning("[PlayerBootstrap] AvatarStateAnimationComponent missing — attack anim speed skipped")
+			return
+		end
+		asac.StateToAvatarBodyActionSheet["ATTACK"] = AvatarBodyActionElement("attack", 2.66)
+		log("[PlayerBootstrap] attack anim PlayRate = 2.66 (2x) for " .. player.Name)
 	end
 
 	@ExecSpace("ServerOnly")

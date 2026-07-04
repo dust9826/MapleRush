@@ -39,7 +39,7 @@ script PlayerConfig extends Logic
 	property number MoveMass = 1.0              -- 질량(Mass). 낮을수록 가감속 반응 빠름. ★기본 100이 "천천히 오르고 느리게 멈추는" 주범.
 	-- 공중 가감속: ★AirAccelerationX는 "값이 클수록 공중 속도 자체가 빨라짐"(스냅이 아님). 1000이면 공중에서 폭주 → 엔진 기본(1) 유지.
 	-- 공중을 더 반응성 있게 하고 싶으면 소폭만 올려 튜닝(예: 2~5). 지상 즉시 가감속은 위 WalkAccel/WalkDrag/Mass가 담당.
-	property number AirAcceleration = 1.0       -- 공중 가속(AirAccelerationX). 엔진 기본.
+	property number AirAcceleration = 30.0      -- 공중 가속(AirAccelerationX). 튜닝값(기본 1 → 30, 공중 기동 강화).
 	property number AirDeceleration = 1.0       -- 공중 감속(AirDecelerationX). 엔진 기본.
 
 	-- ===== 능력: 부동심 (immovable, ability_design §3.3) =====
