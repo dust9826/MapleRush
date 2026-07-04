@@ -115,7 +115,7 @@ script SlowMotion extends Logic
 			return
 		end
 		-- 맵 하위 모든 스프라이트 렌더러(적/발판·타일/장식/브레이커블/투사체 등)에 적용. ★플레이어(및 그 하위)는 제외 — 컬러로 남겨 강조.
-		-- (배경 하늘/산은 SpriteRenderer가 아니라 맵 배경 레이어라 애초에 안 잡힘 → 컬러 유지.)
+		-- 배경(하늘/산)은 아래에서 BackgroundComponent로 따로 처리(SpriteRenderer가 아님).
 		-- ※커스텀 머티리얼을 쓰던 렌더러는 복구 시 default로 리셋됨(현 프로젝트엔 없음).
 		local sprites = map:GetChildComponentsByTypeName("MOD.Core.SpriteRendererComponent", true)
 		local n = 0
@@ -129,7 +129,19 @@ script SlowMotion extends Logic
 				end
 			end
 		end
-		log("[SlowMotion] screen effect on=" .. tostring(on) .. " mat=" .. tostring(matName) .. " -> " .. tostring(n) .. " renderers (player excluded)")
+		-- 배경 레이어(BackgroundComponent) — 엔진이 그리는 하늘/산 배경. SpriteRenderer는 아니지만 MaterialId/ChangeMaterial를 지원.
+		local bgs = map:GetChildComponentsByTypeName("MOD.Core.BackgroundComponent", true)
+		if bgs ~= nil then
+			for _, bgcAny in ipairs(bgs) do
+				---@type BackgroundComponent
+				local bgc = bgcAny
+				if isvalid(bgc) then
+					bgc:ChangeMaterial(matId)
+					n += 1
+				end
+			end
+		end
+		log("[SlowMotion] screen effect on=" .. tostring(on) .. " mat=" .. tostring(matName) .. " -> " .. tostring(n) .. " renderers (player excluded, bg incl)")
 		-- (3) 카메라 비네팅(옵션, 기본 off).
 		self:ApplyVignette(on)
 	end

@@ -148,8 +148,8 @@ script GameConstants extends Logic
 
 	property string MatFxDefault = "DashFxDefault"
 
-	-- 슬로우모션 색보정 효과: 어떤 ColorEffect 머티리얼명을 월드 스프라이트(적/발판·타일/장식 등)에 걸지. ★플레이어는 제외(컬러 강조).
-	-- "GrayScale"=흑백 / "Reverse"=네거티브(색반전) / ""=끔(효과 미적용). 기획자 스위치. (배경 하늘/산은 맵 배경 레이어라 색보정 대상 아님)
+	-- 슬로우모션 색보정 효과: 어떤 ColorEffect 머티리얼명을 월드 스프라이트(적/발판·타일/장식)+배경(BackgroundComponent)에 걸지. ★플레이어는 제외(컬러 강조).
+	-- "GrayScale"=흑백 / "Reverse"=네거티브(색반전) / ""=끔(효과 미적용). 기획자 스위치.
 	property string SlowScreenEffect = "GrayScale"
 
 	-- 슬로우모션 카메라 비네팅(Screen 셰이더) 사용 여부. 기본 off(연출 확인용으로만 켰다 끔). MatVignette 머티리얼 필요.
