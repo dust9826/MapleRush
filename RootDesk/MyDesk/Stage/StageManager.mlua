@@ -427,6 +427,19 @@ script StageManager extends Logic
 			local comp = compAny
 			if isvalid(comp.Entity) then comp:Reset() end
 		end
+		-- (2.7) 잔존 예고 게이지 + 적 공격 판정 레코드 정리 — 파괴된 보스/적의 진행 중이던 패턴(예고·판정)이
+		--   재시작 스테이지로 새는 것 방지. 예고/판정은 적 엔티티 수명과 분리된 전역 리스트라 여기서 중앙 정리해야 한다.
+		_TelegraphService:ClearAllForMap(map)
+		_CombatPrimitives:ClearEnemyAttacks(map)
+		-- (2.8) 재생 중인 전투 이펙트 제거 — 보스 임팩트/빔처럼 instigator=맵이라 적 파괴 후에도 재생이 긴(느리게 터지는)
+		--   이펙트가 재시작 화면에 남는 것 방지. 클라별 추적 시리얼(_EffectTable.Track)을 일괄 RemoveEffect.
+		local fxUsers = _UserService:GetUsersByMapComponent(map.MapComponent)
+		if fxUsers ~= nil then
+			for _, u in ipairs(fxUsers) do
+				local upc = u.PlayerComponent
+				if upc ~= nil then self:ClientClearCombatFx(upc.UserId) end
+			end
+		end
 		-- (3) 슬로우 모션 + 전장 효과 강제 해제
 		_SlowMotion:ClearAllServer()
 		_BattlefieldFx:ClearAllServer()
@@ -752,6 +765,12 @@ script StageManager extends Logic
 	method void ClientPlayerDeathSfx()
 		-- 클라: 플레이어 사망(회귀) 효과음 1회.
 		_SoundManager:PlaySFXKey("sfx_player_death")
+	end
+
+	@ExecSpace("Client")
+	method void ClientClearCombatFx()
+		-- 클라: 추적 중인 전투 이펙트(보스 임팩트/빔 등 맵 앵커) 일괄 제거. ResetStage step(2.8)이 호출.
+		_EffectTable:ClearTracked()
 	end
 
 	@ExecSpace("ServerOnly")

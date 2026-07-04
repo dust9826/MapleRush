@@ -79,6 +79,26 @@ script TelegraphService extends Logic
 		end
 	end
 
+	@ExecSpace("ServerOnly")
+	method void ClearAllForMap(Entity mapEntity)
+		-- 맵의 모든 유저 클라의 활성 예고를 일괄 제거(스테이지 리셋/재시작). 파괴된 보스/적의 진행 중이던 예고가
+		-- 재시작 스테이지로 새는 것 방지 — 개별 Hide(id)에 의존하지 않는 중앙 정리(windup+1s 자동만료 잔류창도 제거).
+		if mapEntity == nil or isvalid(mapEntity) == false then return end
+		local users = _UserService:GetUsersByMapComponent(mapEntity.MapComponent)
+		if users == nil then return end
+		for _, u in ipairs(users) do
+			if isvalid(u) and u.PlayerComponent ~= nil then
+				self:NotifyClearAll(u.PlayerComponent.UserId)
+			end
+		end
+	end
+
+	@ExecSpace("Client")
+	method void NotifyClearAll()
+		-- 클라 수신: 활성 예고 전체 비움.
+		self.clientList = {}
+	end
+
 	@ExecSpace("ClientOnly")
 	method any GetClientList()
 		-- 렌더러가 매 프레임 폴링하는 클라 활성 목록(없으면 생성).

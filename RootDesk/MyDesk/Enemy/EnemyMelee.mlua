@@ -144,7 +144,7 @@ script EnemyMelee extends Component
 						---@type PlayerHit
 						local hitComp = player:GetComponent("script.PlayerHit")
 						if hitComp ~= nil then
-							hitComp:RequestHit("melee:" .. self.Entity.Name)
+							hitComp:RequestHit("melee:" .. self.Entity.Name, self.Entity)
 						end
 					else
 						log("[EnemyMelee] attack missed (player evaded)")

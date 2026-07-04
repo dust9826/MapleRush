@@ -57,6 +57,8 @@ script GameClearController extends Component
 		self.clearRoot.Enable = false
 		local lobby = _EntityService:GetEntityByPath("/ui/LobbyGroup/Root")
 		if lobby ~= nil then lobby.Enable = true end
+		-- 로비 복귀 시 일러스트 배경 다시 깔기(첫 로비와 일관). TIP 없음.
+		_SelectBackdrop:ShowLoading(false)
 		_InputRouter:SetContext("Lobby")
 		_SoundManager:PlayBGMKey("bgm_title")
 		log("[GameClearController] -> lobby")
