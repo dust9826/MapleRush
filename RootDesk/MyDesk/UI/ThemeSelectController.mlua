@@ -3,7 +3,10 @@ script ThemeSelectController extends Component
 
 	property Entity themeRoot = "5e33e100-135f-40cd-a712-f41612d14b8c"
 
-	property TextComponent titleText = "1cdd7055-665c-460d-aa45-68c3b3d9adc4"
+	-- 상단 층 이미지 (1층/2층). Open() 시 CurrentFloor에 맞는 하나만 노출.
+	property Entity floor1Img = "ed30640c-6746-4790-a1b4-4ed126de55e2"
+
+	property Entity floor2Img = "983c03f1-ebfd-4635-b986-b2b71614b177"
 
 	-- 3테마 카드 (오르비스 / 엘나스 / 폐광). 버튼 = 클릭 + Enable 토글 대상.
 	property ButtonComponent btnOrbis = "8ce13f30-c7c0-4dcd-8f4e-ee29013f6734"
@@ -39,13 +42,15 @@ script ThemeSelectController extends Component
 
 	@ExecSpace("ClientOnly")
 	method void Open(boolean orbisAvailable, boolean elnathAvailable, boolean deepmineAvailable)
-		-- 테마 선택 팝업: 미플레이 테마 카드만 노출(Enable 토글).
+		-- 테마 선택 팝업: 층 이미지 갱신 + 미플레이 테마 카드만 노출(Enable 토글).
 		self.themeRoot.Enable = true
-		self.titleText.Text = tostring(_GameStateManager.CurrentFloor) .. "층 — 테마 선택"
+		local floor = _GameStateManager.CurrentFloor
+		if isvalid(self.floor1Img) then self.floor1Img.Enable = (floor == 1) end
+		if isvalid(self.floor2Img) then self.floor2Img.Enable = (floor == 2) end
 		self.btnOrbis.Entity.Enable = orbisAvailable
 		self.btnElnath.Entity.Enable = elnathAvailable
 		self.btnDeepmine.Entity.Enable = deepmineAvailable
-		log("[ThemeSelectController] opened (orbis=" .. tostring(orbisAvailable) .. " elnath=" .. tostring(elnathAvailable) .. " deepmine=" .. tostring(deepmineAvailable) .. ")")
+		log("[ThemeSelectController] opened floor=" .. tostring(floor) .. " (orbis=" .. tostring(orbisAvailable) .. " elnath=" .. tostring(elnathAvailable) .. " deepmine=" .. tostring(deepmineAvailable) .. ")")
 	end
 
 	@ExecSpace("ClientOnly")

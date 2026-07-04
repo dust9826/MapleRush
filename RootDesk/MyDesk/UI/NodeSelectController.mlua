@@ -3,7 +3,8 @@ script NodeSelectController extends Component
 
 	property Entity nodeRoot = "5c6a85af-6513-443a-92fa-5c55f98eb97d"
 
-	property TextComponent titleText = "35febe68-f4de-483b-b1e0-78b836457059"
+	-- 타이틀은 이미지, 서브타이틀 텍스트만 동적("스테이지(X/Y)").
+	property TextComponent subtitleText = "1f7329ab-df25-4572-b22f-064953a715e2"
 
 	property ButtonComponent btnNode1 = "143548d7-20f6-44e2-a88f-f1b5901056c1"
 
@@ -40,7 +41,7 @@ script NodeSelectController extends Component
 	method void Open(integer stageNo, integer totalStages)
 		-- 3분기 노드 선택 (현재 전부 일반 스테이지 — stage_design §2.2.3).
 		self.nodeRoot.Enable = true
-		self.titleText.Text = "다음 스테이지 선택  (스테이지 " .. tostring(stageNo) .. " / " .. tostring(totalStages) .. ")"
+		if isvalid(self.subtitleText) then self.subtitleText.Text = "스테이지(" .. tostring(stageNo) .. "/" .. tostring(totalStages) .. ")" end
 		log("[NodeSelectController] opened " .. tostring(stageNo) .. "/" .. tostring(totalStages))
 	end
 
