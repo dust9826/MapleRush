@@ -32,8 +32,8 @@
           },
           "Value": {
             "$type": "MOD.Core.MODVector2, MOD.Core",
-            "x": 3.0,
-            "y": 3.0
+            "x": 0.5,
+            "y": 0.5
           }
         },
         {
