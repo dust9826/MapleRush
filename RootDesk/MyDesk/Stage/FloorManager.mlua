@@ -69,6 +69,8 @@ script FloorManager extends Logic
 	method void ClientShowThemeSelect(boolean orbisAvailable, boolean elnathAvailable, boolean deepmineAvailable)
 		-- 클라: 3테마 선택 팝업. UI 미등록 시 첫 가용 테마 자동 선택.
 		_InputRouter:SetContext("Node")
+		-- 선택/전환 커버 로딩화면 표시(스테이지 준비되면 ClientStageReset이 숨김).
+		_SelectBackdrop:ShowLoading(true)
 		if self.themeUI ~= nil then
 			self.themeUI:Open(orbisAvailable, elnathAvailable, deepmineAvailable)
 		else
@@ -213,6 +215,8 @@ script FloorManager extends Logic
 	method void ClientShowNodeSelect(integer stageNo, integer totalStages)
 		-- 클라: 3분기 노드 선택 팝업 (현재는 전부 일반 스테이지 — 임시 구현).
 		_InputRouter:SetContext("Node")
+		-- 선택 커버 로딩화면 표시(스테이지 준비되면 ClientStageReset이 숨김).
+		_SelectBackdrop:ShowLoading(true)
 		if self.nodeUI ~= nil then
 			self.nodeUI:Open(stageNo, totalStages)
 		else

@@ -1,0 +1,48 @@
+@Component
+script LoadingOverlay extends Component
+
+	-- 로딩화면 오버레이. _SelectBackdrop에 등록되어 Show()/Hide()로 토글.
+	-- 풀스크린 불투명 일러스트(맵/HUD 위 커버) + 중앙하단 TIP. 그룹 displayOrder=3(선택팝업 4/7 아래) →
+	--   선택 팝업이 로딩화면 위에 뜨고, 그 위에서 맵전환+선택 진행 후 스테이지 준비되면 Hide.
+
+	property Entity loadingRoot = "7cfbd3bb-7eed-4d44-b8b7-03046cfabcab"
+
+	property SpriteGUIRendererComponent illustSprite = "1f378c05-a673-4e72-a450-714676225ce9"
+
+	property TextComponent tipText = "ad798d95-de1d-49a5-bb3c-2c75a94a04ee"
+
+	-- TIP 가독성 바(엔티티) — showTip=false(로비 배경)일 때 함께 숨김.
+	property Entity tipBar = "bba49742-6be5-45af-9042-4bbdee6b4027"
+
+	@ExecSpace("ClientOnly")
+	method void OnBeginPlay()
+		-- 매니저 등록 + 초기 숨김.
+		_SelectBackdrop.overlay = self
+		if isvalid(self.loadingRoot) then self.loadingRoot.Enable = false end
+		log("[LoadingOverlay] registered")
+	end
+
+	@ExecSpace("ClientOnly")
+	method void Show(boolean showTip)
+		-- 랜덤 일러스트 세팅 후 표시. showTip=true면 랜덤 TIP도(선택화면), false면 TIP 숨김(로비 배경).
+		if isvalid(self.illustSprite) then
+			self.illustSprite.ImageRUID = DataRef(_SelectBackdrop:RandomIllust())
+		end
+		if isvalid(self.tipText) then
+			if showTip then
+				self.tipText.Text = "TIP   " .. _SelectBackdrop:RandomTip()
+			else
+				self.tipText.Text = ""
+			end
+		end
+		if isvalid(self.tipBar) then self.tipBar.Enable = showTip end
+		if isvalid(self.loadingRoot) then self.loadingRoot.Enable = true end
+	end
+
+	@ExecSpace("ClientOnly")
+	method void Hide()
+		-- 로딩화면 숨김(스테이지 준비 완료).
+		if isvalid(self.loadingRoot) then self.loadingRoot.Enable = false end
+	end
+
+end
