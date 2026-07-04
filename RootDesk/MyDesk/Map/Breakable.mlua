@@ -27,7 +27,11 @@ script Breakable extends Component
 	property number DebrisScale = 1.0
 
 	-- 파괴 연출이 보이도록 엔티티 소멸을 이만큼 지연(초). 스프라이트는 즉시 숨김.
+	-- ※ 스테이지 재시작 복구를 위해 이제 엔티티를 삭제하지 않는다(숨김만) → 이 값은 현재 미사용(호환용 유지).
 	property number DestroyDelay = 0.2
+
+	-- 서버: 파괴 시 비운 CustomFoothold edge 백업(재시작 복구용). CFC 없는 오브젝트면 계속 nil.
+	@HideFromInspector property any footholdBackup = nil
 
 	-- 플레이어를 막을지 (솔리드). true면 히트박스에 들어온 로컬 플레이어를 매 프레임 밖으로 밀어낸다(걷기·점프·대시 전부 차단). 부서지면 자동 해제.
 	-- ★ MapleTile 풋홀드 벽은 "지형 체인에 연결"돼야 걷기를 막는데 그건 런타임 생성이 안 됨 → 스크립트 밀어내기로 확실히 막는다.
@@ -145,11 +149,56 @@ script Breakable extends Component
 			if isvalid(sp) then ruid = sp.SpriteRUID end
 		end
 		self:PlayDebris(Vector3(hb.cx, hb.cy, z), ruid)
-		-- 파괴 가능 벽: CustomFootholdComponent(IsDynamicFoothold=true)가 있으면 부술 때 벽(풋홀드)을 비워 길을 연다.
+		-- 파괴 가능 벽: CustomFootholdComponent가 있으면 edge를 백업 후 비워 길을 연다(재시작 시 복구).
 		local cfc = self.Entity.CustomFootholdComponent
-		if isvalid(cfc) then cfc.edgeLists:Clear() end
-		self.Entity:Destroy(self.DestroyDelay)
+		if isvalid(cfc) then
+			self:BackupFootholds(cfc)
+			cfc.edgeLists:Clear()
+		end
+		-- ★ Destroy 하지 않는다 — 스테이지 재시작 시 Reset()으로 되살리려면 엔티티가 살아있어야 한다.
+		--   시각 제거는 PlayDebris가 스프라이트를 숨겨 처리, 솔리드 차단은 OnUpdate가 IsBroken=true면 자동 해제.
 		log("[Breakable] " .. self.Entity.Name .. " broke by " .. source)
+	end
+
+	@ExecSpace("ServerOnly")
+	method void Reset()
+		-- 스테이지 재시작/진입 시 파괴 상태 복구: 다시 파괴 가능 + 솔리드 차단 부활(OnUpdate) + 스프라이트 재표시 + 풋홀드 복원.
+		if isvalid(self.Entity) == false then return end
+		if self.IsBroken == false then return end
+		self.IsBroken = false
+		local cfc = self.Entity.CustomFootholdComponent
+		if isvalid(cfc) then self:RestoreFootholds(cfc) end
+		self:ShowSprite()
+		log("[Breakable] " .. self.Entity.Name .. " reset (restored)")
+	end
+
+	@ExecSpace("Multicast")
+	method void ShowSprite()
+		-- 전 클라: 파괴 때 숨겼던 스프라이트를 다시 표시.
+		if isvalid(self.Entity) == false then return end
+		local sp = self.Entity.SpriteRendererComponent
+		if isvalid(sp) then sp.Enable = true end
+	end
+
+	method void BackupFootholds(any cfc)
+		-- edgeLists(풋홀드 세그먼트)를 순수 테이블로 1회 백업 (재시작 복원용).
+		if self.footholdBackup ~= nil then return end
+		local backup = {}
+		local segs = cfc.edgeLists:ToTable()
+		for _, seg in ipairs(segs) do
+			local pts = seg:ToTable()
+			if #pts >= 2 then table.insert(backup, { pts[1], pts[2] }) end
+		end
+		self.footholdBackup = backup
+	end
+
+	method void RestoreFootholds(any cfc)
+		-- 백업된 풋홀드 세그먼트를 edgeLists에 재삽입 (현재 비어있을 때만).
+		if self.footholdBackup == nil then return end
+		if cfc.edgeLists.Count > 0 then return end
+		for _, seg in ipairs(self.footholdBackup) do
+			cfc.edgeLists:Add({ seg[1], seg[2] })
+		end
 	end
 
 	@ExecSpace("Multicast")
