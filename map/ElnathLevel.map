@@ -2179,7 +2179,7 @@
                     }
                   },
                   {
-                    "Length": 0.399999619,
+                    "Length": 0.3999977,
                     "NextFootholdId": 71,
                     "PreviousFootholdId": 499,
                     "groupID": 6,
@@ -2197,8 +2197,8 @@
                     "OwnerId": "a002ab49-6a9b-4055-84b2-043c79cf97f8",
                     "Id": 70,
                     "StartPoint": {
-                      "x": 28.8499985,
-                      "y": 1.16000009
+                      "x": 28.85,
+                      "y": 1.16
                     },
                     "EndPoint": {
                       "x": 29.2499981,
@@ -2206,7 +2206,7 @@
                     },
                     "Variance": {
                       "x": 1.0,
-                      "y": -2.980235E-07
+                      "y": 0.0
                     }
                   },
                   {
@@ -2644,7 +2644,7 @@
                     }
                   },
                   {
-                    "Length": 0.8999977,
+                    "Length": 0.9000015,
                     "NextFootholdId": 86,
                     "PreviousFootholdId": 84,
                     "groupID": 9,
@@ -2666,7 +2666,7 @@
                       "y": 2.96
                     },
                     "EndPoint": {
-                      "x": 60.7499962,
+                      "x": 60.75,
                       "y": 2.96
                     },
                     "Variance": {
@@ -2693,11 +2693,11 @@
                     "OwnerId": "a002ab49-6a9b-4055-84b2-043c79cf97f8",
                     "Id": 86,
                     "StartPoint": {
-                      "x": 60.7499962,
+                      "x": 60.75,
                       "y": 2.96
                     },
                     "EndPoint": {
-                      "x": 61.6499977,
+                      "x": 61.65,
                       "y": 2.36000013
                     },
                     "Variance": {
@@ -2706,7 +2706,7 @@
                     }
                   },
                   {
-                    "Length": 1.08166671,
+                    "Length": 1.08166349,
                     "NextFootholdId": 88,
                     "PreviousFootholdId": 86,
                     "groupID": 9,
@@ -2724,7 +2724,7 @@
                     "OwnerId": "a002ab49-6a9b-4055-84b2-043c79cf97f8",
                     "Id": 87,
                     "StartPoint": {
-                      "x": 61.6499977,
+                      "x": 61.65,
                       "y": 2.36000013
                     },
                     "EndPoint": {
@@ -2732,8 +2732,8 @@
                       "y": 1.76000011
                     },
                     "Variance": {
-                      "x": 0.8320507,
-                      "y": -0.55469954
+                      "x": 0.8320496,
+                      "y": -0.5547012
                     }
                   },
                   {
@@ -10289,11 +10289,11 @@
                     "Id": 331,
                     "StartPoint": {
                       "x": 27.9499989,
-                      "y": 1.76000011
+                      "y": 1.76
                     },
                     "EndPoint": {
                       "x": 28.7499981,
-                      "y": 1.76000011
+                      "y": 1.76
                     },
                     "Variance": {
                       "x": 1.0,
@@ -15478,7 +15478,7 @@
                     }
                   },
                   {
-                    "Length": 0.860000134,
+                    "Length": 0.86,
                     "NextFootholdId": 70,
                     "PreviousFootholdId": 0,
                     "groupID": 6,
@@ -15496,12 +15496,12 @@
                     "OwnerId": "a002ab49-6a9b-4055-84b2-043c79cf97f8",
                     "Id": 499,
                     "StartPoint": {
-                      "x": 28.8499985,
+                      "x": 28.85,
                       "y": 0.299999982
                     },
                     "EndPoint": {
-                      "x": 28.8499985,
-                      "y": 1.16000009
+                      "x": 28.85,
+                      "y": 1.16
                     },
                     "Variance": {
                       "x": 0.0,
@@ -31834,11 +31834,11 @@
                     "Id": 1026,
                     "StartPoint": {
                       "x": 27.9499989,
-                      "y": 1.50000012
+                      "y": 1.5
                     },
                     "EndPoint": {
                       "x": 27.9499989,
-                      "y": 1.76000011
+                      "y": 1.76
                     },
                     "Variance": {
                       "x": 0.0,
@@ -31865,11 +31865,11 @@
                     "Id": 1027,
                     "StartPoint": {
                       "x": 28.7499981,
-                      "y": 1.76000011
+                      "y": 1.76
                     },
                     "EndPoint": {
                       "x": 28.7499981,
-                      "y": 1.50000012
+                      "y": 1.5
                     },
                     "Variance": {
                       "x": 0.0,
@@ -66323,70 +66323,6 @@
                   "tileIndex": -1
                 },
                 {
-                  "type": 0,
-                  "position": {
-                    "x": 136,
-                    "y": 7
-                  },
-                  "tileIndex": 1
-                },
-                {
-                  "type": 0,
-                  "position": {
-                    "x": 137,
-                    "y": 7
-                  },
-                  "tileIndex": 0
-                },
-                {
-                  "type": 0,
-                  "position": {
-                    "x": 137,
-                    "y": 6
-                  },
-                  "tileIndex": 0
-                },
-                {
-                  "type": 0,
-                  "position": {
-                    "x": 137,
-                    "y": 5
-                  },
-                  "tileIndex": -1
-                },
-                {
-                  "type": 0,
-                  "position": {
-                    "x": 138,
-                    "y": 5
-                  },
-                  "tileIndex": 0
-                },
-                {
-                  "type": 0,
-                  "position": {
-                    "x": 139,
-                    "y": 5
-                  },
-                  "tileIndex": 0
-                },
-                {
-                  "type": 3,
-                  "position": {
-                    "x": 136,
-                    "y": 8
-                  },
-                  "tileIndex": 2
-                },
-                {
-                  "type": 3,
-                  "position": {
-                    "x": 138,
-                    "y": 6
-                  },
-                  "tileIndex": 3
-                },
-                {
                   "type": 11,
                   "position": {
                     "x": 141,
@@ -66395,50 +66331,10 @@
                   "tileIndex": 0
                 },
                 {
-                  "type": 7,
-                  "position": {
-                    "x": 140,
-                    "y": 3
-                  },
-                  "tileIndex": 1
-                },
-                {
                   "type": 0,
                   "position": {
                     "x": 139,
                     "y": 3
-                  },
-                  "tileIndex": 0
-                },
-                {
-                  "type": 3,
-                  "position": {
-                    "x": 140,
-                    "y": 4
-                  },
-                  "tileIndex": 3
-                },
-                {
-                  "type": 0,
-                  "position": {
-                    "x": 139,
-                    "y": 4
-                  },
-                  "tileIndex": 0
-                },
-                {
-                  "type": 2,
-                  "position": {
-                    "x": 138,
-                    "y": 4
-                  },
-                  "tileIndex": 0
-                },
-                {
-                  "type": 2,
-                  "position": {
-                    "x": 136,
-                    "y": 6
                   },
                   "tileIndex": 0
                 },
@@ -66679,6 +66575,110 @@
                   "position": {
                     "x": 63,
                     "y": 5
+                  },
+                  "tileIndex": 0
+                },
+                {
+                  "type": 0,
+                  "position": {
+                    "x": 139,
+                    "y": 5
+                  },
+                  "tileIndex": 0
+                },
+                {
+                  "type": 0,
+                  "position": {
+                    "x": 139,
+                    "y": 4
+                  },
+                  "tileIndex": 0
+                },
+                {
+                  "type": 7,
+                  "position": {
+                    "x": 140,
+                    "y": 3
+                  },
+                  "tileIndex": 0
+                },
+                {
+                  "type": 0,
+                  "position": {
+                    "x": 137,
+                    "y": 7
+                  },
+                  "tileIndex": 0
+                },
+                {
+                  "type": 0,
+                  "position": {
+                    "x": 136,
+                    "y": 7
+                  },
+                  "tileIndex": 0
+                },
+                {
+                  "type": 3,
+                  "position": {
+                    "x": 136,
+                    "y": 8
+                  },
+                  "tileIndex": 0
+                },
+                {
+                  "type": 3,
+                  "position": {
+                    "x": 140,
+                    "y": 4
+                  },
+                  "tileIndex": 0
+                },
+                {
+                  "type": 3,
+                  "position": {
+                    "x": 138,
+                    "y": 6
+                  },
+                  "tileIndex": 0
+                },
+                {
+                  "type": 0,
+                  "position": {
+                    "x": 137,
+                    "y": 5
+                  },
+                  "tileIndex": -1
+                },
+                {
+                  "type": 0,
+                  "position": {
+                    "x": 138,
+                    "y": 5
+                  },
+                  "tileIndex": 1
+                },
+                {
+                  "type": 0,
+                  "position": {
+                    "x": 137,
+                    "y": 6
+                  },
+                  "tileIndex": 0
+                },
+                {
+                  "type": 2,
+                  "position": {
+                    "x": 138,
+                    "y": 4
+                  },
+                  "tileIndex": 0
+                },
+                {
+                  "type": 2,
+                  "position": {
+                    "x": 136,
+                    "y": 6
                   },
                   "tileIndex": 0
                 }
@@ -73723,7 +73723,7 @@
           "visible": true,
           "localize": false,
           "displayOrder": 2,
-          "pathConstraints": "/////cd2a1501-cfc2-4d29-8494-2f3f827183e4",
+          "pathConstraints": "/////",
           "revision": 1,
           "origin": {
             "type": "Model",
@@ -73765,7 +73765,7 @@
           "visible": true,
           "localize": false,
           "displayOrder": 3,
-          "pathConstraints": "/////b488cb8a-f16d-466a-a7f3-d3749e9431f1",
+          "pathConstraints": "/////",
           "revision": 1,
           "origin": {
             "type": "Model",
@@ -73817,7 +73817,7 @@
           "visible": true,
           "localize": false,
           "displayOrder": 4,
-          "pathConstraints": "/////1b2d3337-d216-42d2-8ad0-4a2cd68d04cd",
+          "pathConstraints": "/////",
           "revision": 1,
           "origin": {
             "type": "Model",
@@ -73869,7 +73869,7 @@
           "visible": true,
           "localize": false,
           "displayOrder": 5,
-          "pathConstraints": "/////32e229c9-0848-4759-bbbd-b0e31c0080be",
+          "pathConstraints": "/////",
           "revision": 1,
           "origin": {
             "type": "Model",
@@ -74034,8 +74034,8 @@
                 "z": 326.644836
               },
               "Position": {
-                "x": -4.4773,
-                "y": -0.9316,
+                "x": -4.3554,
+                "y": -0.7466,
                 "z": 0.0
               },
               "QuaternionRotation": {
@@ -74046,62 +74046,10 @@
               },
               "Scale": {
                 "x": 6.59270144,
-                "y": 1.53536832,
+                "y": 0.648848,
                 "z": 1.0
               },
               "ZRotation": 326.644836,
-              "Enable": true
-            },
-            {
-              "@type": "MOD.Core.TriggerComponent",
-              "IsLegacy": false,
-              "Enable": true
-            }
-          ],
-          "@version": 1
-        }
-      },
-      {
-        "id": "bc5e3588-c2f0-4842-ab0a-64f7234578e9",
-        "path": "/maps/ElnathLevel/Stage3/Model_Stage3_DashBlockRegion/DashBlockRegion_1",
-        "componentNames": "MOD.Core.TransformComponent,MOD.Core.TriggerComponent",
-        "jsonString": {
-          "name": "DashBlockRegion_1",
-          "path": "/maps/ElnathLevel/Stage3/Model_Stage3_DashBlockRegion/DashBlockRegion_1",
-          "nameEditable": true,
-          "enable": true,
-          "visible": true,
-          "localize": false,
-          "displayOrder": 9,
-          "pathConstraints": "/////bc5e3588-c2f0-4842-ab0a-64f7234578e9",
-          "revision": 1,
-          "origin": {
-            "type": "Model",
-            "entry_id": "dashblockregion",
-            "sub_entity_id": null,
-            "root_entity_id": "50695476-9837-4feb-8bdf-8cc0872cade0",
-            "replaced_model_id": null
-          },
-          "modelId": "dashblockregion",
-          "@components": [
-            {
-              "@type": "MOD.Core.TransformComponent",
-              "Position": {
-                "x": -2.7388,
-                "y": -1.6819,
-                "z": 0.0
-              },
-              "QuaternionRotation": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0,
-                "w": 1.0
-              },
-              "Scale": {
-                "x": 0.8184915,
-                "y": 0.71881336,
-                "z": 1.0
-              },
               "Enable": true
             },
             {
@@ -74124,7 +74072,7 @@
           "enable": true,
           "visible": true,
           "localize": false,
-          "displayOrder": 10,
+          "displayOrder": 9,
           "pathConstraints": "/////cc52e810-85d9-4186-aebf-92205e8ddc44",
           "revision": 1,
           "origin": {
