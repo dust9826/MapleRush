@@ -304,4 +304,22 @@ script GameConstants extends Logic
 		return self:MapForTheme(theme) .. "_Boss"
 	end
 
+	-- 회귀(Regression) 눈뜨기 연출 튜너블 (MR-AE)
+	property string RegressionImageRUID = "93cefac9728c4911a9309bcdf96a516a"
+
+	property string RegressionVignetteRUID = "dad51dc592424ed68a29ca205a41f4aa"
+
+	-- 감기/뜨기 각 방향 지속시간(초). 감기 빠르게, 뜨기 살짝 느리게.
+	property number RegressionBlinkCloseDuration = 0.5
+
+	property number RegressionBlinkOpenDuration = 0.7
+
+	-- 회귀 이미지 정지 홀드(초).
+	property number RegressionHoldDuration = 0.8
+
+	-- 비네팅 iris UIScale 범위(닫힘=작게, 열림=화면 덮게 크게).
+	property number VignetteClosedScale = 0.15
+
+	property number VignetteOpenScale = 4.0
+
 end

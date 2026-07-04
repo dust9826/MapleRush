@@ -1,0 +1,149 @@
+@Component
+script RegressionOverlay extends Component
+
+	-- 회귀(Regression) 눈뜨기 연출. RegressionGroup 루트에 부착(ClientOnly). openness(0=감음/1=뜸) 한 파라미터로
+	-- 5비트 상태머신을 OnUpdate 구동. FadeOverlay 패턴 확장(자기등록 + 매프레임 램프). 루트는 항상 Enable 유지
+	-- (스크립트가 여기 살아 OnUpdate 필요) → 숨김은 자식 alpha 0 + CanvasGroup.BlocksRaycasts=false로.
+
+	-- 3레이어(바인딩 주입, Task 5). illust=회귀 이미지 / blackFill=풀스크린 검정(암전 보장) / vignette=방사형 iris.
+	property SpriteGUIRendererComponent illust = ""
+
+	property SpriteGUIRendererComponent blackFill = ""
+
+	property SpriteGUIRendererComponent vignetteSr = ""
+
+	property UITransformComponent vignetteTf = ""
+
+	-- 상태: idle / close1 / open1 / hold / close2 / open2. mode: restart / lobby.
+	@HideFromInspector property string phase = "idle"
+
+	@HideFromInspector property number phaseT = 0.0
+
+	@HideFromInspector property string mode = ""
+
+	@ExecSpace("ClientOnly")
+	method void OnBeginPlay()
+		-- 레지스트리 등록 + 초기 완전 숨김(비차단).
+		_StageManager.regressionOverlay = self
+		self.phase = "idle"
+		self:ApplyOpenness(1.0)
+		if isvalid(self.illust) then self.illust:SetAlpha(0) end
+		local cg = self.Entity.CanvasGroupComponent
+		if isvalid(cg) then cg.BlocksRaycasts = false end
+		log("[RegressionOverlay] registered")
+	end
+
+	@ExecSpace("ClientOnly")
+	method void Play(string mode)
+		-- 진입점. 재생 중이면 재진입 무시(더블클릭 가드).
+		if self.phase ~= "idle" then return end
+		self.mode = mode
+		local cg = self.Entity.CanvasGroupComponent
+		if isvalid(cg) then cg.BlocksRaycasts = true end
+		self:Enter("close1")
+		log("[RegressionOverlay] Play mode=" .. tostring(mode))
+	end
+
+	method number Clamp01(number v)
+		-- 0..1 클램프.
+		if v < 0 then return 0 end
+		if v > 1 then return 1 end
+		return v
+	end
+
+	@ExecSpace("ClientOnly")
+	method void ApplyOpenness(number o)
+		-- openness→비주얼: BlackFill/Vignette alpha=1-o(가장자리 더 어둡게=비네팅), Vignette scale=closed→open 보간.
+		if isvalid(self.blackFill) then self.blackFill:SetAlpha(1 - o) end
+		if isvalid(self.vignetteSr) then self.vignetteSr:SetAlpha(1 - o) end
+		if isvalid(self.vignetteTf) then
+			local cs = _GameConstants.VignetteClosedScale
+			local os = _GameConstants.VignetteOpenScale
+			local s = cs + (os - cs) * o
+			self.vignetteTf.UIScale = Vector3(s, s, 1)
+		end
+	end
+
+	@ExecSpace("ClientOnly")
+	method void Enter(string p)
+		-- 비트 진입: phase/타이머 리셋 + 초기 비주얼(회귀 이미지 표시 토글 포함).
+		self.phase = p
+		self.phaseT = 0.0
+		if p == "close1" then
+			if isvalid(self.illust) then self.illust:SetAlpha(0) end
+			self:ApplyOpenness(1.0)
+		elseif p == "open1" then
+			if isvalid(self.illust) then self.illust:SetAlpha(1) end
+			self:ApplyOpenness(0.0)
+		elseif p == "hold" then
+			self:ApplyOpenness(1.0)
+		elseif p == "close2" then
+			self:ApplyOpenness(1.0)
+		elseif p == "open2" then
+			self:ApplyOpenness(0.0)
+		end
+		log("[RegressionOverlay] phase=" .. p)
+	end
+
+	@ExecSpace("ClientOnly")
+	method void DoLoad()
+		-- close2 암전 완료 순간(뒤에서) 목적지 로드 + 배경 이미지 제거(open2가 목적지를 드러내도록).
+		if isvalid(self.illust) then self.illust:SetAlpha(0) end
+		if self.mode == "restart" then
+			_StageManager:RequestRestartRun()
+		else
+			local lobby = _EntityService:GetEntityByPath("/ui/LobbyGroup/Root")
+			if lobby ~= nil then lobby.Enable = true end
+			_SelectBackdrop:ShowLoading(false)
+			_SoundManager:PlayBGMKey("bgm_title")
+		end
+		log("[RegressionOverlay] DoLoad mode=" .. tostring(self.mode))
+	end
+
+	@ExecSpace("ClientOnly")
+	method void Finish()
+		-- 종료: 완전 투명·비차단 복귀 + 최종 입력 컨텍스트.
+		self.phase = "idle"
+		self:ApplyOpenness(1.0)
+		if isvalid(self.illust) then self.illust:SetAlpha(0) end
+		local cg = self.Entity.CanvasGroupComponent
+		if isvalid(cg) then cg.BlocksRaycasts = false end
+		if self.mode == "restart" then
+			_InputRouter:SetContext("Combat")
+		else
+			_InputRouter:SetContext("Lobby")
+		end
+		log("[RegressionOverlay] finished mode=" .. tostring(self.mode))
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnUpdate(number delta)
+		-- 5비트 진행. openness 계산 → ApplyOpenness. 비트 종료 시 다음 비트/로드/종료.
+		if self.phase == "idle" then return end
+		self.phaseT += delta
+		local closeDur = _GameConstants.RegressionBlinkCloseDuration
+		local openDur = _GameConstants.RegressionBlinkOpenDuration
+		local holdDur = _GameConstants.RegressionHoldDuration
+		if closeDur <= 0 then closeDur = 0.01 end
+		if openDur <= 0 then openDur = 0.01 end
+		local o = 1.0
+		if self.phase == "close1" then
+			o = 1.0 - self:Clamp01(self.phaseT / closeDur)
+			if self.phaseT >= closeDur then self:Enter("open1") return end
+		elseif self.phase == "open1" then
+			o = self:Clamp01(self.phaseT / openDur)
+			if self.phaseT >= openDur then self:Enter("hold") return end
+		elseif self.phase == "hold" then
+			o = 1.0
+			if self.phaseT >= holdDur then self:Enter("close2") return end
+		elseif self.phase == "close2" then
+			o = 1.0 - self:Clamp01(self.phaseT / closeDur)
+			if self.phaseT >= closeDur then self:DoLoad() self:Enter("open2") return end
+		elseif self.phase == "open2" then
+			o = self:Clamp01(self.phaseT / openDur)
+			if self.phaseT >= openDur then self:Finish() return end
+		end
+		self:ApplyOpenness(o)
+	end
+
+end
