@@ -1,67 +1,80 @@
 @Logic
 script PlayerConfig extends Logic
 
-	-- 플레이어 전용 튜닝 설정 캡슐. GameConstants에서 플레이어 관련 수치를 분리해 가독성·수정 편의를 높인다.
-	-- 접근은 전역 _PlayerConfig.<name> (GameConstants와 동일 패턴). 인스펙터에서 값 편집 가능.
-
-	-- ===== 생존 =====
 	property integer BaseMaxLives = 5
 
-	-- ===== 공격 =====
 	property number BaseAttack = 10.0
+
 	property number AttackCooldown = 0.5
+
 	property number PlayerAttackBoxForward = 2.5
+
 	property number PlayerAttackBoxHeight = 2.0
 
-	-- ===== 대시 =====
 	property integer BaseMaxDash = 2
+
 	property number BaseDashRecoverTime = 2.5
+
 	property number DashDistance = 5.0
+
 	property number DashDuration = 0.1
 
-	-- ===== 데미지 배율 (플레이어 공격 스탯에 곱해지는 계수) =====
 	property number DmgAttackPct = 1.0
+
 	property number DmgDashPct = 0.5
+
 	property number DmgEmpoweredDashPct = 1.5
+
 	property number DmgReflectPct = 2.0
+
 	property number DmgRockPct = 3.0
 
-	-- ===== 아이템 / 능력 =====
-	property integer BaseMaxItems = 3          -- (현재 코드 미사용 — 정의만 이관. 사용 시 여기서 조절)
+	property integer BaseMaxItems = 3
+
 	property integer AbilityUsesNormal = 1
+
 	property integer AbilityUsesBoss = 2
+
 	property number InvincibleAbilityDuration = 1.0
 
-	-- ===== 이동 (MapleTile Rigidbody 물리 — PlayerInputSetup이 spawn/맵진입 시 적용) =====
-	property number MoveSpeed = 1.4             -- 최대 이동속도(WalkSpeed). 조절용.
-	property number MoveAcceleration = 1000.0   -- 지상 가속(WalkAcceleration). 클수록 즉시 최대속도 도달. (기본 1)
-	property number MoveDrag = 2.0              -- 지상 정지 마찰(WalkDrag, 유효 0.5~2). 클수록 즉시 정지. (기본 1)
-	property number MoveMass = 1.0              -- 질량(Mass). 낮을수록 가감속 반응 빠름. ★기본 100이 "천천히 오르고 느리게 멈추는" 주범.
-	-- 공중 가감속: ★AirAccelerationX는 "값이 클수록 공중 속도 자체가 빨라짐"(스냅이 아님). 1000이면 공중에서 폭주 → 엔진 기본(1) 유지.
-	-- 공중을 더 반응성 있게 하고 싶으면 소폭만 올려 튜닝(예: 2~5). 지상 즉시 가감속은 위 WalkAccel/WalkDrag/Mass가 담당.
-	property number AirAcceleration = 30.0      -- 공중 가속(AirAccelerationX). 튜닝값(기본 1 → 30, 공중 기동 강화).
-	property number AirDeceleration = 1.0       -- 공중 감속(AirDecelerationX). 엔진 기본.
+	property number MoveSpeed = 2
 
-	-- ===== 능력: 부동심 (immovable, ability_design §3.3) =====
-	property number ImmovableWindow = 8.0          -- 보험 유효 시간(초)
-	property number ImmovableGraceInvincible = 0.5 -- 흡수 직후 무적(초)
+	property number MoveAcceleration = 1000.0
 
-	-- ===== 능력: 만지 일섬 (manji, ability_design §4.1) =====
-	property number ManjiDashDistance = 6.0        -- 돌진 거리(wu)
-	property number ManjiDashDuration = 0.1        -- 돌진 시간(초) = 무적 시간
-	property number ManjiPathRadius = 1.0          -- 경로 좌우 판정 반지름(wu)
-	property number ManjiDmgPct = 4.0              -- 데미지 배율(공격력×400%)
+	property number MoveDrag = 2.0
 
-	-- ===== 능력: 회전베기 (spin, ability_design §4.2) =====
-	property number SpinRadius = 3.0               -- 원형 판정 반지름(wu)
-	property number SpinDuration = 0.2             -- 지속·무적·이동잠금 시간(초)
-	property number SpinDmgPct = 2.5               -- 데미지 배율(공격력×250%)
+	property number MoveMass = 1.0
 
-	-- ===== 컨트롤 =====
-	property boolean EnableDownJump = false     -- 아래점프 허용 여부 (false = 삭제). PlayerInputSetup이 반영.
+	property number AirAcceleration = 30.0
+
+	property number AirDeceleration = 1.0
+
+	property number ImmovableWindow = 8.0
+
+	property number ImmovableGraceInvincible = 0.5
+
+	property number ManjiDashDistance = 6.0
+
+	property number ManjiDashDuration = 0.1
+
+	property number ManjiPathRadius = 1.0
+
+	property number ManjiDmgPct = 4.0
+
+	property number SpinRadius = 3.0
+
+	property number SpinDuration = 0.2
+
+	property number SpinDmgPct = 2.5
+
+	property boolean EnableDownJump = false
+
 	property string KeyLeft = "A"
+
 	property string KeyRight = "D"
+
 	property string KeyUp = "W"
+
 	property string KeyDown = "S"
 
 end
