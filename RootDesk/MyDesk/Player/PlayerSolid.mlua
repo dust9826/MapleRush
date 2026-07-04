@@ -1,30 +1,29 @@
 @Component
 script PlayerSolid extends Component
 
-	-- 로컬 플레이어를 모든 DashBlock 솔리드 콜라이더의 '측면' 밖으로 밀어낸다(사이드뷰 플랫포머 벽 충돌).
-	-- ★윗면(올라서기)은 FootholdComponent가 담당 → 여기선 수평 차단만(_CombatPrimitives:ResolveSolid).
-	-- ★대시 중엔 PlayerDash가 벽 ray-clamp를 하므로 이 컴포넌트는 비-대시(걷기/점프)에서만 동작한다.
-	-- ★prevX(직전 프레임 X)를 넘겨 '들어온 쪽' 면으로 밀어낸다 → 좁은 벽 관통(터널링) 방지. PlayerBootstrap이 서버에서 부착.
-
-	-- 직전 프레임의 X(진입 방향 판정). 90000=미초기화 센티널.
-	@HideFromInspector property number prevX = 99999.0
+	-- 로컬 플레이어의 DashBlock 벽 충돌(사이드뷰 플랫포머). 위치를 밀어내지 않고,
+	-- 벽에 막힌 방향의 이동속도만 방어(0)한다 → 진동/낙하리셋 없음. 반대 방향 이동은 그대로.
+	-- ★윗면(올라서기)은 FootholdComponent가 담당 → 여기선 좌우(측면)만.
+	-- ★대시 중엔 PlayerDash가 ray-clamp로 별도 처리 → 이 컴포넌트는 비-대시(걷기/점프)에서만.
+	-- PlayerBootstrap이 서버에서 부착.
 
 	@ExecSpace("ClientOnly")
 	method void OnUpdate(number delta)
-		-- 로컬 플레이어만: 매 프레임 DashBlock 콜라이더 측면 밖으로 밀어냄(진입 방향 = prevX). (v2)
+		-- 로컬 플레이어만: 매 프레임 벽 접촉 방향을 계산해 그 방향 이동속도만 상쇄.
 		if self.Entity ~= _UserService.LocalPlayer then return end
-		local curX = self.Entity.TransformComponent.WorldPosition.x
-		if self.prevX > 90000 then self.prevX = curX end
 		---@type PlayerDash
 		local dash = self.Entity:GetComponent("script.PlayerDash")
-		if dash ~= nil and dash.IsDashing then
-			-- 대시 중엔 클램프 안 하되 prevX는 현재 위치로 갱신(대시 종료 직후 첫 프레임 진입방향 오판 방지).
-			self.prevX = curX
-			return
-		end
-		_CombatPrimitives:ResolveSolid(self.Entity, _GameConstants.PlayerHboxHW, _GameConstants.PlayerHboxHH, _GameConstants.PlayerCenterYOffset, self.prevX)
-		-- 클램프 반영된 최종 X를 다음 프레임 진입방향 기준으로 저장.
-		self.prevX = self.Entity.TransformComponent.WorldPosition.x
+		if dash ~= nil and dash.IsDashing then return end
+		local rb = self.Entity.RigidbodyComponent
+		if isvalid(rb) == false then return end
+		-- 벽 방향 플래그: left=왼쪽 벽 접촉, right=오른쪽 벽 접촉.
+		local block = _CombatPrimitives:ComputeSolidBlock(self.Entity, _GameConstants.PlayerHboxHW, _GameConstants.PlayerHboxHH, _GameConstants.PlayerCenterYOffset)
+		local mv = rb.MoveVelocity
+		local vx = mv.x
+		-- 벽 쪽으로 가려는 성분만 0 (반대 방향은 보존). y(중력/점프)는 불변.
+		if block.left and vx < 0 then vx = 0 end
+		if block.right and vx > 0 then vx = 0 end
+		if vx ~= mv.x then rb.MoveVelocity = Vector2(vx, mv.y) end
 	end
 
 end

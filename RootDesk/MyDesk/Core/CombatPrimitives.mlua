@@ -850,6 +850,65 @@ script CombatPrimitives extends Logic
 		end
 	end
 
+	method any ComputeSolidBlock(Entity target, number thw, number thh, number tyoff)
+		-- 벽 방향 '방어 플래그' 계산 — 위치를 밀어내지 않는다(ResolveSolid와의 차이).
+		--   반환: { left = bool, right = bool }
+		--     left  = 플레이어 왼쪽에 벽 접촉 → 왼쪽 이동을 방어해야 함
+		--     right = 플레이어 오른쪽에 벽 접촉 → 오른쪽 이동을 방어해야 함
+		-- 사후 위치 스냅이 없어 진동/낙하리셋이 없다. 잔여 얕은 침투는 허용(속도만 방어).
+		-- ★AABB 판정(회전 미반영) — ResolveSolid와 동일 스코프. 회전 블록 정밀도는 별도 안건(스윕/OBB).
+		local result = { left = false, right = false }
+		if isvalid(target) == false then return result end
+		local map = target.CurrentMap
+		if isvalid(map) == false then return result end
+		local grp = CollisionGroups[_GameConstants.DashBlockGroup]
+		if grp == nil then return result end
+		if self.blockColliderCacheMapName ~= map.Name then
+			self.blockColliderCache = self:BuildBlockColliders(map, grp)
+			self.blockColliderCacheMapName = map.Name
+		end
+		local cols = self.blockColliderCache
+		if cols == nil then return result end
+		local tp = target.TransformComponent.WorldPosition
+		for _, tc in ipairs(cols) do
+			if isvalid(tc) and isvalid(tc.Entity) then
+				self:AccumSideBlock(result, tc, tp, thw, thh, tyoff)
+			end
+		end
+		return result
+	end
+
+	method void AccumSideBlock(any result, any tc, Vector3 tp, number thw, number thh, number tyoff)
+		-- 콜라이더 하나가 '측면(좌우) 접촉'이면 해당 방향 플래그를 세팅. (PushOutSide와 동일 게이트, 위치 이동만 제거)
+		local bs = tc.BoxSize
+		if bs.x <= 0 or bs.y <= 0 then return end
+		local ce = tc.Entity
+		local ctf = ce.TransformComponent
+		local cp = ctf.WorldPosition
+		local csc = ctf.Scale
+		local off = tc.ColliderOffset
+		local cx = cp.x + off.x * csc.x
+		local cy = cp.y + off.y * csc.y
+		local hw = bs.x * math.abs(csc.x) * 0.5
+		local hh = bs.y * math.abs(csc.y) * 0.5
+		local dx = tp.x - cx
+		local dy = (tp.y + tyoff) - cy
+		local ox = (hw + thw) - math.abs(dx)
+		local oy = (hh + thh) - math.abs(dy)
+		if ox <= 0 or oy <= 0 then return end
+		-- 세로가 최소 침투축(위/아래 접촉)이면 스킵 — 윗면=풋홀드, 아랫면=중력 담당.
+		if ox > oy then return end
+		-- 발이 박스 윗면 위(올라선 상태)면 스킵 — 풋홀드가 세로를 잡음.
+		local feetY = (tp.y + tyoff) - thh
+		if feetY >= (cy + hh - 0.15) then return end
+		-- 박스 중심이 플레이어보다 왼쪽(dx>0) = 벽이 왼쪽 → 왼쪽 방어. 오른쪽(dx<0) = 오른쪽 방어.
+		if dx > 0 then
+			result.left = true
+		else
+			result.right = true
+		end
+	end
+
 	method table BuildBlockColliders(Entity map, any grp)
 		-- 맵의 DashBlock 그룹 TriggerComponent 목록 (맵별 캐시). 전체 열거 클램프용. grp.Id로 필터.
 		local list = {}
