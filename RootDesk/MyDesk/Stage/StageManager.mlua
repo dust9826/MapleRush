@@ -180,6 +180,9 @@ script StageManager extends Logic
 					local p = sp.TransformComponent.WorldPosition
 					sx = p.x
 					sy = p.y
+					-- 스폰 마커는 위치 참조용(modelId=spriterenderer, 빈 SpriteRUID) → 런타임엔 흰 박스로 렌더되므로 렌더만 끈다.
+					local sr = sp.SpriteRendererComponent
+					if isvalid(sr) then sr.Enable = false end
 				end
 				local mons = {}
 				local hcs = child:GetChildComponentsByTypeName("script.EnemyHealth", true)
