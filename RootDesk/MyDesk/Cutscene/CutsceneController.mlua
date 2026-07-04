@@ -33,12 +33,18 @@ script CutsceneController extends Component
 
 	property number shown = 0.0
 
-	-- "typing" / "waiting" / "done"
+	-- "blinkClose" / "blinkOpen" / "typing" / "waiting" / "done"
 	property string phase = ""
 
 	property number waitTimer = 0.0
 
 	property any escHandler = nil
+
+	-- 이미지 전환 눈뜨기 블링크: RegressionVignetteMat(RadialGradient) 머티리얼 id + 비트 타이머.
+	-- 회귀 연출(RegressionOverlay)과 동일 머티리얼·상수 재사용. iris Intensity를 닫힘↔열림 애니메이션.
+	@HideFromInspector property string matId = ""
+
+	@HideFromInspector property number phaseT = 0.0
 
 	@ExecSpace("ClientOnly")
 	method void OnBeginPlay()
@@ -56,6 +62,12 @@ script CutsceneController extends Component
 		-- 로비 숨김(컷씬이 먼저) + 전투 입력 억제(비전투 컨텍스트).
 		if isvalid(self.lobbyRoot) then self.lobbyRoot.Enable = false end
 		_InputRouter:SetContext("Lobby")
+		-- 눈뜨기 블링크 머티리얼(RadialGradient) 해석·부착. 첫 장면은 iris 닫힘에서 시작 → blinkOpen으로 눈을 뜬다.
+		self.matId = _EntryService:GetMaterialIdByName(_GameConstants.RegressionVignetteMatName)
+		if isvalid(self.imageSprite) and self.matId ~= "" then
+			self.imageSprite:ChangeMaterial(self.matId)
+		end
+		self:SetIris(_GameConstants.VignetteClosedIntensity)
 		-- ESC 스킵.
 		self.escHandler = _InputService:ConnectEvent(KeyDownEvent, self.OnKeyDown)
 		self.sceneIdx = 0
@@ -74,12 +86,28 @@ script CutsceneController extends Component
 
 	@ExecSpace("ClientOnly")
 	method void NextScene()
-		-- 다음 장면 진입: 이미지 교체 + (필요 시)BGM + 타자기 리셋. 마지막 장면 이후면 종료.
+		-- 다음 장면 진입: 눈뜨기 블링크로 전환. 마지막 장면 이후면 종료.
 		self.sceneIdx = self.sceneIdx + 1
 		if self.scenes == nil or self.sceneIdx > #self.scenes then
 			self:EndCutscene()
 			return
 		end
+		self.phaseT = 0.0
+		if self.sceneIdx == 1 then
+			-- 첫 장면: 닫힌 눈에서 이미지를 깔고 곧장 눈을 뜬다(blinkOpen).
+			self:SwapSceneVisual()
+			self:SetIris(_GameConstants.VignetteClosedIntensity)
+			self.phase = "blinkOpen"
+		else
+			-- 이후 장면: 현재 이미지 위에서 눈을 감고(blinkClose) → 감긴 순간 이미지 교체 → 눈을 뜬다.
+			self.phase = "blinkClose"
+		end
+		log("[CutsceneController] scene " .. tostring(self.sceneIdx) .. " transition (blink)")
+	end
+
+	@ExecSpace("ClientOnly")
+	method void SwapSceneVisual()
+		-- 현재 sceneIdx의 이미지 RUID·크기 교체 + BGM + 타자기 텍스트 준비(출력은 눈 뜬 뒤 typing에서).
 		local sc = self.scenes[self.sceneIdx]
 		if isvalid(self.imageSprite) then
 			self.imageSprite.ImageRUID = DataRef(sc.ruid)
@@ -93,14 +121,51 @@ script CutsceneController extends Component
 		self.chars = self:SplitChars(sc.text)
 		self.charCount = #self.chars
 		self.shown = 0.0
-		self.phase = "typing"
 		if isvalid(self.storyText) then self.storyText.Text = "" end
-		log("[CutsceneController] scene " .. tostring(self.sceneIdx) .. " (chars=" .. tostring(self.charCount) .. ")")
+	end
+
+	@ExecSpace("ClientOnly")
+	method void SetIris(number intensity)
+		-- RadialGradient Intensity(iris 반경) 설정. 닫힘≈0(암전) / 열림=클린 이미지. RegressionOverlay와 동일 머티리얼.
+		if self.matId ~= "" then
+			_MaterialService:ChangeMaterialProperty(self.matId, { ["Intensity"] = intensity })
+		end
 	end
 
 	@ExecSpace("ClientOnly")
 	method void OnUpdate(number delta)
-		-- 타자기 출력 → 완료 시 3초 대기 → 자동 넘김.
+		-- 눈뜨기 블링크(close→swap→open) → 타자기 출력 → 3초 대기 → 자동 넘김.
+		local cI = _GameConstants.VignetteClosedIntensity
+		local oI = _GameConstants.VignetteOpenIntensity
+		if self.phase == "blinkClose" then
+			-- 눈 감기: iris 열림→닫힘. 다 감기면 이미지 교체 후 blinkOpen.
+			local closeDur = _GameConstants.RegressionBlinkCloseDuration
+			if closeDur <= 0 then closeDur = 0.01 end
+			self.phaseT = self.phaseT + delta
+			local p = self.phaseT / closeDur
+			if p > 1 then p = 1 end
+			self:SetIris(oI + (cI - oI) * p)
+			if self.phaseT >= closeDur then
+				self:SwapSceneVisual()
+				self.phaseT = 0.0
+				self.phase = "blinkOpen"
+			end
+			return
+		elseif self.phase == "blinkOpen" then
+			-- 눈 뜨기: iris 닫힘→열림. 다 뜨면 타자기 시작.
+			local openDur = _GameConstants.RegressionBlinkOpenDuration
+			if openDur <= 0 then openDur = 0.01 end
+			self.phaseT = self.phaseT + delta
+			local p = self.phaseT / openDur
+			if p > 1 then p = 1 end
+			self:SetIris(cI + (oI - cI) * p)
+			if self.phaseT >= openDur then
+				self:SetIris(oI)
+				self.shown = 0.0
+				self.phase = "typing"
+			end
+			return
+		end
 		if self.phase == "typing" then
 			self.shown = self.shown + delta * self.CharsPerSec
 			local n = math.floor(self.shown)
@@ -125,6 +190,8 @@ script CutsceneController extends Component
 		-- 종료(자연 완료/스킵 공통): ESC 해제 → 로비 표시 + 타이틀 BGM + 로비 컨텍스트 → 컷씬 숨김.
 		if self.phase == "done" then return end
 		self.phase = "done"
+		-- 블링크 중 스킵 대비: iris 열림으로 복귀(공유 머티리얼 잔여 상태 정리).
+		self:SetIris(_GameConstants.VignetteOpenIntensity)
 		if self.escHandler ~= nil then
 			_InputService:DisconnectEvent(KeyDownEvent, self.escHandler)
 			self.escHandler = nil
