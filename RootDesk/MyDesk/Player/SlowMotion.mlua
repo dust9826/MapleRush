@@ -88,36 +88,95 @@ script SlowMotion extends Logic
 				dash.EmpoweredReady = true
 			end
 		end
-		self:ApplyEnemyGrayscale(true)
+		self:ApplyScreenEffect(true)
 		log("[SlowMotion] CLIENT timescale 0.25, empowered dash READY")
 	end
 
 	@ExecSpace("ClientOnly")
-	method void ApplyEnemyGrayscale(boolean on)
-		-- 클라 연출: 현재 맵의 모든 적 스프라이트에 흑백(GrayScale) 머티리얼 적용/해제. 플레이어·배경은 컬러 유지.
+	method void ApplyScreenEffect(boolean on)
+		-- 클라 연출: 슬로우모션 동안 화면 전체 색보정. 카메라 포스트프로세스(Screen 카테고리)는 GrayScale/Reverse를
+		-- 지원하지 않고 Vignette/LensDistortion만 되므로, "화면 전체"는 모든 월드 스프라이트 렌더러 + 플레이어 아바타에
+		-- ColorEffect 머티리얼을 개별 적용해서 낸다. 효과 종류는 GameConstants.SlowScreenEffect("GrayScale"/"Reverse"/"")로 전환.
 		local player = _UserService.LocalPlayer
 		if player == nil or isvalid(player) == false then return end
 		local map = player.CurrentMap
 		if map == nil or isvalid(map) == false then return end
-		local matName = _GameConstants.MatGrayScale
+		-- 효과 미설정("")이면 화면 색보정 생략(비네팅만 옵션으로 처리).
+		local effectName = _GameConstants.SlowScreenEffect
+		if on and effectName == "" then
+			self:ApplyVignette(on)
+			return
+		end
+		local matName = effectName
 		if on == false then matName = _GameConstants.MatFxDefault end
 		local matId = _EntryService:GetMaterialIdByName(matName)
 		if matId == nil or matId == "" then
-			log("[SlowMotion] grayscale material '" .. tostring(matName) .. "' NOT FOUND")
+			log("[SlowMotion] screen material '" .. tostring(matName) .. "' NOT FOUND")
 			return
 		end
-		local list = map:GetChildComponentsByTypeName("script.EnemyHealth", true)
+		-- 맵 하위 모든 스프라이트 렌더러(적/발판·타일/장식/브레이커블/투사체 등)에 적용. ★플레이어(및 그 하위)는 제외 — 컬러로 남겨 강조.
+		-- 배경(하늘/산)은 아래에서 BackgroundComponent로 따로 처리(SpriteRenderer가 아님).
+		-- ※커스텀 머티리얼을 쓰던 렌더러는 복구 시 default로 리셋됨(현 프로젝트엔 없음).
+		local sprites = map:GetChildComponentsByTypeName("MOD.Core.SpriteRendererComponent", true)
 		local n = 0
-		for _, compAny in ipairs(list) do
-			---@type EnemyHealth
-			local comp = compAny
-			local e = comp.Entity
-			if isvalid(e) and isvalid(e.SpriteRendererComponent) then
-				e.SpriteRendererComponent:ChangeMaterial(matId)
-				n += 1
+		if sprites ~= nil then
+			for _, srAny in ipairs(sprites) do
+				---@type SpriteRendererComponent
+				local sr = srAny
+				if isvalid(sr) and self:IsUnderPlayer(sr.Entity, player) == false then
+					sr:ChangeMaterial(matId)
+					n += 1
+				end
 			end
 		end
-		log("[SlowMotion] grayscale on=" .. tostring(on) .. " -> " .. tostring(n) .. " enemies (matId=" .. tostring(matId) .. ")")
+		-- 배경 레이어(BackgroundComponent) — 엔진이 그리는 하늘/산 배경. SpriteRenderer는 아니지만 MaterialId/ChangeMaterial를 지원.
+		local bgs = map:GetChildComponentsByTypeName("MOD.Core.BackgroundComponent", true)
+		if bgs ~= nil then
+			for _, bgcAny in ipairs(bgs) do
+				---@type BackgroundComponent
+				local bgc = bgcAny
+				if isvalid(bgc) then
+					bgc:ChangeMaterial(matId)
+					n += 1
+				end
+			end
+		end
+		log("[SlowMotion] screen effect on=" .. tostring(on) .. " mat=" .. tostring(matName) .. " -> " .. tostring(n) .. " renderers (player excluded, bg incl)")
+		-- (3) 카메라 비네팅(옵션, 기본 off).
+		self:ApplyVignette(on)
+	end
+
+	method boolean IsUnderPlayer(Entity e, Entity player)
+		-- e가 player 자신이거나 그 하위(부모 체인에 player)면 true → 슬로우 색보정 제외 대상.
+		local cur = e
+		local guard = 0
+		while isvalid(cur) and guard < 32 do
+			if cur == player then return true end
+			cur = cur.Parent
+			guard += 1
+		end
+		return false
+	end
+
+	@ExecSpace("ClientOnly")
+	method void ApplyVignette(boolean on)
+		-- 카메라 Screen 셰이더 비네팅(옵션 연출). GameConstants.SlowVignetteEnabled=true + MatVignette 머티리얼 있을 때만.
+		-- 카메라만 걸 수 있는 진짜 풀스크린 포스트프로세스. 끌 때는 카메라를 default 머티리얼로 복구.
+		if _GameConstants.SlowVignetteEnabled == false then return end
+		local cam = _CameraService:GetCurrentCameraComponent()
+		if isvalid(cam) == false then return end
+		if on then
+			local vid = _EntryService:GetMaterialIdByName(_GameConstants.MatVignette)
+			if vid == nil or vid == "" then
+				log("[SlowMotion] vignette material '" .. tostring(_GameConstants.MatVignette) .. "' NOT FOUND")
+				return
+			end
+			cam:ChangeMaterial(vid)
+		else
+			local did = _EntryService:GetMaterialIdByName(_GameConstants.MatFxDefault)
+			if did ~= nil and did ~= "" then cam:ChangeMaterial(did) end
+		end
+		log("[SlowMotion] vignette on=" .. tostring(on))
 	end
 
 	@ExecSpace("ClientOnly")
@@ -125,7 +184,7 @@ script SlowMotion extends Logic
 		-- 클라: 타임스케일 복귀. 자연 만료 시 미사용 강화 대시 소멸.
 		self.clientSlowActive = false
 		_UtilLogic:SetClientTimeScale(1.0)
-		self:ApplyEnemyGrayscale(false)
+		self:ApplyScreenEffect(false)
 		if expireEmpowered then
 			local player = _UserService.LocalPlayer
 			if player ~= nil then

@@ -164,6 +164,18 @@ script EnemyRanged extends Component
 			return
 		end
 
+		-- 벽(DashBlock) 시야 차단: 감지 거리 안이어도 적↔플레이어 사이에 벽이 있으면 인식 실패 → 조준 취소 후 대기.
+		if _CombatPrimitives:IsSightBlocked(self.Entity.CurrentMap, myCenter, playerCenter) then
+			self:ClearTelegraph()
+			self.IsAiming = false
+			self.aimLocked = false
+			self.cyclePhase = "aim"
+			self.cycleTimer = (self.TrackTime + self.LockedTime)
+			self:StopMove()
+			self:PlayClip(self.standClip)
+			return
+		end
+
 		-- 조준(aim) 중엔 정지 캐스팅, 쿨다운엔 플레이어 방향 이동 (걸으며 캐스팅 방지)
 		if self.cyclePhase == "aim" then
 			self:StopMove()

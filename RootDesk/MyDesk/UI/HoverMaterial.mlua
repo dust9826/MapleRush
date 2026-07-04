@@ -1,0 +1,70 @@
+@Component
+script HoverMaterial extends Component
+
+	-- 호버 시 적용할 머티리얼 이름. 기획자 편집 가능, 버튼별 오버라이드 가능.
+	property string hoverMaterialName = "MouseHovering"
+
+	-- ButtonStateChangeEvent 구독 핸들.
+	property any stateHandler = nil
+
+	-- EntityEnabledInHierarchyChangedEvent 구독 핸들.
+	property any enableHandler = nil
+
+	@ExecSpace("ClientOnly")
+	method void OnBeginPlay()
+		-- 스프라이트 렌더러 확보 → 원본 머티리얼 기억 → 호버 머티리얼 해석 → 버튼 상태 이벤트 구독.
+		local sprite = self.Entity.SpriteGUIRendererComponent
+		if not isvalid(sprite) then
+			log_warning("[HoverMaterial] no SpriteGUIRendererComponent on " .. self.Entity.Name)
+			return
+		end
+		self._T.baseMatId = sprite.MaterialId or ""
+		local matId = _EntryService:GetMaterialIdByName(self.hoverMaterialName)
+		if matId == nil or matId == "" then
+			log_warning("[HoverMaterial] material not found: " .. tostring(self.hoverMaterialName) .. " on " .. self.Entity.Name)
+			return
+		end
+		self._T.hoverMatId = matId
+		self.stateHandler = self.Entity:ConnectEvent(ButtonStateChangeEvent, self.OnButtonState)
+		self.enableHandler = self.Entity:ConnectEvent(EntityEnabledInHierarchyChangedEvent, self.OnEnabledChanged)
+		log("[HoverMaterial] ready on " .. self.Entity.Name .. " mat=" .. self.hoverMaterialName)
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnEnabledChanged(EntityEnabledInHierarchyChangedEvent event)
+		-- 숨겨질 때(계층 비활성화) 호버 머티리얼이 박제되지 않도록 원본으로 강제 원복.
+		-- hover 중 클릭 → 팝업이 닫히면 Normal 이벤트가 오지 않아, 재오픈 시 hover 상태로 남는 문제 방지.
+		if event.EnabledInHierarchy then return end
+		local sprite = self.Entity.SpriteGUIRendererComponent
+		if not isvalid(sprite) then return end
+		sprite:ChangeMaterial(self._T.baseMatId or "")
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnButtonState(ButtonStateChangeEvent event)
+		-- Hover 진입 → 머티리얼 적용 / Normal 복귀 → 원본 머티리얼로 원복.
+		local sprite = self.Entity.SpriteGUIRendererComponent
+		if not isvalid(sprite) then return end
+		if event.state == ButtonState.Hover then
+			sprite:ChangeMaterial(self._T.hoverMatId)
+			log("[HoverMaterial] hover ON " .. self.Entity.Name)
+		elseif event.state == ButtonState.Normal then
+			sprite:ChangeMaterial(self._T.baseMatId)
+			log("[HoverMaterial] hover OFF " .. self.Entity.Name)
+		end
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnEndPlay()
+		-- 이벤트 해제.
+		if self.stateHandler ~= nil then
+			self.Entity:DisconnectEvent(ButtonStateChangeEvent, self.stateHandler)
+			self.stateHandler = nil
+		end
+		if self.enableHandler ~= nil then
+			self.Entity:DisconnectEvent(EntityEnabledInHierarchyChangedEvent, self.enableHandler)
+			self.enableHandler = nil
+		end
+	end
+
+end
