@@ -1,7 +1,7 @@
 ---
 id: MR-AB
 title: 층별 적 체력 스케일링 (+20%/층 합연산)
-status: review
+status: done
 owner: D4LGONA
 area: script
 touches: [RootDesk/MyDesk/Core/GameConstants.mlua, RootDesk/MyDesk/Enemy/EnemyHealth.mlua]
