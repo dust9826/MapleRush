@@ -86,8 +86,30 @@ script EnemyHealth extends Component
 			-- 잡몹 종족 사망음 (sfx_death_<species>). Species 미지정(제네릭)이면 PlaySpeciesSfx가 무음 처리.
 			self:PlaySpeciesSfx("death")
 		end
+		-- 죽는 순간 자기가 쏜 비행 중 투사체 소멸 — "이미 죽은 몬스터의 탄"에 맞아 죽는 러브샷 방지.
+		-- OwnerName 태깅된 enemy 소유 탄만 대상(반사돼 player 소유가 된 탄, 다른 적의 탄, 플레이어 아이템 탄은 유지).
+		self:DestroyOwnedProjectiles()
 		-- 즉시 파괴하지 않고 지연 → AI가 IsDead 감지해 dead 클립 재생(사망 모션). DeadAnimDelay 후 소멸.
 		self.Entity:Destroy(self.DeadAnimDelay)
+	end
+
+	@ExecSpace("ServerOnly")
+	method void DestroyOwnedProjectiles()
+		-- 맵의 투사체 중 이 적이 발사한(OwnerName 일치 + enemy 소유) 것을 전부 소멸.
+		local map = self.Entity.CurrentMap
+		if isvalid(map) == false then return end
+		local projs = map:GetChildComponentsByTypeName("script.Projectile", true)
+		if projs == nil then return end
+		local n = 0
+		for _, pAny in ipairs(projs) do
+			---@type Projectile
+			local pc = pAny
+			if isvalid(pc.Entity) and pc.OwnerSide == "enemy" and pc.OwnerName == self.Entity.Name then
+				pc.Entity:Destroy()
+				n += 1
+			end
+		end
+		if n > 0 then log("[EnemyHealth] " .. self.Entity.Name .. " died -> destroyed " .. tostring(n) .. " in-flight projectile(s)") end
 	end
 
 	@ExecSpace("Multicast")

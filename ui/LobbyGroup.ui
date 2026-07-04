@@ -24,7 +24,7 @@
           "enable": true,
           "visible": true,
           "localize": true,
-          "displayOrder": 11,
+          "displayOrder": 12,
           "pathConstraints": "//",
           "revision": 0,
           "origin": {
@@ -97,7 +97,7 @@
             {
               "@type": "MOD.Core.UIGroupComponent",
               "DefaultShow": true,
-              "GroupOrder": 11,
+              "GroupOrder": 12,
               "GroupType": 1,
               "Enable": true
             },
@@ -196,7 +196,9 @@
             {
               "@type": "script.LobbyController",
               "Enable": true,
-              "wasLobbyVisible": false
+              "wasLobbyVisible": false,
+              "lbReceived": false,
+              "lbRetryTimer": 0.0
             }
           ],
           "@version": 1
@@ -1634,7 +1636,7 @@
           "enable": true,
           "visible": true,
           "localize": true,
-          "displayOrder": 8,
+          "displayOrder": 6,
           "pathConstraints": "////",
           "revision": 0,
           "origin": {
@@ -1687,8 +1689,8 @@
                 "y": 60.0
               },
               "Position": {
-                "x": 0.0,
-                "y": 0.0,
+                "x": -920.0,
+                "y": 60.0,
                 "z": 0.0
               },
               "QuaternionRotation": {
@@ -1772,7 +1774,7 @@
                 "y": 0.0
               },
               "Position": {
-                "x": 0.0,
+                "x": 260.0,
                 "y": 0.0,
                 "z": 0.0
               },
@@ -1917,8 +1919,8 @@
                 "y": -28.0
               },
               "Position": {
-                "x": 0.0,
-                "y": 0.0,
+                "x": 260.0,
+                "y": 122.0,
                 "z": 0.0
               },
               "QuaternionRotation": {
@@ -2119,8 +2121,8 @@
                 "y": -105.0
               },
               "Position": {
-                "x": 0.0,
-                "y": 0.0,
+                "x": 260.0,
+                "y": 45.0,
                 "z": 0.0
               },
               "QuaternionRotation": {
@@ -2321,8 +2323,8 @@
                 "y": -165.0
               },
               "Position": {
-                "x": 0.0,
-                "y": 0.0,
+                "x": 260.0,
+                "y": -15.0,
                 "z": 0.0
               },
               "QuaternionRotation": {
@@ -2523,8 +2525,8 @@
                 "y": -248.0
               },
               "Position": {
-                "x": 0.0,
-                "y": 0.0,
+                "x": 260.0,
+                "y": -98.0,
                 "z": 0.0
               },
               "QuaternionRotation": {
@@ -2672,7 +2674,7 @@
           "enable": true,
           "visible": true,
           "localize": true,
-          "displayOrder": 9,
+          "displayOrder": 7,
           "pathConstraints": "////",
           "revision": 0,
           "origin": {
