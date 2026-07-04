@@ -112,6 +112,7 @@ script CutsceneController extends Component
 		if isvalid(self.imageSprite) then
 			self.imageSprite.ImageRUID = DataRef(sc.ruid)
 			-- 프레임(폭 1100) 기준 비율 유지 → 높이 산출. 16:9보다 세로로 길면 Mask가 위아래를 크롭(cover).
+			-- 노출(alpha 1)은 SwapSceneVisual이 아니라 blinkOpen 첫 프레임에서 켠다 → 머티리얼 바인딩 지연 시에도 번쩍 없음(iris 닫힘 뒤 노출).
 			local frameW = 1100.0
 			self.imageSprite.Entity.UITransformComponent.RectSize = Vector2(frameW, frameW * sc.h / sc.w)
 		end
@@ -153,6 +154,8 @@ script CutsceneController extends Component
 			return
 		elseif self.phase == "blinkOpen" then
 			-- 눈 뜨기: iris 닫힘→열림. 다 뜨면 타자기 시작.
+			-- 여기서 alpha 노출(OnBeginPlay 다음 프레임이라 머티리얼 바인딩 완료 → iris 닫힘=검정 상태에서 켜져 번쩍 없음). 이미 1이면 무해.
+			if isvalid(self.imageSprite) then self.imageSprite:SetAlpha(1) end
 			local openDur = _GameConstants.RegressionBlinkOpenDuration
 			if openDur <= 0 then openDur = 0.01 end
 			self.phaseT = self.phaseT + delta
