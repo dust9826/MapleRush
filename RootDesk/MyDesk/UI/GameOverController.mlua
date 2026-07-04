@@ -65,28 +65,39 @@ script GameOverController extends Component
 
 	@ExecSpace("ClientOnly")
 	method void OnRestartClick(ButtonClickEvent event)
-		-- 다시 도전: 팝업 닫기 + 전투 컨텍스트 + 런 재시작 요청.
+		-- 다시 도전: 팝업 닫고 회귀 연출 재생(오버레이가 재시작 로드/컨텍스트 수행). 오버레이 없으면 기존 즉시 경로 폴백.
 		self.gameOverRoot.Enable = false
 		self.fadeT = -1.0
 		if isvalid(self.canvasGroup) then self.canvasGroup.GroupAlpha = 1 end
-		_InputRouter:SetContext("Combat")
-		_StageManager:RequestRestartRun()
-		log("[GameOverController] restart requested")
+		---@type RegressionOverlay
+		local ov = _StageManager.regressionOverlay
+		if ov ~= nil and isvalid(ov) then
+			ov:Play("restart")
+		else
+			_InputRouter:SetContext("Combat")
+			_StageManager:RequestRestartRun()
+		end
+		log("[GameOverController] restart -> regression")
 	end
 
 	@ExecSpace("ClientOnly")
 	method void OnLobbyClick(ButtonClickEvent event)
-		-- 로비로: 런 포기하고 메인 로비 복귀 (재시작 안 함).
+		-- 로비로: 팝업 닫고 회귀 연출 재생(오버레이가 로비 복귀 수행). 폴백=기존 즉시 로비 복귀.
 		self.gameOverRoot.Enable = false
 		self.fadeT = -1.0
 		if isvalid(self.canvasGroup) then self.canvasGroup.GroupAlpha = 1 end
-		local lobby = _EntityService:GetEntityByPath("/ui/LobbyGroup/Root")
-		if lobby ~= nil then lobby.Enable = true end
-		-- 로비 복귀 시 일러스트 배경 다시 깔기(첫 로비와 일관). TIP 없음.
-		_SelectBackdrop:ShowLoading(false)
-		_InputRouter:SetContext("Lobby")
-		_SoundManager:PlayBGMKey("bgm_title")
-		log("[GameOverController] -> lobby")
+		---@type RegressionOverlay
+		local ov = _StageManager.regressionOverlay
+		if ov ~= nil and isvalid(ov) then
+			ov:Play("lobby")
+		else
+			local lobby = _EntityService:GetEntityByPath("/ui/LobbyGroup/Root")
+			if lobby ~= nil then lobby.Enable = true end
+			_SelectBackdrop:ShowLoading(false)
+			_InputRouter:SetContext("Lobby")
+			_SoundManager:PlayBGMKey("bgm_title")
+		end
+		log("[GameOverController] lobby -> regression")
 	end
 
 end
