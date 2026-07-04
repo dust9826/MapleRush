@@ -261,7 +261,10 @@ script BossController extends Component
 		if pat == nil then pat = pats[_UtilLogic:RandomIntegerRange(1, #pats)] end
 		self.curPat = pat
 		self.phase = "windup"
-		self.phaseTimer = pat.windup
+		-- 판정(ResolvePattern→RequestHit)은 패링 후행창(Trail)이 닫힌 뒤(hitAt+Trail)에 해소.
+		-- 텔레그래프/명중시점(hitAt=windup)은 그대로, 판정만 Trail만큼 늦춰 트레일 구간 패링이
+		-- 명중보다 먼저 canceled를 세팅하게 함 → "패링 성공했는데 죽는" 버그 방지.
+		self.phaseTimer = pat.windup + _GameConstants.ParryWindowTrail
 		self.pendingAttacks = {}
 		self.telegraphIds = {}
 		self.attackCenters = {}
