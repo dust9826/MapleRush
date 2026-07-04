@@ -289,7 +289,7 @@
       {
         "id": "bd7ad1dd-9203-467e-8faf-dc7cfd928c40",
         "path": "/ui/LobbyGroup/Root/Sky",
-        "componentNames": "MOD.Core.UITransformComponent,MOD.Core.SpriteGUIRendererComponent",
+        "componentNames": "MOD.Core.UITransformComponent,MOD.Core.SpriteGUIRendererComponent,MOD.Core.YoutubePlayerGUIComponent",
         "jsonString": {
           "name": "Sky",
           "path": "/ui/LobbyGroup/Root/Sky",
@@ -426,6 +426,20 @@
               "RaycastTarget": false,
               "Type": 0,
               "Enable": true
+            },
+            {
+              "@type": "MOD.Core.YoutubePlayerGUIComponent",
+              "OrderInLayer": 0,
+              "OverrideSorting": false,
+              "SortingLayer": "UI",
+              "Loop": true,
+              "PlayOnAwake": true,
+              "Shuffle": false,
+              "Urls": [
+                "https://www.youtube.com/watch?v=SbwSxysR9Sk"
+              ],
+              "Volume": 0.0,
+              "Enable": true
             }
           ],
           "@version": 1
@@ -543,7 +557,7 @@
               "PlayOnEnable": true,
               "PlaySpeed": 1.0,
               "Prewarm": false,
-              "RandomSeed": 1565148698,
+              "RandomSeed": 3024240756,
               "Enable": true
             }
           ],
@@ -3232,7 +3246,7 @@
               },
               "Position": {
                 "x": 0.0,
-                "y": 0.0,
+                "y": -50.0,
                 "z": 0.0
               },
               "QuaternionRotation": {
