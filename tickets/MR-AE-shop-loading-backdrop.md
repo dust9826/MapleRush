@@ -1,7 +1,7 @@
 ---
 id: MR-AE
 title: 상점 UI 뒤 배경도 로딩화면으로
-status: review
+status: done
 owner: D4LGONA
 area: script
 touches: [RootDesk/MyDesk/Stage/FloorManager.mlua]
