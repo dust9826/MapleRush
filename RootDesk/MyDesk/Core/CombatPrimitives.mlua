@@ -362,6 +362,45 @@ script CombatPrimitives extends Logic
 		return hitCount
 	end
 
+	method integer KnockbackEnemiesInCircle(Entity mapEntity, Vector2 center, number radius, number distance)
+		-- 원형 범위 내 살아있는 적을 center(플레이어) 반대 방향으로 distance(wu)만큼 밀어냄. 밀린 수 반환. 서버 전용.
+		-- 사이드뷰 플랫폼이라 수평 넉백(Y 보존)으로 처리 → 바닥/천장 관통 방지. 투사체엔 미적용(EnemyHealth 대상만). 기획 §4.2.
+		if mapEntity == nil then return 0 end
+		-- 활성 바디 판정: RectTileMapComponent 있으면 SideView(Sideviewbody), 없으면 MapleTile(Rigidbody).
+		-- 적 모델이 두 바디를 다 달고 있어 isvalid로는 구분 불가 → 맵 종류로 골라야 함(EnemyChaser.IsSideViewMap과 동일).
+		local isSideView = isvalid(mapEntity:GetFirstChildComponentByTypeName("MOD.Core.RectTileMapComponent", true))
+		local list = mapEntity:GetChildComponentsByTypeName("script.EnemyHealth", true)
+		local count = 0
+		for _, compAny in ipairs(list) do
+			---@type EnemyHealth
+			local comp = compAny
+			local e = comp.Entity
+			if isvalid(e) and comp.IsDead == false then
+				local hb = self:HurtboxOf(e, _GameConstants.EnemyHboxHW, _GameConstants.EnemyHboxHH, 0)
+				if self:BoxCircleOverlap(Vector2(hb.cx, hb.cy), hb.hw, hb.hh, center, radius) then
+					local pos = e.TransformComponent.WorldPosition
+					local dir = 1
+					if pos.x < center.x then dir = -1 end
+					self:TeleportBodyWorld(e, Vector2(pos.x + dir * distance, pos.y), isSideView)
+					count += 1
+				end
+			end
+		end
+		return count
+	end
+
+	method void TeleportBodyWorld(Entity e, Vector2 target, boolean isSideView)
+		-- 활성 바디에 위치 이동. ⚠️ MapleTile Rigidbody는 SetWorldPosition이 무효(실측)라 SetPosition 사용.
+		-- 적은 맵 루트 직계라 local==world이므로 월드 좌표를 그대로 넘겨도 정확. 모델이 두 바디를 다 달아 map 종류로 활성 바디 선택.
+		if isSideView then
+			local svb = e.SideviewbodyComponent
+			if isvalid(svb) then svb:SetPosition(target) end
+		else
+			local rb = e.RigidbodyComponent
+			if isvalid(rb) then rb:SetPosition(target) end
+		end
+	end
+
 	method integer DamageEnemiesInBox(Entity mapEntity, Vector2 boxCenter, number hw, number hh, number damage, string source)
 		-- 박스 범위 내 모든 적(script.EnemyHealth)에 데미지. 명중 수 반환. 서버 메서드에서 호출할 것.
 		if mapEntity == nil then return 0 end

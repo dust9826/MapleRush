@@ -113,21 +113,21 @@ script ItemTooltip extends Component
 	end
 
 	method any ItemDesc(string id)
-		-- 아이템 설명 {title, body} (기획서 player_design §7 / stage §3.2.2 기반).
-		if id == "rock" then return { title = "짱돌", body = "커서 방향으로 돌을 던져 공격력 300%의 피해를 준다.\n(일회용 · 커서 방향 발사)" } end
-		if id == "smoke" then return { title = "연막탄", body = "연막을 터뜨려 반경 3 안에서 5초간 적에게\n발각되지 않는다. (은신)" } end
-		if id == "flash" then return { title = "섬광탄", body = "일반 적을 3초간 기절시키고, 보스의 그로기\n게이지 감소를 5초간 정지시킨다. (즉시 발동)" } end
-		return { title = "빈 슬롯", body = "일회용 아이템을 담는 칸입니다.\n(숫자키 1~3으로 활성화 후 좌클릭 사용)" }
+		-- 아이템 설명 {title, body} — 텍스트는 TooltipTable 데이터셋(CSV)에서 조회. 빈 슬롯은 item_empty.
+		local key = id
+		if key == "" then key = "item_empty" end
+		local d = _TooltipTable:Get(key)
+		if d == nil then return { title = "", body = "" } end
+		return d
 	end
 
 	method any AbilityDesc(string id)
-		-- 능력 설명 {title, body} (기획서 ability_design 기반).
-		if id == "invincible" then return { title = "임시 무적", body = "발동 후 1초간 모든 피해를 무효화한다.\n(휠 클릭 · 능동)" } end
-		if id == "clearProjectiles" then return { title = "모든 투사체 무효화", body = "화면 내 모든 적 투사체를 즉시 제거한다.\n(휠 클릭 · 즉시 발동)" } end
-		if id == "immovable" then return { title = "부동심 (응급 회생)", body = "8초간 적의 공격 1회를 무효화한다. 무효화 시\n0.5초 무적 + 슬로우 모션. (수동 보험)" } end
-		if id == "manji" then return { title = "만지 일섬", body = "커서 방향으로 돌진(무적)하며 경로의 적에게\n공격력 400% 피해." } end
-		if id == "spin" then return { title = "회전베기", body = "반경 3 원형 광역 공격력 250% + 넉백 + 패링.\n0.2초 지속·무적(이동 불가)." } end
-		return { title = "능력 없음", body = "능력을 획득하면 여기에 표시됩니다.\n(휠 클릭으로 발동)" }
+		-- 능력 설명 {title, body} — 텍스트는 TooltipTable 데이터셋(CSV)에서 조회. 능력 없음은 ability_empty.
+		local key = id
+		if key == "" then key = "ability_empty" end
+		local d = _TooltipTable:Get(key)
+		if d == nil then return { title = "", body = "" } end
+		return d
 	end
 
 end
