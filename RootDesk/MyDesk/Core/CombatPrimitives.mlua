@@ -858,4 +858,25 @@ script CombatPrimitives extends Logic
 		return self.clientEnemyAttacks
 	end
 
+	@ExecSpace("ServerOnly")
+	method void ClearEnemyAttacks(Entity mapEntity)
+		-- 서버 활성 공격 레코드 전부 폐기 + 클라 공격 기즈모 목록 일괄 제거(스테이지 리셋/재시작).
+		-- 파괴된 보스/적의 진행 중이던 판정 레코드가 슬로우 트리거(AnyThreatNear)·패링(TryParry)·기즈모에 남는 것 방지.
+		self.activeAttacks = {}
+		if mapEntity == nil or isvalid(mapEntity) == false then return end
+		local users = _UserService:GetUsersByMapComponent(mapEntity.MapComponent)
+		if users == nil then return end
+		for _, u in ipairs(users) do
+			if isvalid(u) and u.PlayerComponent ~= nil then
+				self:NotifyClearEnemyAttacks(u.PlayerComponent.UserId)
+			end
+		end
+	end
+
+	@ExecSpace("Client")
+	method void NotifyClearEnemyAttacks()
+		-- 클라 수신: 공격 박스 기즈모 목록 전체 비움.
+		self.clientEnemyAttacks = {}
+	end
+
 end

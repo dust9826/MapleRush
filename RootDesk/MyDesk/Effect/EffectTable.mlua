@@ -110,4 +110,29 @@ script EffectTable extends Logic
 		return rec.rot
 	end
 
+	-- 클라: 스테이지 리셋 때 지워야 할 전투 이펙트 시리얼 목록 (맵 앵커 이펙트 — 소유 적이 파괴돼도 남는 것들).
+	@HideFromInspector property any trackedSerials = nil
+
+	@ExecSpace("ClientOnly")
+	method void Track(integer serial)
+		-- 재생 시리얼 등록(클라). 보스 임팩트/빔처럼 instigator=맵이라 적 파괴 후에도 재생이 이어지는 이펙트가 대상.
+		-- 등록된 시리얼은 ClearTracked(스테이지 리셋)가 일괄 RemoveEffect 한다. serial 0(생성 실패)은 무시.
+		if serial == 0 then return end
+		if self.trackedSerials == nil then self.trackedSerials = {} end
+		table.insert(self.trackedSerials, serial)
+	end
+
+	@ExecSpace("ClientOnly")
+	method void ClearTracked()
+		-- 추적 중인 전투 이펙트 전부 제거(클라). 사망→스테이지 재시작 때 느리게 터지는(재생이 긴) 이펙트 잔존 방지.
+		-- 이미 자연 종료된 시리얼의 RemoveEffect는 무해(no-op)라 별도 상태 추적 불필요.
+		if self.trackedSerials == nil then return end
+		local n = #self.trackedSerials
+		for _, serial in ipairs(self.trackedSerials) do
+			_EffectService:RemoveEffect(serial)
+		end
+		self.trackedSerials = {}
+		if n > 0 then log("[EffectTable] cleared " .. tostring(n) .. " tracked combat fx") end
+	end
+
 end
