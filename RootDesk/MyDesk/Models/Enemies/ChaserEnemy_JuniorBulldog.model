@@ -73,7 +73,7 @@
             "$type": "MODNativeType",
             "type": "System.Double, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
           },
-          "Value": 30
+          "Value": 30.0
         },
         {
           "TargetType": "script.EnemyHealth",
@@ -119,10 +119,10 @@
           },
           "Value": {
             "$type": "MOD.Core.MODQuaternion, MOD.Core",
-            "x": 0,
-            "y": 0,
-            "z": 0,
-            "w": 1
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0,
+            "w": 1.0
           }
         },
         {
@@ -163,8 +163,8 @@
           },
           "Value": {
             "$type": "MOD.Core.MODVector2, MOD.Core",
-            "x": 0,
-            "y": 0
+            "x": 0.0,
+            "y": 0.0
           }
         },
         {
@@ -176,8 +176,8 @@
           },
           "Value": {
             "$type": "MOD.Core.MODVector2, MOD.Core",
-            "x": 0,
-            "y": 0
+            "x": 0.0,
+            "y": 0.0
           }
         },
         {
@@ -207,8 +207,8 @@
           },
           "Value": {
             "$type": "MOD.Core.MODVector2, MOD.Core",
-            "x": 0,
-            "y": 0
+            "x": 0.0,
+            "y": 0.0
           }
         },
         {
@@ -272,7 +272,7 @@
             "$type": "MODNativeType",
             "type": "System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
           },
-          "Value": ""
+          "Value": "40436042a8194867a239322bb114eeec"
         },
         {
           "TargetType": "script.EnemyAnimSet",
@@ -345,6 +345,42 @@
             "type": "System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
           },
           "Value": "jrbulldog"
+        },
+        {
+          "TargetType": "script.EnemyHealth",
+          "Name": "solidPrevX",
+          "ValueType": {
+            "$type": "MODNativeType",
+            "type": "System.Double, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
+          },
+          "Value": 99999.0
+        },
+        {
+          "TargetType": "script.EnemyMelee",
+          "Name": "Enable",
+          "ValueType": {
+            "$type": "MODNativeType",
+            "type": "System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
+          },
+          "Value": true
+        },
+        {
+          "TargetType": "script.EnemyMelee",
+          "Name": "telegraphId",
+          "ValueType": {
+            "$type": "MODNativeType",
+            "type": "System.Int64, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
+          },
+          "Value": 0
+        },
+        {
+          "TargetType": "script.EnemyMelee",
+          "Name": "mapKindCache",
+          "ValueType": {
+            "$type": "MODNativeType",
+            "type": "System.Int64, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
+          },
+          "Value": 0
         }
       ],
       "EventLinks": [],
@@ -390,9 +426,9 @@
                 },
                 "Value": {
                   "$type": "MOD.Core.MODVector3, MOD.Core",
-                  "x": 0,
+                  "x": 0.0,
                   "y": 0.5,
-                  "z": 0
+                  "z": 0.0
                 }
               },
               {
@@ -404,10 +440,10 @@
                 },
                 "Value": {
                   "$type": "MOD.Core.MODQuaternion, MOD.Core",
-                  "x": 0,
-                  "y": 0,
-                  "z": 0,
-                  "w": 1
+                  "x": 0.0,
+                  "y": 0.0,
+                  "z": 0.0,
+                  "w": 1.0
                 }
               },
               {
