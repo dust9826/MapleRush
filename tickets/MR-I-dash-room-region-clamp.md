@@ -7,12 +7,13 @@ area: mixed
 touches:
   - RootDesk/MyDesk/Player/PlayerDash.mlua
   - RootDesk/MyDesk/Core/CombatPrimitives.mlua
+  - RootDesk/MyDesk/Map/Breakable.mlua
   - RootDesk/MyDesk/Models/
   - map/
 depends_on: []
-branch: ""
+branch: "fix/breakable-dashblock-region"
 created: 2026-06-20
-updated: 2026-06-28
+updated: 2026-07-04
 ---
 
 # 대시 방-영역 클램프 (RoomRegion 논리 충돌 + 마커 authoring)
@@ -193,6 +194,16 @@ updated: 2026-06-28
 - **touched:** `Player/GizmoManager.mlua`(재작성), `Player/PlayerDashGizmo.mlua`, `Player/CombatGizmo.mlua`, `Core/GameConstants.mlua`(GizmoLinePoolSize 24→27).
 - **실측 PASS(play map02):** 빌드 0에러, 런타임 LEA-/Exception/nil/LWA-3019 전부 0. 플레이어 x=0→2.83 이동 후 range/marker 홀더 pos=(2.83, y+0.5) 정확 추종, 스크린샷에 사거리원·마커원·대시레이(초록)·블록박스(빨강) 전부 렌더+추종 확인. 상세는 메모리 [[linerenderer-gizmo]].
 - 비고: LWA-3009(Default 셰이더 폴백) 홀더당 1회 = 27개 경고, 무해(기본셰이더 폴백). MR-D 정리 시 `GameConstants.DrawGizmo=false` 또는 기즈모 일체 제거.
+
+## breakable가 하위 DashBlockRegion 대시 통과 제어 (2026-07-04, PR #66)
+버그: breakable(한 대 맞고 사라지는 장식/벽) 아래 DashBlockRegion이 겹쳐 있으면, breakable을 부숴도 그 존이 남아 대시가 통과 못 함.
+- **DashBlockRegion 모델**: 기본 `TriggerComponent.BoxSize` **3×3 → 0.5×0.5** 축소 (line 45/122의 "BoxSize 3×3 기본" 갱신). breakable이 토글하는 기준값과 일치.
+- **`Map/Breakable.mlua`**: breakable이 **하위(자식)로 매단 DashBlockRegion**을 제어.
+  - `Break()` → 하위 DashBlock 그룹 TriggerComponent `BoxSize=(0,0)` (대시 통과). `Reset()`(스테이지 재시작/재진입) → `DashRegionBoxSize`(기본 0.5×0.5) 복구.
+  - 대시 클램프는 ClientOnly(`ComputeDashLengthMax → ClampRayToCurrentRoom`)로 평가 → `@Sync IsBroken`의 `OnSyncProperty`에서 클라 BoxSize 갱신(뒤늦은 접속/맵 재진입 포함). DashBlock 콜라이더 그룹만 필터 → 자기 히트박스 불변.
+- **authoring**: Maker Hierarchy에서 제어 대상 DashBlockRegion을 해당 breakable **밑 자식으로** 배치. 재귀 열거(`BuildBlockColliders`/`BlockRegions`가 `map:GetChildComponentsByTypeName(...,true)`)라 중첩돼도 대시 차단 유지, 파괴 시에만 열림.
+- 검증: 빌드 0에러(재직렬화 노이즈 `LIA-1114` info 제외) + 인게임 동작 확인(부수기→통과 / Reset→재차단, 사용자 확인). PR #66 (`fix/breakable-dashblock-region`).
+- 비고: PR엔 DashBlockRegion 모델 + Breakable 만 포함. 워킹트리의 UI/ElnathLevel 맵 변경은 재직렬화 노이즈라 제외.
 
 ## Verify
 - Maker `play` → 대시를 방 경계·바닥 방향으로 쏴서 클램프 정상 + 방 밖 이탈 없음 → `logs` 에러 0. 미authoring 맵 폴백 확인.
