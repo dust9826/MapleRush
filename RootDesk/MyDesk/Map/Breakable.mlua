@@ -89,7 +89,7 @@ script Breakable extends Component
 	end
 
 	method void PushOut(Entity target, any hb, number thw, number thh, number tyoff, boolean allowTop)
-		-- 대상이 히트박스 hb에 겹치면 밖으로 밀어낸다. allowTop=true면 위에서 내려올 때 윗면에 올려세움(발판). ★아래로는 절대 안 밈.
+		-- 대상이 히트박스 hb에 겹치면 밖으로 밀어낸다. allowTop=true면 "위에서 내려온" 경우에만 윗면에 올려세움(발판). ★아래로는 절대 안 밈.
 		local mc = target.MovementComponent
 		if isvalid(mc) == false then return end
 		local tp = target.TransformComponent.WorldPosition
@@ -98,7 +98,11 @@ script Breakable extends Component
 		local ox = (hb.hw + thw) - math.abs(dx)
 		local oy = (hb.hh + thh) - math.abs(dy)
 		if ox <= 0 or oy <= 0 then return end
-		if allowTop and dy > 0 and oy <= ox then
+		-- 윗면 안착은 "발이 박스 상단 위"일 때만 (위에서 내려온 착지). 측면에서 밀 때(발이 상단보다 아래)는 무조건 수평 차단
+		-- → 공중 박스 측면을 밀 때 위로 튕겨 올라가 붙는 버그 방지. feetY = 중심 - 반높이, boxTop = hb.cy + hb.hh.
+		local feetY = (tp.y + tyoff) - thh
+		local landingOnTop = allowTop and dy > 0 and feetY >= (hb.cy + hb.hh - 0.15)
+		if landingOnTop then
 			mc:SetWorldPosition(Vector2(tp.x, hb.cy + hb.hh + thh - tyoff))
 		else
 			local nx = hb.cx - hb.hw - thw
