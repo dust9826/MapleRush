@@ -1,0 +1,38 @@
+{
+  "Id": "",
+  "GameId": "",
+  "EntryKey": "material://4b8f8699-1a24-45a3-8897-96dbc2abe52e",
+  "ContentType": "x-mod/material",
+  "Content": "",
+  "Usage": 0,
+  "UsePublish": 1,
+  "UseService": 0,
+  "CoreVersion": "26.5.0.0",
+  "StudioVersion": "0.1.0.0",
+  "DynamicLoading": 0,
+  "ContentProto": {
+    "Use": "Json",
+    "Json": {
+      "name": "MouseHovering",
+      "id": "4b8f8699-1a24-45a3-8897-96dbc2abe52e",
+      "shadertype": "Hologram",
+      "Blend": 0.5,
+      "ChangeAmount": 0.3,
+      "HologramColor": {
+        "r": 1.0,
+        "g": 0.7285156,
+        "b": 0.935310364,
+        "a": 1.0
+      },
+      "LitMode": 0,
+      "MaxAlpha": 0.75,
+      "MinAlpha": 0.1,
+      "Rotate": 30.0,
+      "TimeOffset": 0.0,
+      "TimeScale": 1.0,
+      "UnchangeAmount": 0.3,
+      "IsUIMaterial": false,
+      "RequiresUIStencilStateChange": false
+    }
+  }
+}
