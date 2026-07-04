@@ -199,10 +199,15 @@ script RecordStorage extends Logic
 		if player == nil or isvalid(player) == false then return end
 		local pc = player.PlayerComponent
 		if isvalid(pc) == false then return end
+		local profileCode = pc.ProfileCode
+		if profileCode == nil or profileCode == "" then
+			log_warning("[RecordStorage] leaderboard submit skipped — ProfileCode 없음(신기록 미등록)")
+			return
+		end
 		local tag = pc.Nickname
 		if tag == nil then tag = "" end
 		local cycleIndex = _RankingDataStorageLogic.ConfigData:GetCycleIndex(_DateTimeLogic:GetTimeElapsed())
-		local ok = _RankingDataStorageLogic:SetScoreAndWait(cycleIndex, pc.ProfileCode, score, tag, false)
+		local ok = _RankingDataStorageLogic:SetScoreAndWait(cycleIndex, profileCode, score, tag, false)
 		log("[RecordStorage] leaderboard submit score=" .. tostring(score) .. " tag=" .. tag .. " ok=" .. tostring(ok))
 		if ok then
 			-- ★ 등록 직후 랭킹 테이블 재빌드 + 캐시 클리어. 안 하면 방금 점수가 다음 갱신주기(기본 30분)/캐시(10분)까지
@@ -221,6 +226,11 @@ script RecordStorage extends Logic
 		local pc = player.PlayerComponent
 		if isvalid(pc) == false then return end
 		local profileCode = pc.ProfileCode
+		if profileCode == nil or profileCode == "" then
+			-- ProfileCode 미확정: 빈 결과로 응답(로비가 '조회 중'에서 벗어나도록).
+			self:ClientReceiveLeaderboard(0, {}, senderUserId)
+			return
+		end
 		local cycleIndex = _RankingDataStorageLogic.ConfigData:GetCycleIndex(_DateTimeLogic:GetTimeElapsed())
 		-- 내 순위
 		local myRank = 0

@@ -35,6 +35,11 @@ script LobbyController extends Component
 
 	@HideFromInspector property boolean wasLobbyVisible = false
 
+	-- 리더보드 조회: 콜드스타트(서버 InitAndWait 미완/응답 유실) 대비 응답 올 때까지 주기 재시도.
+	@HideFromInspector property boolean lbReceived = false
+
+	@HideFromInspector property number lbRetryTimer = 0.0
+
 	property any hStart = nil
 
 	property any hTutorial = nil
@@ -134,9 +139,18 @@ script LobbyController extends Component
 		if self.wasLobbyVisible == false then
 			self.wasLobbyVisible = true
 			-- 로비 진입: 순위/상위10 조회(서버 → ClientReceiveLeaderboard → ShowLeaderboard).
+			self.lbReceived = false
+			self.lbRetryTimer = 0.0
 			if isvalid(self.recordRankText) then self.recordRankText.Text = "글로벌 순위: 조회 중..." end
 			if isvalid(self.leaderboardText) then self.leaderboardText.Text = "불러오는 중..." end
 			_RecordStorage:RequestLeaderboard(10)
+		elseif self.lbReceived == false then
+			-- 응답 미수신 시 2.5초마다 재요청(서버 InitAndWait 완료 전 진입/응답 유실 대비).
+			self.lbRetryTimer = self.lbRetryTimer + delta
+			if self.lbRetryTimer >= 2.5 then
+				self.lbRetryTimer = 0.0
+				_RecordStorage:RequestLeaderboard(10)
+			end
 		end
 		self:RefreshRecordBoard()
 	end
@@ -171,6 +185,7 @@ script LobbyController extends Component
 	@ExecSpace("ClientOnly")
 	method void ShowLeaderboard(integer myRank, table rows)
 		-- 서버가 보낸 내 순위 + 상위 리스트 표시(§8.2). rows = 표시용 행 문자열 배열.
+		self.lbReceived = true
 		if isvalid(self.recordRankText) then
 			if myRank > 0 then
 				self.recordRankText.Text = "글로벌 순위: #" .. tostring(myRank)
