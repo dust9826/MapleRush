@@ -510,6 +510,17 @@ script StageManager extends Logic
 		self.combatGraceUntil = _WallClock:ServerNow() + 1.5
 		-- 런 타이머 활성화(전투 스테이지 진입 = 첫 조작가능 순간). shop은 ResetStage를 안 타므로 여기 도달=전투.
 		_RunTimer:SetActive(true)
+		-- ★소프트락 안전망: 전투 스테이지인데 실제 스폰된 적이 0마리면 클리어 판정(KilledCount>=SpawnedCount)의
+		--   트리거인 OnEnemyKilled가 영영 호출되지 않아 스테이지가 영구히 안 끝난다(진행 불가).
+		--   빈 구성/전량 스폰 실패(재진입 캐시 손상 등)의 최후 방어선으로, 지연 후 자동 클리어를 예약해 흐름을 보장한다.
+		if self.StageType ~= "shop" and self.SpawnedCount == 0 then
+			log_error("[StageManager] ★스폰 0마리 감지 -> 소프트락 방지 자동클리어 예약 (type=" .. tostring(self.StageType) .. " stage=" .. tostring(self.pendingStage) .. ")")
+			self.StageActive = false
+			_RunTimer:SetActive(false)
+			_TimerService:SetTimerOnce(function()
+				if _GameStateManager.RunActive then self:StageClear() end
+			end, _GameConstants.StageEndDelay)
+		end
 		log("[StageManager] ResetStage done: spawned=" .. tostring(self.SpawnedCount))
 	end
 
@@ -696,14 +707,25 @@ script StageManager extends Logic
 		_GameStateManager:AddMeso(mesoGain)
 		local rewards = _RewardManager:RollRewards(self.StageType)
 		log("[StageManager] STAGE CLEAR! type=" .. self.StageType .. " meso+" .. tostring(mesoGain) .. " stat=" .. tostring(rewards.stat) .. " item=" .. tostring(rewards.item) .. " ability=" .. tostring(rewards.ability))
-		-- 보상 UI (클라)
+		-- 보상 UI (클라). map이 nil(CurrentMapId 미설정/경로조회 실패)이어도 크래시 없이 추적 플레이어로 폴백,
+		-- 그래도 대상이 없으면 보상 없이 진행 위임(런 스톨 방지).
 		local map = self:GetMap()
-		local users = _UserService:GetUsersByMapComponent(map.MapComponent)
+		local users = nil
+		if map ~= nil and isvalid(map) then
+			users = _UserService:GetUsersByMapComponent(map.MapComponent)
+		end
+		local pc = nil
 		if users ~= nil and #users > 0 then
-			local pc = users[1].PlayerComponent
-			if pc ~= nil then
-				self:ClientShowReward(mesoGain, rewards.stat, rewards.item, rewards.ability, pc.UserId)
-			end
+			pc = users[1].PlayerComponent
+		else
+			local tp = self:GetPlayer()
+			if tp ~= nil then pc = tp.PlayerComponent end
+		end
+		if pc ~= nil then
+			self:ClientShowReward(mesoGain, rewards.stat, rewards.item, rewards.ability, pc.UserId)
+		else
+			log_error("[StageManager] StageClear: 보상 대상 플레이어 없음 -> 자동 진행")
+			self:RequestProceedNext()
 		end
 	end
 
@@ -790,13 +812,23 @@ script StageManager extends Logic
 		local score = _GameStateManager.NormalClears + _GameStateManager.BossClears * 3
 		_MetaProgression:AwardScore(score)
 		log("[StageManager] GAME OVER (normalClears=" .. tostring(_GameStateManager.NormalClears) .. " score+" .. tostring(score) .. ")")
+		-- 게임오버 화면(클라). map nil이어도 크래시 없이 추적 플레이어로 폴백.
 		local map = self:GetMap()
-		local users = _UserService:GetUsersByMapComponent(map.MapComponent)
+		local users = nil
+		if map ~= nil and isvalid(map) then
+			users = _UserService:GetUsersByMapComponent(map.MapComponent)
+		end
+		local pc = nil
 		if users ~= nil and #users > 0 then
-			local pc = users[1].PlayerComponent
-			if pc ~= nil then
-				self:ClientShowGameOver(score, pc.UserId)
-			end
+			pc = users[1].PlayerComponent
+		else
+			local tp = self:GetPlayer()
+			if tp ~= nil then pc = tp.PlayerComponent end
+		end
+		if pc ~= nil then
+			self:ClientShowGameOver(score, pc.UserId)
+		else
+			log_error("[StageManager] GameOver: 화면 표시 대상 플레이어 없음")
 		end
 	end
 

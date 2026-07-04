@@ -42,6 +42,8 @@ script PlayerCombat extends Component
 	@ExecSpace("Server")
 	method void RequestDebugSlow()
 		-- 테스트용: 조건 무시하고 슬로우모션 즉시 발동 (서버 권위로 Activate 호출).
+		-- 릴리스(CheatMode=false)에선 클라 입력 게이트를 우회한 요청도 서버에서 무시.
+		if _GameConstants.CheatMode == false then return end
 		_SlowMotion:Activate(self.Entity)
 	end
 
