@@ -21,6 +21,9 @@ script PlayerAbility extends Component
 
 	@HideFromInspector property boolean spinPrevControllerEnable = true
 
+	-- 클라: 부동심 보호막 루프 이펙트 serial(0=없음). 흡수/스테이지전환 시 FxImmovableStop이 조기 제거. 각 클라 로컬 값.
+	@HideFromInspector property integer immovableFxSerial = 0
+
 	property any routerHandler = nil
 
 	@ExecSpace("ClientOnly")
@@ -81,6 +84,11 @@ script PlayerAbility extends Component
 	method void RequestUseAbility()
 		-- 서버 검증 + 효과 발동 (player_design §4).
 		if self.AbilityId == "" or self.UsesLeft <= 0 then return end
+		-- 부동심: 이미 보험 창이 활성(시간·흡수횟수 남음) 중이면 재사용 무시 — 중복 발동/이펙트 겹침/사용횟수 낭비 방지(ability_design §4).
+		if self.AbilityId == "immovable" and _WallClock:ServerNow() < self.immovableUntil and self.immovableCharges > 0 then
+			log("[PlayerAbility] IMMOVABLE already active — ignore re-use")
+			return
+		end
 		self.UsesLeft -= 1
 		if self.AbilityId == "invincible" then
 			local invDur = _PlayerConfig.InvincibleAbilityDuration + _MetaProgression:GetInvincibleBonus()
@@ -121,6 +129,7 @@ script PlayerAbility extends Component
 		self.immovableCharges -= 1
 		if self.immovableCharges <= 0 then
 			self.immovableUntil = -999.0   -- 마지막 흡수 → 창 종료
+			self:FxImmovableStop()          -- 공격 흡수 직후 보호막 이펙트 즉시 제거(8초 타이머 대기 없이)
 		end
 		self.abilityInvincibleUntil = _WallClock:ServerNow() + _PlayerConfig.ImmovableGraceInvincible
 		_SlowMotion:Activate(self.Entity)
@@ -248,6 +257,7 @@ script PlayerAbility extends Component
 		self.abilityInvincibleUntil = -999.0
 		self.immovableUntil = -999.0
 		self.immovableCharges = 0
+		self:FxImmovableStop()   -- 진행 중이던 보호막 이펙트도 강제 제거(스테이지 전환 시 잔상 방지)
 	end
 
 	-- ===== 능력 이펙트 (RUID는 EffectTable 데이터셋 ability_* 참조) =====
@@ -286,15 +296,29 @@ script PlayerAbility extends Component
 
 	@ExecSpace("Multicast")
 	method void FxImmovable(number duration)
-		-- 부동심: 보험 창 동안 플레이어에 보호막 부착 루프. effect_list #5.
+		-- 부동심: 보험 창 동안 플레이어에 보호막 부착 루프. 흡수/스테이지전환 시 FxImmovableStop이 조기 제거. effect_list #5.
 		local clip = _EffectTable:Clip("ability_immovable")
 		if clip == "" then return end
 		local sc = _EffectTable:Scale("ability_immovable")
 		local fo = _EffectTable:Offset("ability_immovable")
 		local serial = _EffectService:PlayEffectAttached(clip, self.Entity, Vector3(fo.x, fo.y, 0), _EffectTable:Rot("ability_immovable"), Vector3(sc.x, sc.y, 1), true, _EffectTable:Options("ability_immovable"))
+		self.immovableFxSerial = serial
 		_TimerService:SetTimerOnce(function()
-			_EffectService:RemoveEffect(serial)
+			-- 8초 만료 자동 제거. 조기 흡수/스테이지전환으로 이미 꺼졌으면 serial이 0/교체되어 스킵.
+			if self.immovableFxSerial == serial then
+				_EffectService:RemoveEffect(serial)
+				self.immovableFxSerial = 0
+			end
 		end, duration)
+	end
+
+	@ExecSpace("Multicast")
+	method void FxImmovableStop()
+		-- 부동심 보호막 이펙트 즉시 제거(공격 흡수 직후 / 스테이지 전환 등 조기 종료). 8초 타이머는 serial 불일치로 스킵됨. effect_list #5.
+		if self.immovableFxSerial > 0 then
+			_EffectService:RemoveEffect(self.immovableFxSerial)
+			self.immovableFxSerial = 0
+		end
 	end
 
 	@ExecSpace("ClientOnly")
