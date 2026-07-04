@@ -1,7 +1,7 @@
 ---
 id: MR-AG
 title: 튜토리얼 진입 시 아이템3+랜덤능력 지급, 나갈 때 복원
-status: review
+status: done
 owner: D4LGONA
 area: script
 touches: [RootDesk/MyDesk/Tutorial/TutorialManager.mlua]
