@@ -9,9 +9,6 @@ script RewardController extends Component
 	-- fade-in 진행 시간(>=0 진행 중, -1 정지).
 	@HideFromInspector property number fadeT = -1.0
 
-	-- 자동 진행 카운트다운(>=0 진행 중, -1 정지). 모든 보상 처리 완료(또는 처음부터 없음) 시 3초 후 Proceed.
-	@HideFromInspector property number proceedT = -1.0
-
 	-- 중복 진행 방지 가드.
 	@HideFromInspector property boolean proceeding = false
 
@@ -29,6 +26,9 @@ script RewardController extends Component
 
 	property ButtonComponent btnAbilityDiscard = "3b1cc436-c83f-4d3d-8e21-860d2f9d9561"
 
+	-- '다음으로' 진행 버튼 — 이 버튼을 눌러야만 다음 스테이지로 넘어간다(자동 진행 없음).
+	property ButtonComponent btnNext = "ef15fe9e-6823-416a-ab58-b9821f515f25"
+
 	property any hStat = nil
 
 	property any hItem = nil
@@ -41,6 +41,8 @@ script RewardController extends Component
 
 	property any hAbilityDiscard = nil
 
+	property any hNext = nil
+
 	@ExecSpace("ClientOnly")
 	method void OnBeginPlay()
 		-- StageManager에 자신을 등록 + 패널 숨김 + 버튼 연결.
@@ -52,6 +54,7 @@ script RewardController extends Component
 		self.hStatDiscard = self.btnStatDiscard.Entity:ConnectEvent(ButtonClickEvent, self.OnStatDiscard)
 		self.hItemDiscard = self.btnItemDiscard.Entity:ConnectEvent(ButtonClickEvent, self.OnItemDiscard)
 		self.hAbilityDiscard = self.btnAbilityDiscard.Entity:ConnectEvent(ButtonClickEvent, self.OnAbilityDiscard)
+		self.hNext = self.btnNext.Entity:ConnectEvent(ButtonClickEvent, self.OnNextClick)
 		log("[RewardController] OnBeginPlay: registered + buttons connected")
 	end
 
@@ -64,19 +67,11 @@ script RewardController extends Component
 		if self.hStatDiscard ~= nil then self.btnStatDiscard.Entity:DisconnectEvent(ButtonClickEvent, self.hStatDiscard) end
 		if self.hItemDiscard ~= nil then self.btnItemDiscard.Entity:DisconnectEvent(ButtonClickEvent, self.hItemDiscard) end
 		if self.hAbilityDiscard ~= nil then self.btnAbilityDiscard.Entity:DisconnectEvent(ButtonClickEvent, self.hAbilityDiscard) end
+		if self.hNext ~= nil then self.btnNext.Entity:DisconnectEvent(ButtonClickEvent, self.hNext) end
 	end
 
 	@ExecSpace("ClientOnly")
 	method void OnUpdate(number delta)
-		-- 자동 진행 카운트다운: 모든 보상 처리 완료 후 proceedT초 뒤 다음 스테이지로.
-		if self.proceedT >= 0 then
-			self.proceedT -= delta
-			if self.proceedT <= 0 then
-				self.proceedT = -1.0
-				self:Proceed()
-				return
-			end
-		end
 		-- 등장 fade-in: fadeT 진행 → GroupAlpha 0→1 (PopupFadeDuration 동안).
 		if self.fadeT < 0 then return end
 		self.fadeT += delta
@@ -93,7 +88,6 @@ script RewardController extends Component
 		self.rewardRoot.Enable = true
 		-- 진행 상태 초기화(재사용 대비).
 		self.proceeding = false
-		self.proceedT = -1.0
 		-- 등장 fade-in 시작 (CanvasGroup 알파 0에서 램프업).
 		if isvalid(self.canvasGroup) then self.canvasGroup.GroupAlpha = 0 end
 		self.fadeT = 0.0
@@ -102,8 +96,6 @@ script RewardController extends Component
 		self:SetPair(self.btnItem, self.btnItemDiscard, itemReward)
 		self:SetPair(self.btnAbility, self.btnAbilityDiscard, abilityReward)
 		log("[RewardController] opened (meso+" .. tostring(mesoGain) .. " stat=" .. tostring(statReward) .. " item=" .. tostring(itemReward) .. " ability=" .. tostring(abilityReward) .. ")")
-		-- 처음부터 보상이 하나도 없으면 즉시 자동 진행 예약.
-		self:MaybeScheduleProceed()
 	end
 
 	@ExecSpace("ClientOnly")
@@ -114,13 +106,10 @@ script RewardController extends Component
 	end
 
 	@ExecSpace("ClientOnly")
-	method void MaybeScheduleProceed()
-		-- 남은(미처리) 보상이 없으면 3초 뒤 자동 진행을 예약. 이미 예약/진행 중이면 무시.
-		if self.proceeding then return end
-		if self:HasUnclaimedReward() then return end
-		if self.proceedT >= 0 then return end
-		self.proceedT = 3.0
-		log("[RewardController] all rewards resolved (or none) -> auto-proceed in 3s")
+	method void OnNextClick(ButtonClickEvent event)
+		-- '다음으로' 버튼: 눌러야만 다음 스테이지로 진행 (자동 진행 없음).
+		self:Proceed()
+		log("[RewardController] next clicked -> proceed")
 	end
 
 	@ExecSpace("ClientOnly")
@@ -129,7 +118,6 @@ script RewardController extends Component
 		_RewardManager:ClaimStatReward()
 		_UIToast:ShowMessage("스탯 강화 획득! (공격력 +2)", true)
 		self:SetPair(self.btnStat, self.btnStatDiscard, false)
-		self:MaybeScheduleProceed()
 		log("[RewardController] stat claimed")
 	end
 
@@ -144,7 +132,6 @@ script RewardController extends Component
 		_RewardManager:ClaimItemReward()
 		_UIToast:ShowMessage("아이템 획득!", true)
 		self:SetPair(self.btnItem, self.btnItemDiscard, false)
-		self:MaybeScheduleProceed()
 		log("[RewardController] item claimed")
 	end
 
@@ -156,7 +143,6 @@ script RewardController extends Component
 		_RewardManager:ClaimAbilityReward()
 		_UIToast:ShowMessage(msg, true)
 		self:SetPair(self.btnAbility, self.btnAbilityDiscard, false)
-		self:MaybeScheduleProceed()
 		log("[RewardController] ability claimed")
 	end
 
@@ -165,7 +151,6 @@ script RewardController extends Component
 		-- 스탯 보상 버리기: 미수령 처리 + 안내 토스트.
 		_UIToast:ShowMessage("스탯 강화 보상을 버렸습니다", false)
 		self:SetPair(self.btnStat, self.btnStatDiscard, false)
-		self:MaybeScheduleProceed()
 		log("[RewardController] stat discarded")
 	end
 
@@ -174,7 +159,6 @@ script RewardController extends Component
 		-- 아이템 보상 버리기.
 		_UIToast:ShowMessage("아이템 보상을 버렸습니다", false)
 		self:SetPair(self.btnItem, self.btnItemDiscard, false)
-		self:MaybeScheduleProceed()
 		log("[RewardController] item discarded")
 	end
 
@@ -183,20 +167,18 @@ script RewardController extends Component
 		-- 능력 보상 버리기 (기존 능력 유지).
 		_UIToast:ShowMessage("능력 보상을 버렸습니다", false)
 		self:SetPair(self.btnAbility, self.btnAbilityDiscard, false)
-		self:MaybeScheduleProceed()
 		log("[RewardController] ability discarded")
 	end
 
 	@ExecSpace("ClientOnly")
 	method boolean IsInventoryFull()
-		-- 현재 최대 보관 수(MaxItems, itemcap 해금 슬롯 포함) 안에 빈 칸이 하나도 없는지.
-		-- ★ 슬롯 1~3만 하드코딩하던 버그 수정: PlayerItems.HasFreeSlot(단일 진실원)로 통일.
+		-- 로컬 플레이어 아이템 슬롯 3칸이 모두 찼는지 (@Sync 슬롯 조회).
 		local player = _UserService.LocalPlayer
 		if isvalid(player) == false then return false end
 		---@type PlayerItems
 		local items = player:GetComponent("script.PlayerItems")
 		if items == nil then return false end
-		return items:HasFreeSlot() == false
+		return items.Slot1 ~= "" and items.Slot2 ~= "" and items.Slot3 ~= ""
 	end
 
 	@ExecSpace("ClientOnly")
@@ -211,23 +193,16 @@ script RewardController extends Component
 	end
 
 	@ExecSpace("ClientOnly")
-	method boolean HasUnclaimedReward()
-		-- 아직 수령/버리기 처리하지 않은 보상이 남았는지 (수령 버튼이 아직 활성 = 미처리).
-		return self.btnStat.Entity.Enable or self.btnItem.Entity.Enable or self.btnAbility.Entity.Enable
-	end
-
-	@ExecSpace("ClientOnly")
 	method void Proceed()
 		-- 실제 다음 스테이지 진행: 팝업 닫기 + 전투 컨텍스트 + 다음 스테이지 요청. (중복 방지 가드)
 		if self.proceeding then return end
 		self.proceeding = true
 		self.rewardRoot.Enable = false
 		self.fadeT = -1.0
-		self.proceedT = -1.0
 		if isvalid(self.canvasGroup) then self.canvasGroup.GroupAlpha = 1 end
 		_InputRouter:SetContext("Combat")
 		_StageManager:RequestProceedNext()
-		log("[RewardController] auto-proceed -> next stage")
+		log("[RewardController] proceed -> next stage")
 	end
 
 end
