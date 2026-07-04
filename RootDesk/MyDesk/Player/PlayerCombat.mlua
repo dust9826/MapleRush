@@ -100,7 +100,9 @@ script PlayerCombat extends Component
 		local hitCount = _CombatPrimitives:DamageEnemiesInBox(self.Entity.CurrentMap, boxCenter, hw, hh, damage, "attack")
 		local reflectDamage = _GameStateManager.AttackStat * _PlayerConfig.DmgReflectPct
 		local parried = _CombatPrimitives:TryParry(self.Entity.CurrentMap, boxCenter, hw, hh, reflectDamage)
-		log("[PlayerCombat] server attack resolved: hit=" .. tostring(hitCount) .. " parried=" .. tostring(parried) .. " dmg=" .. tostring(damage))
+		-- 기본 공격으로 파괴 가능 장식 오브젝트(구름/나뭇가지 등) 파괴. ★이 훅은 기본공격에만 있음 → 대시/아이템/투사체로는 안 부서짐.
+		local broke = _CombatPrimitives:BreakBreakablesInBox(self.Entity.CurrentMap, boxCenter, hw, hh, "attack")
+		log("[PlayerCombat] server attack resolved: hit=" .. tostring(hitCount) .. " parried=" .. tostring(parried) .. " broke=" .. tostring(broke) .. " dmg=" .. tostring(damage))
 	end
 
 end
