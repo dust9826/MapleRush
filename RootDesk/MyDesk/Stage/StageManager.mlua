@@ -427,6 +427,10 @@ script StageManager extends Logic
 			local comp = compAny
 			if isvalid(comp.Entity) then comp:Reset() end
 		end
+		-- (2.7) 잔존 예고 게이지 + 적 공격 판정 레코드 정리 — 파괴된 보스/적의 진행 중이던 패턴(예고·판정)이
+		--   재시작 스테이지로 새는 것 방지. 예고/판정은 적 엔티티 수명과 분리된 전역 리스트라 여기서 중앙 정리해야 한다.
+		_TelegraphService:ClearAllForMap(map)
+		_CombatPrimitives:ClearEnemyAttacks(map)
 		-- (3) 슬로우 모션 + 전장 효과 강제 해제
 		_SlowMotion:ClearAllServer()
 		_BattlefieldFx:ClearAllServer()
