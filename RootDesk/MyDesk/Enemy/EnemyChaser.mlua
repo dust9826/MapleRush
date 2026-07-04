@@ -114,6 +114,13 @@ script EnemyChaser extends Component
 			return
 		end
 
+		-- 벽(DashBlock) 시야 차단: 인지 거리 안이어도 적↔플레이어 사이에 벽이 있으면 인식 실패(추격·접촉 안 함).
+		if _CombatPrimitives:IsSightBlocked(self.Entity.CurrentMap, myCenter, playerCenter) then
+			self:StopMove()
+			self:PlayClip(self.standClip)
+			return
+		end
+
 		-- 접촉 판정: 내 몸 hurtbox vs 플레이어 hurtbox 겹치면 피격 요청. RequestHit이 i-frame/중복(0.2s)/사망 처리.
 		local myHb = _CombatPrimitives:HurtboxOf(self.Entity, _GameConstants.EnemyHboxHW, _GameConstants.EnemyHboxHH, 0)
 		local pHb = _CombatPrimitives:HurtboxOf(player, _GameConstants.PlayerHboxHW, _GameConstants.PlayerHboxHH, _GameConstants.PlayerCenterYOffset)

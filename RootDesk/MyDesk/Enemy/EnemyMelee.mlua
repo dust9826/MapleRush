@@ -165,7 +165,12 @@ script EnemyMelee extends Component
 				self.aiState = "idle"
 			end
 		else
-			if dist <= self.AttackRadius then
+			-- 벽(DashBlock) 시야 차단: 인지 거리 안일 때만 raycast(성능). 사이에 벽이 있으면 인식 실패 → 대기(공격·추격 안 함).
+			local blocked = false
+			if dist <= self.DetectRadius then
+				blocked = _CombatPrimitives:IsSightBlocked(self.Entity.CurrentMap, myCenter, playerCenter)
+			end
+			if blocked == false and dist <= self.AttackRadius then
 				-- 공격 개시: 텔레그래프 등록 (슬로우 트리거/패링 대상)
 				self.aiState = "windup"
 				-- 판정(RequestHit)은 패링 후행창(Trail)이 닫힌 뒤(hitAt+Trail)에 해소. 텔레그래프/명중시점(hitAt=windup)은
@@ -184,7 +189,7 @@ script EnemyMelee extends Component
 				self:PlayClip(self:AnimClip("attack", _GameConstants.MeleeAttackClip))
 				if hp ~= nil then hp:PlaySpeciesSfx("atk") end
 					log("[EnemyMelee] " .. self.Entity.Name .. " windup start (parryable=" .. tostring(self.AttackParryable) .. ")")
-			elseif dist <= self.DetectRadius then
+			elseif blocked == false and dist <= self.DetectRadius then
 				self:ChaseToward(playerCenter.x, myCenter.x, timeScale, delta)
 				self:PlayClip(self:AnimClip("run", _GameConstants.MeleeMoveClip))
 			else

@@ -688,11 +688,7 @@ script CombatPrimitives extends Logic
 		-- 바닥은 놓쳐 관통하는 문제가 있어, 전체 열거로 모든 블록을 평가한다. 그룹 미등록이면 건너뜀(안전 폴백).
 		local grp = CollisionGroups[_GameConstants.DashBlockGroup]
 		if grp ~= nil then
-			if self.blockColliderCacheMapName ~= map.Name then
-				self.blockColliderCache = self:BuildBlockColliders(map, grp)
-				self.blockColliderCacheMapName = map.Name
-			end
-			local cols = self.blockColliderCache
+			local cols = self:CachedBlockColliders(map)
 			if cols ~= nil and #cols > 0 then
 				-- 접지 스텝오버: 원점 Y를 blockGrace만큼 올려 낮은 장애물 통과.
 				local bOrigin = origin
@@ -723,6 +719,43 @@ script CombatPrimitives extends Logic
 			end
 		end
 		return list
+	end
+
+	method table CachedBlockColliders(Entity map)
+		-- 맵의 DashBlock 콜라이더(TriggerComponent) 목록, 맵별 1회 열거 후 캐시. grp 미등록/맵 무효면 빈 테이블.
+		-- @Logic 프로퍼티라 서버/클라 인스턴스가 각자 독립 캐시를 가진다(교차 오염 없음).
+		if map == nil or isvalid(map) == false then return {} end
+		local grp = CollisionGroups[_GameConstants.DashBlockGroup]
+		if grp == nil then return {} end
+		if self.blockColliderCacheMapName ~= map.Name then
+			self.blockColliderCache = self:BuildBlockColliders(map, grp)
+			self.blockColliderCacheMapName = map.Name
+		end
+		return self.blockColliderCache
+	end
+
+	method boolean IsSightBlocked(Entity map, Vector2 from, Vector2 to)
+		-- from→to 시야 선분이 DashBlock 콜라이더(벽)에 막히는지. 적 인식 판정용(서버측 순수 기하 — 콜리전 시뮬레이터 비의존).
+		-- DashBlock 그룹 TriggerComponent(회전 OBB 지원)를 전체 열거해, 레이 진입거리가 선분 길이보다 짧으면 사이에 벽이 있다고 판정.
+		-- 그룹 미등록/블록 없음이면 false(=시야 트임, 안전 폴백). from이 블록 내부면 진입거리 0 → 막힘 취급.
+		if map == nil or isvalid(map) == false then return false end
+		local cols = self:CachedBlockColliders(map)
+		if cols == nil then return false end
+		local n = #cols
+		if n == 0 then return false end
+		local dx = to.x - from.x
+		local dy = to.y - from.y
+		local dist = math.sqrt(dx * dx + dy * dy)
+		if dist < 0.0001 then return false end
+		local dir = Vector2(dx / dist, dy / dist)
+		for i = 1, n do
+			local tc = cols[i]
+			if isvalid(tc) and isvalid(tc.Entity) then
+				local entry = self:OBBRayEntry(tc, from, dir, dist)
+				if entry < dist then return true end
+			end
+		end
+		return false
 	end
 
 	method number SnapFootToBlock(Entity map, number footX, number footY, number maxSnap)
