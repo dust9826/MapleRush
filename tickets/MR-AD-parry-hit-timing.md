@@ -1,7 +1,7 @@
 ---
 id: MR-AD
 title: 패링 성공했는데 죽는 버그 (판정 타이밍)
-status: review
+status: done
 owner: D4LGONA
 area: script
 touches: [RootDesk/MyDesk/Enemy/EnemyMelee.mlua, RootDesk/MyDesk/Enemy/Boss/BossController.mlua]
