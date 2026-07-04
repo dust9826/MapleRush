@@ -168,7 +168,9 @@ script EnemyMelee extends Component
 			if dist <= self.AttackRadius then
 				-- 공격 개시: 텔레그래프 등록 (슬로우 트리거/패링 대상)
 				self.aiState = "windup"
-				self.stateTimer = self.WindupTime
+				-- 판정(RequestHit)은 패링 후행창(Trail)이 닫힌 뒤(hitAt+Trail)에 해소. 텔레그래프/명중시점(hitAt=windup)은
+					-- 그대로, 판정만 Trail만큼 늦춰 트레일 구간 패링이 명중보다 먼저 canceled를 세팅 → "패링했는데 죽는" 버그 방지.
+					self.stateTimer = self.WindupTime + _GameConstants.ParryWindowTrail
 				local facingX = 1
 				if dx < 0 then facingX = -1 end
 				local box = self:ComputeAttackBox(facingX, myCenter)
