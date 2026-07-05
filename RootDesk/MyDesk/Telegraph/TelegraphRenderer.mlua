@@ -153,6 +153,18 @@ script TelegraphRenderer extends Logic
 	end
 
 	@ExecSpace("ClientOnly")
+	method void InitHolderVisual(any e)
+		-- 홀더 최초 해석 시 1회: PixelRenderer 기본 버퍼(흰 16x16 불투명)를 투명으로 덮고 비활성화.
+		-- 안 하면 슬롯이 처음 배치되는 프레임에 기본 흰 네모가 잠깐 보인다(예고 '준비중' 흰 점 아티팩트).
+		-- 이후 실제 배치(PutHolder)는 매 프레임 FillColor로 제 색을 칠하므로 예고 자체 표시는 그대로 유지.
+		if e == nil or isvalid(e) == false then return end
+		local pr = e.PixelRendererComponent
+		if isvalid(pr) == false then return end
+		pr:FillColor(Color(0, 0, 0, 0))
+		pr.Enable = false
+	end
+
+	@ExecSpace("ClientOnly")
 	method any FrameHolder(integer idx)
 		-- 프레임 홀더 조회(맵 자식, 캐시 + isvalid 재조회).
 		if idx < 0 or idx >= self.poolSize then return nil end
@@ -161,6 +173,7 @@ script TelegraphRenderer extends Logic
 		if e ~= nil and isvalid(e) then return e end
 		if self.boundMap == nil or isvalid(self.boundMap) == false then return nil end
 		e = self.boundMap:GetChildByName(_GameConstants.TelegraphFramePrefix .. tostring(idx), false)
+		if e ~= nil and isvalid(e) then self:InitHolderVisual(e) end
 		self.frameHolders[s] = e
 		return e
 	end
@@ -174,6 +187,7 @@ script TelegraphRenderer extends Logic
 		if e ~= nil and isvalid(e) then return e end
 		if self.boundMap == nil or isvalid(self.boundMap) == false then return nil end
 		e = self.boundMap:GetChildByName(_GameConstants.TelegraphFillPrefix .. tostring(idx), false)
+		if e ~= nil and isvalid(e) then self:InitHolderVisual(e) end
 		self.fillHolders[s] = e
 		return e
 	end
@@ -184,6 +198,7 @@ script TelegraphRenderer extends Logic
 		if self.aimHolder ~= nil and isvalid(self.aimHolder) then return self.aimHolder end
 		if self.boundMap == nil or isvalid(self.boundMap) == false then return nil end
 		self.aimHolder = self.boundMap:GetChildByName(_GameConstants.TelegraphFramePrefix .. "Aim", false)
+		if self.aimHolder ~= nil and isvalid(self.aimHolder) then self:InitHolderVisual(self.aimHolder) end
 		return self.aimHolder
 	end
 
