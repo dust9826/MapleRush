@@ -24,9 +24,10 @@ script PlayerBootstrap extends Logic
 		if player:GetComponent("script.PlayerDash") == nil then
 			player:AddComponent("PlayerDash")
 		end
-		if player:GetComponent("script.PlayerSolid") == nil then
-			player:AddComponent("PlayerSolid")
-		end
+		-- 앵커 3점 벽 충돌 체크(PlayerSolid) 비활성화 — 부착하지 않음.
+		-- if player:GetComponent("script.PlayerSolid") == nil then
+		-- 	player:AddComponent("PlayerSolid")
+		-- end
 		if player:GetComponent("script.PlayerInputSetup") == nil then
 			player:AddComponent("PlayerInputSetup")
 		end

@@ -26,6 +26,23 @@ script LobbyController extends Component
 	-- 글로벌 랭킹 TOP N 리스트 본문(여러 줄 1개 텍스트). §8.2 상위 10명 + 내 순위.
 	property TextComponent leaderboardText = "0fc215bb-2662-4d2e-96fa-4eb8b2032df9"
 
+	-- 로비 배경 유튜브 영상(LobbyGroup/Root/YoutubePlayerGUI). PlayOnAwake는 월드 시작 1회뿐이라
+	-- 게임→타이틀 복귀(로비 재표시) 때는 재생이 안 된다 → 로비가 보일 때마다 Play()로 되살린다.
+	property YoutubePlayerGUIComponent youtubePlayer = "1c7f56ac-174d-456b-8436-ea9093b0fc00"
+
+	-- 유튜브 버퍼링(준비중) 동안 영상 위를 덮는 썸네일(LobbyGroup/Root/YoutubeThumb).
+	-- 재생 준비 완료 이벤트가 없으므로 '잠깐 보여주고(hold) → 페이드아웃' 휴리스틱으로 처리한다.
+	property Entity youtubeThumb = "a88bf2e9-60a0-45d7-b553-fe13aad76fc3"
+
+	-- 썸네일 유지 시간(초, 페이드 전 대기) / 페이드아웃 시간(초). 기획자 튜닝용.
+	-- 기본: 대기 없이 로비 등장과 동시에 1초에 걸쳐 알파 1→0으로 서서히 사라진다.
+	property number YoutubeThumbHoldSec = 0.0
+
+	property number YoutubeThumbFadeSec = 1.0
+
+	-- 썸네일 페이드 타이머(>=0 진행 중: hold부터 누적, -1 정지).
+	@HideFromInspector property number thumbT = -1.0
+
 	@HideFromInspector property boolean wasLobbyVisible = false
 
 	-- 리더보드 조회: 콜드스타트(서버 InitAndWait 미완/응답 유실) 대비 응답 올 때까지 주기 재시도.
@@ -109,6 +126,11 @@ script LobbyController extends Component
 		end
 		if self.wasLobbyVisible == false then
 			self.wasLobbyVisible = true
+			-- 로비 진입(부팅 후 최초 + 게임에서 복귀): 배경 유튜브 영상 재생. PlayOnAwake는 월드 시작 1회뿐이라
+			-- 복귀 시 재생이 안 되던 버그 → 로비가 보이는 순간마다 처음부터 재생.
+			if isvalid(self.youtubePlayer) then self.youtubePlayer:Play() end
+			-- 썸네일 비활성화 — 표시 안 함(엔티티는 숨김 상태로 잔류). 되살리려면 아래 주석 해제.
+			-- self:ShowYoutubeThumb()
 			-- 로비 진입: 순위/상위10 조회(서버 → ClientReceiveLeaderboard → ShowLeaderboard).
 			self.lbReceived = false
 			self.lbRetryTimer = 0.0
@@ -123,7 +145,38 @@ script LobbyController extends Component
 				_RecordStorage:RequestLeaderboard(10)
 			end
 		end
+		-- 유튜브 썸네일 페이드아웃: hold 경과 후 fade 동안 알파 1→0, 끝나면 숨김(영상 노출).
+		if self.thumbT >= 0 then
+			self.thumbT = self.thumbT + delta
+			local fade = self.YoutubeThumbFadeSec
+			if fade <= 0 then fade = 0.01 end
+			local a = 1.0 - (self.thumbT - self.YoutubeThumbHoldSec) / fade
+			if a > 1 then a = 1 end
+			if a <= 0 then
+				a = 0
+				self.thumbT = -1.0
+				if isvalid(self.youtubeThumb) then self.youtubeThumb.Enable = false end
+			end
+			self:SetThumbAlpha(a)
+		end
 		self:RefreshRecordBoard()
+	end
+
+	@ExecSpace("ClientOnly")
+	method void ShowYoutubeThumb()
+		-- 유튜브 버퍼링(준비중) 동안 영상 위에 썸네일을 불투명으로 띄우고 페이드 타이머 시작.
+		if isvalid(self.youtubeThumb) == false then return end
+		self.youtubeThumb.Enable = true
+		self:SetThumbAlpha(1.0)
+		self.thumbT = 0.0
+	end
+
+	@ExecSpace("ClientOnly")
+	method void SetThumbAlpha(number a)
+		-- 썸네일 스프라이트 알파만 변경(흰색 틴트 고정). FlashOverlay와 동일 idiom.
+		if isvalid(self.youtubeThumb) == false then return end
+		local sr = self.youtubeThumb.SpriteGUIRendererComponent
+		if isvalid(sr) then sr.Color = Color(1, 1, 1, a) end
 	end
 
 	@ExecSpace("ClientOnly")
