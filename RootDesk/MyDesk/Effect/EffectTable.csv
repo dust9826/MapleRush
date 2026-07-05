@@ -1,6 +1,6 @@
 ﻿key,ruid,playrate,startframe,endframe,rot,offx,offy,scalex,scaley,#name,final
 dash,429e8db08f1e486d8f783e7e51d05178,1,0,-1,0,0,0,1,,대시 이펙트,TRUE
-dash_empowered,af919bf13ce04e3981cada2251a0c87f,1,0,-1,0,0,0,1,,강화 대시 이펙트,TRUE
+dash_empowered,361525360d7641f0ae2d47ca18700023,1,0,-1,0,0,0,1,,강화 대시 이펙트(선딜 감소 버전),TRUE
 attack,e87714e7b6d74841a677b25fd5d40c37,1,0,-1,180,0,0,1,1.2,기본 공격 이펙트,TRUE
 ability_invincible_effect,a95a6b448de941a79c89611929a161d4,1,0,-1,0,0,0,1,,금강불괴 - effect(발동 버스트),TRUE
 ability_invincible_affected,51ecdf202d4d4c1f89704665df7be67d,1,0,-1,0,0,0,1,,금강불괴 - affected(피격 오버레이),TRUE
