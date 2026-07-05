@@ -61,8 +61,6 @@ script GameConstants extends Logic
 
 	property number FlashPeakAlpha = 0.9
 
-	-- 참공(모든 투사체 무효화) 제거 범위 = 플레이어 중심 뷰포트 박스 반너비/반높이(월드유닛).
-	-- 화면 실측 12.8×7.2(PC) → 반값 6.4×3.6. 기획 ability_design §3.2 "화면(뷰포트) 내" 판정. 카메라 오프셋 보정은 값 조정으로.
 	property number ClearViewHalfW = 6.4
 
 	property number ClearViewHalfH = 3.6
@@ -135,7 +133,6 @@ script GameConstants extends Logic
 
 	property integer MaxFloors = 3
 
-	-- 층당 적 체력 증가량(합연산). 1층 +0% / 2층 +20% / 3층 +40% (stage_design 스케일링).
 	property number HpAddPerFloor = 0.20
 
 	property string MapNormal = "map02"
@@ -154,11 +151,8 @@ script GameConstants extends Logic
 
 	property string MatFxDefault = "DashFxDefault"
 
-	-- 슬로우모션 색보정 효과: 어떤 ColorEffect 머티리얼명을 월드 스프라이트(적/발판·타일/장식)+배경(BackgroundComponent)에 걸지. ★플레이어는 제외(컬러 강조).
-	-- "GrayScale"=흑백 / "Reverse"=네거티브(색반전) / ""=끔(효과 미적용). 기획자 스위치.
 	property string SlowScreenEffect = "GrayScale"
 
-	-- 슬로우모션 카메라 비네팅(Screen 셰이더) 사용 여부. 기본 off(연출 확인용으로만 켰다 끔). MatVignette 머티리얼 필요.
 	property boolean SlowVignetteEnabled = false
 
 	property string MatVignette = "SlowVignette"
@@ -189,7 +183,7 @@ script GameConstants extends Logic
 
 	property boolean CheatMode = true
 
-	property boolean DrawGizmo = true
+	property boolean DrawGizmo = false
 
 	property boolean DashGizmoDrawBlocks = false
 
@@ -269,6 +263,20 @@ script GameConstants extends Logic
 
 	property number TelegraphPxBaseWorld = 0.16
 
+	property string RegressionImageRUID = "93cefac9728c4911a9309bcdf96a516a"
+
+	property string RegressionVignetteMatName = "RegressionVignetteMat"
+
+	property number RegressionBlinkCloseDuration = 0.5
+
+	property number RegressionBlinkOpenDuration = 0.7
+
+	property number RegressionHoldDuration = 0.8
+
+	property number VignetteClosedIntensity = 0.02
+
+	property number VignetteOpenIntensity = 3.0
+
 	method integer NormalStagesForFloor(integer floor)
 		-- 층별 일반 스테이지 진행 횟수: 4 + 1*(층수-1) (stage_design_doc §2.2.3)
 		return self.Floor1NormalStages + (floor - 1)
@@ -309,24 +317,5 @@ script GameConstants extends Logic
 		-- 파일명==루트 Hierarchy name 검증됨(세 테마 전부 TileMapMode=0). name 그대로 반환.
 		return self:MapForTheme(theme) .. "_Boss"
 	end
-
-	-- 회귀(Regression) 눈뜨기 연출 튜너블 (MR-AE)
-	property string RegressionImageRUID = "93cefac9728c4911a9309bcdf96a516a"
-
-	-- 방사형 비네팅 RadialGradient 머티리얼 이름(_EntryService:GetMaterialIdByName). RootDesk/MyDesk/Materials/RegressionVignetteMat.material
-	property string RegressionVignetteMatName = "RegressionVignetteMat"
-
-	-- 감기/뜨기 각 방향 지속시간(초). 감기 빠르게, 뜨기 살짝 느리게.
-	property number RegressionBlinkCloseDuration = 0.5
-
-	property number RegressionBlinkOpenDuration = 0.7
-
-	-- 회귀 이미지 정지 홀드(초).
-	property number RegressionHoldDuration = 0.8
-
-	-- 방사형 비네팅 셰이더(RadialGradient) Intensity = iris 반경. 닫힘≈0(암전·핀포인트) / 열림=클린 이미지.
-	property number VignetteClosedIntensity = 0.02
-
-	property number VignetteOpenIntensity = 3.0
 
 end

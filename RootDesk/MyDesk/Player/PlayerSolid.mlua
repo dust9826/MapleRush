@@ -1,30 +1,74 @@
 @Component
 script PlayerSolid extends Component
 
-	-- 로컬 플레이어를 모든 DashBlock 솔리드 콜라이더의 '측면' 밖으로 밀어낸다(사이드뷰 플랫포머 벽 충돌).
-	-- ★윗면(올라서기)은 FootholdComponent가 담당 → 여기선 수평 차단만(_CombatPrimitives:ResolveSolid).
-	-- ★대시 중엔 PlayerDash가 벽 ray-clamp를 하므로 이 컴포넌트는 비-대시(걷기/점프)에서만 동작한다.
-	-- ★prevX(직전 프레임 X)를 넘겨 '들어온 쪽' 면으로 밀어낸다 → 좁은 벽 관통(터널링) 방지. PlayerBootstrap이 서버에서 부착.
+	-- 2단계 앵커 벽 정지 (velocity 기반, x만 조절 — 위치는 안 건드림 → 진동/낙하리셋 없음).
+	--  · 2단계(먼 앵커)가 벽에 닿으면 x속도를 서서히(lerp) 감속 → 부드럽게 멈춤.
+	--  · 1단계(가까운 앵커)가 닿으면 하드 정지.
+	--  · 앵커는 '발 + walkUp' 위로 둬서 낮은 턱/오르막은 안 막고 걸어 오름. y(중력/점프)는 불변.
+	-- ★대시 중엔 PlayerDash가 담당. PlayerBootstrap이 서버에서 부착.
 
-	-- 직전 프레임의 X(진입 방향 판정). 90000=미초기화 센티널.
-	@HideFromInspector property number prevX = 99999.0
+	-- 벽 감속 스케일 (1=정상, 0=정지). 2단계에서 delta로 서서히 0으로 lerp.
+	@HideFromInspector property number brakeScale = 1.0
 
 	@ExecSpace("ClientOnly")
 	method void OnUpdate(number delta)
-		-- 로컬 플레이어만: 매 프레임 DashBlock 콜라이더 측면 밖으로 밀어냄(진입 방향 = prevX). (v2)
+		-- 로컬 플레이어만.
 		if self.Entity ~= _UserService.LocalPlayer then return end
-		local curX = self.Entity.TransformComponent.WorldPosition.x
-		if self.prevX > 90000 then self.prevX = curX end
 		---@type PlayerDash
 		local dash = self.Entity:GetComponent("script.PlayerDash")
-		if dash ~= nil and dash.IsDashing then
-			-- 대시 중엔 클램프 안 하되 prevX는 현재 위치로 갱신(대시 종료 직후 첫 프레임 진입방향 오판 방지).
-			self.prevX = curX
+		if dash ~= nil and dash.IsDashing then return end
+		local rb = self.Entity.RigidbodyComponent
+		if isvalid(rb) == false then return end
+		local map = self.Entity.CurrentMap
+		if isvalid(map) == false then return end
+
+		local mv = rb.MoveVelocity
+		local vx = mv.x
+		-- 진행 방향(벽쪽 판정 기준). 안 움직이면 정상 복귀.
+		local dir = 0
+		if vx > 0.001 then dir = 1 elseif vx < -0.001 then dir = -1 end
+		if dir == 0 then
+			self.brakeScale = 1.0
 			return
 		end
-		_CombatPrimitives:ResolveSolid(self.Entity, _GameConstants.PlayerHboxHW, _GameConstants.PlayerHboxHH, _GameConstants.PlayerCenterYOffset, self.prevX)
-		-- 클램프 반영된 최종 X를 다음 프레임 진입방향 기준으로 저장.
-		self.prevX = self.Entity.TransformComponent.WorldPosition.x
+
+		local thw = _GameConstants.PlayerHboxHW
+		local thh = _GameConstants.PlayerHboxHH
+		local yoff = _GameConstants.PlayerCenterYOffset
+		local cur = self.Entity.TransformComponent.WorldPosition
+
+		-- 앵커 3점 높이: 하단은 '발 + walkUp' 위(그 이하 낮은 턱/오르막은 안 막고 오름).
+		local walkUp = 0.55
+		local cyc = cur.y + yoff
+		local yTop = cyc + thh * 0.8
+		local yBot = (cyc - thh) + walkUp
+		local yMid = (yTop + yBot) * 0.5
+
+		-- 1단계(가까운, 하드 정지) / 2단계(먼, 감속 시작) 앵커 x — 진행 방향으로 가장자리+gap.
+		local gapStop = 0.03
+		local gapBrake = 0.20
+		local axStop = cur.x + dir * (thw + gapStop)
+		local axBrake = cur.x + dir * (thw + gapBrake)
+		local nearHit = _CombatPrimitives:PointInWall(map, axStop, yMid) or _CombatPrimitives:PointInWall(map, axStop, yTop) or _CombatPrimitives:PointInWall(map, axStop, yBot)
+		local farHit = _CombatPrimitives:PointInWall(map, axBrake, yMid) or _CombatPrimitives:PointInWall(map, axBrake, yTop) or _CombatPrimitives:PointInWall(map, axBrake, yBot)
+
+		if nearHit then
+			-- 1단계: 하드 정지.
+			self.brakeScale = 0.0
+		elseif farHit then
+			-- 2단계: x속도를 delta에 비례해 서서히 0으로 (부드럽게 멈춤).
+			local brakeSpeed = 6.0
+			self.brakeScale = self.brakeScale - brakeSpeed * delta
+			if self.brakeScale < 0.0 then self.brakeScale = 0.0 end
+		else
+			-- 벽 없음 → 정상 복귀.
+			self.brakeScale = 1.0
+		end
+
+		-- x만 감속 적용(y=중력/점프 불변). brakeScale=1이면 손 안 댐.
+		if self.brakeScale < 1.0 then
+			rb.MoveVelocity = Vector2(vx * self.brakeScale, mv.y)
+		end
 	end
 
 end
