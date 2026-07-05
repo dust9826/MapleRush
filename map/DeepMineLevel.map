@@ -7065,11 +7065,11 @@
                     "Id": 227,
                     "StartPoint": {
                       "x": 168.75,
-                      "y": -3.48000026
+                      "y": -3.48
                     },
                     "EndPoint": {
                       "x": 169.65,
-                      "y": -3.48000026
+                      "y": -3.48
                     },
                     "Variance": {
                       "x": 1.0,
@@ -7078,7 +7078,7 @@
                   },
                   {
                     "Length": 0.5700073,
-                    "NextFootholdId": 0,
+                    "NextFootholdId": 796,
                     "PreviousFootholdId": 227,
                     "groupID": 19,
                     "layer": 1,
@@ -7096,11 +7096,11 @@
                     "Id": 228,
                     "StartPoint": {
                       "x": 169.65,
-                      "y": -3.48000026
+                      "y": -3.48
                     },
                     "EndPoint": {
                       "x": 170.22,
-                      "y": -3.48000026
+                      "y": -3.48
                     },
                     "Variance": {
                       "x": 1.0,
@@ -7111,7 +7111,7 @@
                     "Length": 0.569992065,
                     "NextFootholdId": 230,
                     "PreviousFootholdId": 797,
-                    "groupID": 20,
+                    "groupID": 19,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -7142,7 +7142,7 @@
                     "Length": 0.8999939,
                     "NextFootholdId": 231,
                     "PreviousFootholdId": 229,
-                    "groupID": 20,
+                    "groupID": 19,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -7173,7 +7173,7 @@
                     "Length": 0.8999939,
                     "NextFootholdId": 232,
                     "PreviousFootholdId": 230,
-                    "groupID": 20,
+                    "groupID": 19,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -7204,7 +7204,7 @@
                     "Length": 0.8999939,
                     "NextFootholdId": 233,
                     "PreviousFootholdId": 231,
-                    "groupID": 20,
+                    "groupID": 19,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -7235,7 +7235,7 @@
                     "Length": 0.8999939,
                     "NextFootholdId": 234,
                     "PreviousFootholdId": 232,
-                    "groupID": 20,
+                    "groupID": 19,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -7266,7 +7266,7 @@
                     "Length": 0.8999939,
                     "NextFootholdId": 235,
                     "PreviousFootholdId": 233,
-                    "groupID": 20,
+                    "groupID": 19,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -7297,7 +7297,7 @@
                     "Length": 0.8999939,
                     "NextFootholdId": 236,
                     "PreviousFootholdId": 234,
-                    "groupID": 20,
+                    "groupID": 19,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -7328,7 +7328,7 @@
                     "Length": 0.5700073,
                     "NextFootholdId": 998,
                     "PreviousFootholdId": 235,
-                    "groupID": 20,
+                    "groupID": 19,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -7359,7 +7359,7 @@
                     "Length": 0.569992065,
                     "NextFootholdId": 238,
                     "PreviousFootholdId": 936,
-                    "groupID": 21,
+                    "groupID": 20,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -7390,7 +7390,7 @@
                     "Length": 0.8999939,
                     "NextFootholdId": 239,
                     "PreviousFootholdId": 237,
-                    "groupID": 21,
+                    "groupID": 20,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -7421,7 +7421,7 @@
                     "Length": 0.8999939,
                     "NextFootholdId": 240,
                     "PreviousFootholdId": 238,
-                    "groupID": 21,
+                    "groupID": 20,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -7452,7 +7452,7 @@
                     "Length": 1.22999573,
                     "NextFootholdId": 901,
                     "PreviousFootholdId": 239,
-                    "groupID": 21,
+                    "groupID": 20,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -7483,7 +7483,7 @@
                     "Length": 0.569992065,
                     "NextFootholdId": 242,
                     "PreviousFootholdId": 1022,
-                    "groupID": 22,
+                    "groupID": 21,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -7514,7 +7514,7 @@
                     "Length": 0.8999939,
                     "NextFootholdId": 243,
                     "PreviousFootholdId": 241,
-                    "groupID": 22,
+                    "groupID": 21,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -7545,7 +7545,7 @@
                     "Length": 0.8999939,
                     "NextFootholdId": 244,
                     "PreviousFootholdId": 242,
-                    "groupID": 22,
+                    "groupID": 21,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -7576,7 +7576,7 @@
                     "Length": 0.8999939,
                     "NextFootholdId": 245,
                     "PreviousFootholdId": 243,
-                    "groupID": 22,
+                    "groupID": 21,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -7607,7 +7607,7 @@
                     "Length": 0.8999939,
                     "NextFootholdId": 246,
                     "PreviousFootholdId": 244,
-                    "groupID": 22,
+                    "groupID": 21,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -7638,7 +7638,7 @@
                     "Length": 0.8999939,
                     "NextFootholdId": 247,
                     "PreviousFootholdId": 245,
-                    "groupID": 22,
+                    "groupID": 21,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -7669,7 +7669,7 @@
                     "Length": 0.8999939,
                     "NextFootholdId": 248,
                     "PreviousFootholdId": 246,
-                    "groupID": 22,
+                    "groupID": 21,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -7700,7 +7700,7 @@
                     "Length": 1.22999573,
                     "NextFootholdId": 1030,
                     "PreviousFootholdId": 247,
-                    "groupID": 22,
+                    "groupID": 21,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -7731,7 +7731,7 @@
                     "Length": 1.22999573,
                     "NextFootholdId": 250,
                     "PreviousFootholdId": 795,
-                    "groupID": 23,
+                    "groupID": 22,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -7762,7 +7762,7 @@
                     "Length": 0.8999939,
                     "NextFootholdId": 251,
                     "PreviousFootholdId": 249,
-                    "groupID": 23,
+                    "groupID": 22,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -7793,7 +7793,7 @@
                     "Length": 0.8999939,
                     "NextFootholdId": 252,
                     "PreviousFootholdId": 250,
-                    "groupID": 23,
+                    "groupID": 22,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -7824,7 +7824,7 @@
                     "Length": 0.8999939,
                     "NextFootholdId": 253,
                     "PreviousFootholdId": 251,
-                    "groupID": 23,
+                    "groupID": 22,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -7855,7 +7855,7 @@
                     "Length": 0.8999939,
                     "NextFootholdId": 254,
                     "PreviousFootholdId": 252,
-                    "groupID": 23,
+                    "groupID": 22,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -7886,7 +7886,7 @@
                     "Length": 0.8999939,
                     "NextFootholdId": 255,
                     "PreviousFootholdId": 253,
-                    "groupID": 23,
+                    "groupID": 22,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -7917,7 +7917,7 @@
                     "Length": 0.8999939,
                     "NextFootholdId": 256,
                     "PreviousFootholdId": 254,
-                    "groupID": 23,
+                    "groupID": 22,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -7948,7 +7948,7 @@
                     "Length": 0.5700073,
                     "NextFootholdId": 982,
                     "PreviousFootholdId": 255,
-                    "groupID": 23,
+                    "groupID": 22,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -7978,8 +7978,8 @@
                   {
                     "Length": 0.660003662,
                     "NextFootholdId": 797,
-                    "PreviousFootholdId": 0,
-                    "groupID": 20,
+                    "PreviousFootholdId": 796,
+                    "groupID": 19,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -7994,11 +7994,11 @@
                     "OwnerId": "a06770d3-2811-4449-875a-35da4543a163",
                     "Id": 257,
                     "StartPoint": {
-                      "x": 170.219986,
+                      "x": 170.22,
                       "y": -2.88
                     },
                     "EndPoint": {
-                      "x": 170.87999,
+                      "x": 170.88,
                       "y": -2.88
                     },
                     "Variance": {
@@ -8010,7 +8010,7 @@
                     "Length": 0.5700073,
                     "NextFootholdId": 259,
                     "PreviousFootholdId": 828,
-                    "groupID": 24,
+                    "groupID": 23,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -8041,7 +8041,7 @@
                     "Length": 0.8999939,
                     "NextFootholdId": 260,
                     "PreviousFootholdId": 258,
-                    "groupID": 24,
+                    "groupID": 23,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -8072,7 +8072,7 @@
                     "Length": 0.8999939,
                     "NextFootholdId": 261,
                     "PreviousFootholdId": 259,
-                    "groupID": 24,
+                    "groupID": 23,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -8103,7 +8103,7 @@
                     "Length": 0.8999939,
                     "NextFootholdId": 262,
                     "PreviousFootholdId": 260,
-                    "groupID": 24,
+                    "groupID": 23,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -8134,7 +8134,7 @@
                     "Length": 0.8999939,
                     "NextFootholdId": 263,
                     "PreviousFootholdId": 261,
-                    "groupID": 24,
+                    "groupID": 23,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -8165,7 +8165,7 @@
                     "Length": 0.8999939,
                     "NextFootholdId": 264,
                     "PreviousFootholdId": 262,
-                    "groupID": 24,
+                    "groupID": 23,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -8196,7 +8196,7 @@
                     "Length": 0.8999939,
                     "NextFootholdId": 265,
                     "PreviousFootholdId": 263,
-                    "groupID": 24,
+                    "groupID": 23,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -8227,7 +8227,7 @@
                     "Length": 0.8999939,
                     "NextFootholdId": 266,
                     "PreviousFootholdId": 264,
-                    "groupID": 24,
+                    "groupID": 23,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -8258,7 +8258,7 @@
                     "Length": 0.8999939,
                     "NextFootholdId": 267,
                     "PreviousFootholdId": 265,
-                    "groupID": 24,
+                    "groupID": 23,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -8289,7 +8289,7 @@
                     "Length": 0.8999939,
                     "NextFootholdId": 268,
                     "PreviousFootholdId": 266,
-                    "groupID": 24,
+                    "groupID": 23,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -8320,7 +8320,7 @@
                     "Length": 0.8999939,
                     "NextFootholdId": 269,
                     "PreviousFootholdId": 267,
-                    "groupID": 24,
+                    "groupID": 23,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -8351,7 +8351,7 @@
                     "Length": 0.8999939,
                     "NextFootholdId": 270,
                     "PreviousFootholdId": 268,
-                    "groupID": 24,
+                    "groupID": 23,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -8382,7 +8382,7 @@
                     "Length": 0.8999939,
                     "NextFootholdId": 271,
                     "PreviousFootholdId": 269,
-                    "groupID": 24,
+                    "groupID": 23,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -8413,7 +8413,7 @@
                     "Length": 0.8999939,
                     "NextFootholdId": 272,
                     "PreviousFootholdId": 270,
-                    "groupID": 24,
+                    "groupID": 23,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -8444,7 +8444,7 @@
                     "Length": 0.8999939,
                     "NextFootholdId": 273,
                     "PreviousFootholdId": 271,
-                    "groupID": 24,
+                    "groupID": 23,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -8475,7 +8475,7 @@
                     "Length": 0.8999939,
                     "NextFootholdId": 274,
                     "PreviousFootholdId": 272,
-                    "groupID": 24,
+                    "groupID": 23,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -8506,7 +8506,7 @@
                     "Length": 0.8999939,
                     "NextFootholdId": 275,
                     "PreviousFootholdId": 273,
-                    "groupID": 24,
+                    "groupID": 23,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -8537,7 +8537,7 @@
                     "Length": 0.8999939,
                     "NextFootholdId": 276,
                     "PreviousFootholdId": 274,
-                    "groupID": 24,
+                    "groupID": 23,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -8568,7 +8568,7 @@
                     "Length": 0.8999939,
                     "NextFootholdId": 277,
                     "PreviousFootholdId": 275,
-                    "groupID": 24,
+                    "groupID": 23,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -8599,7 +8599,7 @@
                     "Length": 0.8999939,
                     "NextFootholdId": 278,
                     "PreviousFootholdId": 276,
-                    "groupID": 24,
+                    "groupID": 23,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -8630,7 +8630,7 @@
                     "Length": 0.8999939,
                     "NextFootholdId": 279,
                     "PreviousFootholdId": 277,
-                    "groupID": 24,
+                    "groupID": 23,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -8661,7 +8661,7 @@
                     "Length": 0.8999939,
                     "NextFootholdId": 280,
                     "PreviousFootholdId": 278,
-                    "groupID": 24,
+                    "groupID": 23,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -8692,7 +8692,7 @@
                     "Length": 0.8999939,
                     "NextFootholdId": 281,
                     "PreviousFootholdId": 279,
-                    "groupID": 24,
+                    "groupID": 23,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -8723,7 +8723,7 @@
                     "Length": 0.8999939,
                     "NextFootholdId": 282,
                     "PreviousFootholdId": 280,
-                    "groupID": 24,
+                    "groupID": 23,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -8754,7 +8754,7 @@
                     "Length": 0.569992065,
                     "NextFootholdId": 862,
                     "PreviousFootholdId": 281,
-                    "groupID": 24,
+                    "groupID": 23,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -8785,7 +8785,7 @@
                     "Length": 0.5700073,
                     "NextFootholdId": 284,
                     "PreviousFootholdId": 812,
-                    "groupID": 25,
+                    "groupID": 24,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -8816,7 +8816,7 @@
                     "Length": 0.8999939,
                     "NextFootholdId": 285,
                     "PreviousFootholdId": 283,
-                    "groupID": 25,
+                    "groupID": 24,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -8847,7 +8847,7 @@
                     "Length": 0.8999939,
                     "NextFootholdId": 286,
                     "PreviousFootholdId": 284,
-                    "groupID": 25,
+                    "groupID": 24,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -8878,7 +8878,7 @@
                     "Length": 1.22999573,
                     "NextFootholdId": 868,
                     "PreviousFootholdId": 285,
-                    "groupID": 25,
+                    "groupID": 24,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -8909,7 +8909,7 @@
                     "Length": 0.660003662,
                     "NextFootholdId": 799,
                     "PreviousFootholdId": 798,
-                    "groupID": 25,
+                    "groupID": 24,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -8940,7 +8940,7 @@
                     "Length": 0.660003662,
                     "NextFootholdId": 835,
                     "PreviousFootholdId": 834,
-                    "groupID": 26,
+                    "groupID": 25,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -8971,7 +8971,7 @@
                     "Length": 1.22999573,
                     "NextFootholdId": 290,
                     "PreviousFootholdId": 869,
-                    "groupID": 26,
+                    "groupID": 25,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -9002,7 +9002,7 @@
                     "Length": 0.8999939,
                     "NextFootholdId": 291,
                     "PreviousFootholdId": 289,
-                    "groupID": 26,
+                    "groupID": 25,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -9033,7 +9033,7 @@
                     "Length": 0.8999939,
                     "NextFootholdId": 292,
                     "PreviousFootholdId": 290,
-                    "groupID": 26,
+                    "groupID": 25,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -9064,7 +9064,7 @@
                     "Length": 0.569992065,
                     "NextFootholdId": 846,
                     "PreviousFootholdId": 291,
-                    "groupID": 26,
+                    "groupID": 25,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -9095,7 +9095,7 @@
                     "Length": 0.569992065,
                     "NextFootholdId": 294,
                     "PreviousFootholdId": 870,
-                    "groupID": 27,
+                    "groupID": 26,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -9126,7 +9126,7 @@
                     "Length": 0.8999939,
                     "NextFootholdId": 295,
                     "PreviousFootholdId": 293,
-                    "groupID": 27,
+                    "groupID": 26,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -9157,7 +9157,7 @@
                     "Length": 0.8999939,
                     "NextFootholdId": 296,
                     "PreviousFootholdId": 294,
-                    "groupID": 27,
+                    "groupID": 26,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -9188,7 +9188,7 @@
                     "Length": 0.8999939,
                     "NextFootholdId": 297,
                     "PreviousFootholdId": 295,
-                    "groupID": 27,
+                    "groupID": 26,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -9219,7 +9219,7 @@
                     "Length": 0.569992065,
                     "NextFootholdId": 872,
                     "PreviousFootholdId": 296,
-                    "groupID": 27,
+                    "groupID": 26,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -9250,7 +9250,7 @@
                     "Length": 0.660003662,
                     "NextFootholdId": 870,
                     "PreviousFootholdId": 871,
-                    "groupID": 27,
+                    "groupID": 26,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -9281,7 +9281,7 @@
                     "Length": 0.660003662,
                     "NextFootholdId": 873,
                     "PreviousFootholdId": 872,
-                    "groupID": 27,
+                    "groupID": 26,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -9312,7 +9312,7 @@
                     "Length": 0.5699997,
                     "NextFootholdId": 301,
                     "PreviousFootholdId": 883,
-                    "groupID": 28,
+                    "groupID": 27,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -9343,7 +9343,7 @@
                     "Length": 0.8999939,
                     "NextFootholdId": 302,
                     "PreviousFootholdId": 300,
-                    "groupID": 28,
+                    "groupID": 27,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -9374,7 +9374,7 @@
                     "Length": 0.8999939,
                     "NextFootholdId": 303,
                     "PreviousFootholdId": 301,
-                    "groupID": 28,
+                    "groupID": 27,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -9405,7 +9405,7 @@
                     "Length": 0.8999939,
                     "NextFootholdId": 304,
                     "PreviousFootholdId": 302,
-                    "groupID": 28,
+                    "groupID": 27,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -9436,7 +9436,7 @@
                     "Length": 0.8999939,
                     "NextFootholdId": 305,
                     "PreviousFootholdId": 303,
-                    "groupID": 28,
+                    "groupID": 27,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -9467,7 +9467,7 @@
                     "Length": 0.8999939,
                     "NextFootholdId": 306,
                     "PreviousFootholdId": 304,
-                    "groupID": 28,
+                    "groupID": 27,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -9498,7 +9498,7 @@
                     "Length": 1.23000336,
                     "NextFootholdId": 884,
                     "PreviousFootholdId": 305,
-                    "groupID": 28,
+                    "groupID": 27,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -9529,7 +9529,7 @@
                     "Length": 1.56000519,
                     "NextFootholdId": 879,
                     "PreviousFootholdId": 874,
-                    "groupID": 28,
+                    "groupID": 27,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -9839,7 +9839,7 @@
                     "Length": 1.22999573,
                     "NextFootholdId": 318,
                     "PreviousFootholdId": 898,
-                    "groupID": 29,
+                    "groupID": 28,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -9870,7 +9870,7 @@
                     "Length": 0.8999939,
                     "NextFootholdId": 319,
                     "PreviousFootholdId": 317,
-                    "groupID": 29,
+                    "groupID": 28,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -9901,7 +9901,7 @@
                     "Length": 0.8999939,
                     "NextFootholdId": 320,
                     "PreviousFootholdId": 318,
-                    "groupID": 29,
+                    "groupID": 28,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -9932,7 +9932,7 @@
                     "Length": 0.8999939,
                     "NextFootholdId": 321,
                     "PreviousFootholdId": 319,
-                    "groupID": 29,
+                    "groupID": 28,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -9963,7 +9963,7 @@
                     "Length": 0.8999939,
                     "NextFootholdId": 322,
                     "PreviousFootholdId": 320,
-                    "groupID": 29,
+                    "groupID": 28,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -9994,7 +9994,7 @@
                     "Length": 0.8999939,
                     "NextFootholdId": 323,
                     "PreviousFootholdId": 321,
-                    "groupID": 29,
+                    "groupID": 28,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -10025,7 +10025,7 @@
                     "Length": 1.22999573,
                     "NextFootholdId": 897,
                     "PreviousFootholdId": 322,
-                    "groupID": 29,
+                    "groupID": 28,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -10056,7 +10056,7 @@
                     "Length": 1.22999573,
                     "NextFootholdId": 325,
                     "PreviousFootholdId": 899,
-                    "groupID": 30,
+                    "groupID": 29,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -10087,7 +10087,7 @@
                     "Length": 0.8999939,
                     "NextFootholdId": 326,
                     "PreviousFootholdId": 324,
-                    "groupID": 30,
+                    "groupID": 29,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -10118,7 +10118,7 @@
                     "Length": 0.8999939,
                     "NextFootholdId": 327,
                     "PreviousFootholdId": 325,
-                    "groupID": 30,
+                    "groupID": 29,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -10149,7 +10149,7 @@
                     "Length": 0.8999939,
                     "NextFootholdId": 328,
                     "PreviousFootholdId": 326,
-                    "groupID": 30,
+                    "groupID": 29,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -10180,7 +10180,7 @@
                     "Length": 0.8999939,
                     "NextFootholdId": 329,
                     "PreviousFootholdId": 327,
-                    "groupID": 30,
+                    "groupID": 29,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -10211,7 +10211,7 @@
                     "Length": 0.8999939,
                     "NextFootholdId": 330,
                     "PreviousFootholdId": 328,
-                    "groupID": 30,
+                    "groupID": 29,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -10242,7 +10242,7 @@
                     "Length": 0.8999939,
                     "NextFootholdId": 331,
                     "PreviousFootholdId": 329,
-                    "groupID": 30,
+                    "groupID": 29,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -10273,7 +10273,7 @@
                     "Length": 0.8999939,
                     "NextFootholdId": 332,
                     "PreviousFootholdId": 330,
-                    "groupID": 30,
+                    "groupID": 29,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -10304,7 +10304,7 @@
                     "Length": 1.22999573,
                     "NextFootholdId": 900,
                     "PreviousFootholdId": 331,
-                    "groupID": 30,
+                    "groupID": 29,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -10335,7 +10335,7 @@
                     "Length": 1.22999573,
                     "NextFootholdId": 334,
                     "PreviousFootholdId": 902,
-                    "groupID": 22,
+                    "groupID": 21,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -10366,7 +10366,7 @@
                     "Length": 0.8999939,
                     "NextFootholdId": 335,
                     "PreviousFootholdId": 333,
-                    "groupID": 22,
+                    "groupID": 21,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -10397,7 +10397,7 @@
                     "Length": 0.8999939,
                     "NextFootholdId": 336,
                     "PreviousFootholdId": 334,
-                    "groupID": 22,
+                    "groupID": 21,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -10428,7 +10428,7 @@
                     "Length": 0.5700073,
                     "NextFootholdId": 1016,
                     "PreviousFootholdId": 335,
-                    "groupID": 22,
+                    "groupID": 21,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -10459,7 +10459,7 @@
                     "Length": 1.22999573,
                     "NextFootholdId": 338,
                     "PreviousFootholdId": 911,
-                    "groupID": 31,
+                    "groupID": 30,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -10490,7 +10490,7 @@
                     "Length": 0.8999939,
                     "NextFootholdId": 339,
                     "PreviousFootholdId": 337,
-                    "groupID": 31,
+                    "groupID": 30,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -10521,7 +10521,7 @@
                     "Length": 0.8999939,
                     "NextFootholdId": 340,
                     "PreviousFootholdId": 338,
-                    "groupID": 31,
+                    "groupID": 30,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -10552,7 +10552,7 @@
                     "Length": 0.8999939,
                     "NextFootholdId": 341,
                     "PreviousFootholdId": 339,
-                    "groupID": 31,
+                    "groupID": 30,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -10583,7 +10583,7 @@
                     "Length": 0.8999939,
                     "NextFootholdId": 342,
                     "PreviousFootholdId": 340,
-                    "groupID": 31,
+                    "groupID": 30,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -10614,7 +10614,7 @@
                     "Length": 0.8999939,
                     "NextFootholdId": 343,
                     "PreviousFootholdId": 341,
-                    "groupID": 31,
+                    "groupID": 30,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -10645,7 +10645,7 @@
                     "Length": 1.22999573,
                     "NextFootholdId": 758,
                     "PreviousFootholdId": 342,
-                    "groupID": 31,
+                    "groupID": 30,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -10676,7 +10676,7 @@
                     "Length": 0.660003662,
                     "NextFootholdId": 913,
                     "PreviousFootholdId": 912,
-                    "groupID": 21,
+                    "groupID": 20,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -10707,7 +10707,7 @@
                     "Length": 0.660003662,
                     "NextFootholdId": 959,
                     "PreviousFootholdId": 958,
-                    "groupID": 23,
+                    "groupID": 22,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -10738,7 +10738,7 @@
                     "Length": 1.55999756,
                     "NextFootholdId": 1017,
                     "PreviousFootholdId": 1004,
-                    "groupID": 22,
+                    "groupID": 21,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -10862,7 +10862,7 @@
                     "Length": 0.660003662,
                     "NextFootholdId": 1041,
                     "PreviousFootholdId": 1040,
-                    "groupID": 32,
+                    "groupID": 31,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -10877,11 +10877,11 @@
                     "OwnerId": "a06770d3-2811-4449-875a-35da4543a163",
                     "Id": 350,
                     "StartPoint": {
-                      "x": 168.419983,
+                      "x": 168.42,
                       "y": -1.08
                     },
                     "EndPoint": {
-                      "x": 169.079987,
+                      "x": 169.08,
                       "y": -1.08
                     },
                     "Variance": {
@@ -10893,7 +10893,7 @@
                     "Length": 0.660003662,
                     "NextFootholdId": 1043,
                     "PreviousFootholdId": 1042,
-                    "groupID": 33,
+                    "groupID": 32,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -10908,12 +10908,12 @@
                     "OwnerId": "a06770d3-2811-4449-875a-35da4543a163",
                     "Id": 351,
                     "StartPoint": {
-                      "x": 168.419983,
-                      "y": -2.28000021
+                      "x": 168.42,
+                      "y": -2.28
                     },
                     "EndPoint": {
-                      "x": 169.079987,
-                      "y": -2.28000021
+                      "x": 169.08,
+                      "y": -2.28
                     },
                     "Variance": {
                       "x": 1.0,
@@ -10924,7 +10924,7 @@
                     "Length": 0.660003662,
                     "NextFootholdId": 1045,
                     "PreviousFootholdId": 1044,
-                    "groupID": 34,
+                    "groupID": 33,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -10955,7 +10955,7 @@
                     "Length": 0.660003662,
                     "NextFootholdId": 1047,
                     "PreviousFootholdId": 1046,
-                    "groupID": 35,
+                    "groupID": 34,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -12133,7 +12133,7 @@
                     "Length": 0.6,
                     "NextFootholdId": 393,
                     "PreviousFootholdId": 0,
-                    "groupID": 36,
+                    "groupID": 35,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -12195,7 +12195,7 @@
                     "Length": 0.6,
                     "NextFootholdId": 395,
                     "PreviousFootholdId": 391,
-                    "groupID": 36,
+                    "groupID": 35,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -12257,7 +12257,7 @@
                     "Length": 0.599999964,
                     "NextFootholdId": 397,
                     "PreviousFootholdId": 393,
-                    "groupID": 36,
+                    "groupID": 35,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -12319,7 +12319,7 @@
                     "Length": 0.6,
                     "NextFootholdId": 0,
                     "PreviousFootholdId": 395,
-                    "groupID": 36,
+                    "groupID": 35,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -12350,7 +12350,7 @@
                     "Length": 0.6,
                     "NextFootholdId": 0,
                     "PreviousFootholdId": 400,
-                    "groupID": 37,
+                    "groupID": 36,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -12412,7 +12412,7 @@
                     "Length": 0.6,
                     "NextFootholdId": 398,
                     "PreviousFootholdId": 402,
-                    "groupID": 37,
+                    "groupID": 36,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -12474,7 +12474,7 @@
                     "Length": 0.599999964,
                     "NextFootholdId": 400,
                     "PreviousFootholdId": 404,
-                    "groupID": 37,
+                    "groupID": 36,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -12536,7 +12536,7 @@
                     "Length": 0.6,
                     "NextFootholdId": 402,
                     "PreviousFootholdId": 0,
-                    "groupID": 37,
+                    "groupID": 36,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -16070,7 +16070,7 @@
                     "Length": 0.600000143,
                     "NextFootholdId": 520,
                     "PreviousFootholdId": 0,
-                    "groupID": 38,
+                    "groupID": 37,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -16132,7 +16132,7 @@
                     "Length": 0.6,
                     "NextFootholdId": 522,
                     "PreviousFootholdId": 518,
-                    "groupID": 38,
+                    "groupID": 37,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -16194,7 +16194,7 @@
                     "Length": 0.6,
                     "NextFootholdId": 524,
                     "PreviousFootholdId": 520,
-                    "groupID": 38,
+                    "groupID": 37,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -16256,7 +16256,7 @@
                     "Length": 0.599999964,
                     "NextFootholdId": 526,
                     "PreviousFootholdId": 522,
-                    "groupID": 38,
+                    "groupID": 37,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -16318,7 +16318,7 @@
                     "Length": 0.6,
                     "NextFootholdId": 0,
                     "PreviousFootholdId": 524,
-                    "groupID": 38,
+                    "groupID": 37,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -16380,7 +16380,7 @@
                     "Length": 0.600000143,
                     "NextFootholdId": 0,
                     "PreviousFootholdId": 529,
-                    "groupID": 39,
+                    "groupID": 38,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -16411,7 +16411,7 @@
                     "Length": 0.6,
                     "NextFootholdId": 528,
                     "PreviousFootholdId": 531,
-                    "groupID": 39,
+                    "groupID": 38,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -16442,7 +16442,7 @@
                     "Length": 0.6,
                     "NextFootholdId": 532,
                     "PreviousFootholdId": 0,
-                    "groupID": 40,
+                    "groupID": 39,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -16473,7 +16473,7 @@
                     "Length": 0.6,
                     "NextFootholdId": 529,
                     "PreviousFootholdId": 533,
-                    "groupID": 39,
+                    "groupID": 38,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -16504,7 +16504,7 @@
                     "Length": 0.6,
                     "NextFootholdId": 534,
                     "PreviousFootholdId": 530,
-                    "groupID": 40,
+                    "groupID": 39,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -16535,7 +16535,7 @@
                     "Length": 0.599999964,
                     "NextFootholdId": 531,
                     "PreviousFootholdId": 535,
-                    "groupID": 39,
+                    "groupID": 38,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -16566,7 +16566,7 @@
                     "Length": 0.599999964,
                     "NextFootholdId": 536,
                     "PreviousFootholdId": 532,
-                    "groupID": 40,
+                    "groupID": 39,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -16597,7 +16597,7 @@
                     "Length": 0.6,
                     "NextFootholdId": 533,
                     "PreviousFootholdId": 0,
-                    "groupID": 39,
+                    "groupID": 38,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -16628,7 +16628,7 @@
                     "Length": 0.6,
                     "NextFootholdId": 0,
                     "PreviousFootholdId": 534,
-                    "groupID": 40,
+                    "groupID": 39,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -23510,7 +23510,7 @@
                     "Length": 1.02000046,
                     "NextFootholdId": 760,
                     "PreviousFootholdId": 343,
-                    "groupID": 31,
+                    "groupID": 30,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -23572,7 +23572,7 @@
                     "Length": 0.6000004,
                     "NextFootholdId": 762,
                     "PreviousFootholdId": 758,
-                    "groupID": 31,
+                    "groupID": 30,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -23634,7 +23634,7 @@
                     "Length": 0.6000004,
                     "NextFootholdId": 764,
                     "PreviousFootholdId": 760,
-                    "groupID": 31,
+                    "groupID": 30,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -23696,7 +23696,7 @@
                     "Length": 0.5999999,
                     "NextFootholdId": 766,
                     "PreviousFootholdId": 762,
-                    "groupID": 31,
+                    "groupID": 30,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -23758,7 +23758,7 @@
                     "Length": 0.5999999,
                     "NextFootholdId": 768,
                     "PreviousFootholdId": 764,
-                    "groupID": 31,
+                    "groupID": 30,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -23820,7 +23820,7 @@
                     "Length": 0.5999999,
                     "NextFootholdId": 770,
                     "PreviousFootholdId": 766,
-                    "groupID": 31,
+                    "groupID": 30,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -23882,7 +23882,7 @@
                     "Length": 0.5999998,
                     "NextFootholdId": 772,
                     "PreviousFootholdId": 768,
-                    "groupID": 31,
+                    "groupID": 30,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -23944,7 +23944,7 @@
                     "Length": 0.600000143,
                     "NextFootholdId": 774,
                     "PreviousFootholdId": 770,
-                    "groupID": 31,
+                    "groupID": 30,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -24006,7 +24006,7 @@
                     "Length": 0.6,
                     "NextFootholdId": 776,
                     "PreviousFootholdId": 772,
-                    "groupID": 31,
+                    "groupID": 30,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -24068,7 +24068,7 @@
                     "Length": 0.6,
                     "NextFootholdId": 778,
                     "PreviousFootholdId": 774,
-                    "groupID": 31,
+                    "groupID": 30,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -24130,7 +24130,7 @@
                     "Length": 0.599999964,
                     "NextFootholdId": 780,
                     "PreviousFootholdId": 776,
-                    "groupID": 31,
+                    "groupID": 30,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -24192,7 +24192,7 @@
                     "Length": 0.6,
                     "NextFootholdId": 782,
                     "PreviousFootholdId": 778,
-                    "groupID": 31,
+                    "groupID": 30,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -24254,7 +24254,7 @@
                     "Length": 0.6,
                     "NextFootholdId": 784,
                     "PreviousFootholdId": 780,
-                    "groupID": 31,
+                    "groupID": 30,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -24316,7 +24316,7 @@
                     "Length": 0.5999999,
                     "NextFootholdId": 786,
                     "PreviousFootholdId": 782,
-                    "groupID": 31,
+                    "groupID": 30,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -24378,7 +24378,7 @@
                     "Length": 0.5999999,
                     "NextFootholdId": 788,
                     "PreviousFootholdId": 784,
-                    "groupID": 31,
+                    "groupID": 30,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -24440,7 +24440,7 @@
                     "Length": 0.5999999,
                     "NextFootholdId": 789,
                     "PreviousFootholdId": 786,
-                    "groupID": 31,
+                    "groupID": 30,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -24471,7 +24471,7 @@
                     "Length": 0.600000143,
                     "NextFootholdId": 790,
                     "PreviousFootholdId": 788,
-                    "groupID": 31,
+                    "groupID": 30,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -24502,7 +24502,7 @@
                     "Length": 0.6000004,
                     "NextFootholdId": 791,
                     "PreviousFootholdId": 789,
-                    "groupID": 31,
+                    "groupID": 30,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -24533,7 +24533,7 @@
                     "Length": 0.6000004,
                     "NextFootholdId": 792,
                     "PreviousFootholdId": 790,
-                    "groupID": 31,
+                    "groupID": 30,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -24564,7 +24564,7 @@
                     "Length": 0.6000004,
                     "NextFootholdId": 0,
                     "PreviousFootholdId": 791,
-                    "groupID": 31,
+                    "groupID": 30,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -24657,7 +24657,7 @@
                     "Length": 0.419999957,
                     "NextFootholdId": 249,
                     "PreviousFootholdId": 0,
-                    "groupID": 23,
+                    "groupID": 22,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -24685,10 +24685,10 @@
                     }
                   },
                   {
-                    "Length": 0.600000143,
-                    "NextFootholdId": 0,
-                    "PreviousFootholdId": 0,
-                    "groupID": 41,
+                    "Length": 0.5999999,
+                    "NextFootholdId": 257,
+                    "PreviousFootholdId": 228,
+                    "groupID": 19,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -24703,23 +24703,23 @@
                     "OwnerId": "a06770d3-2811-4449-875a-35da4543a163",
                     "Id": 796,
                     "StartPoint": {
-                      "x": 170.219986,
-                      "y": -2.88
+                      "x": 170.22,
+                      "y": -3.48
                     },
                     "EndPoint": {
                       "x": 170.22,
-                      "y": -3.48000026
+                      "y": -2.88
                     },
                     "Variance": {
-                      "x": 2.5431309E-05,
-                      "y": -1.0
+                      "x": 0.0,
+                      "y": 1.0
                     }
                   },
                   {
                     "Length": 0.5999999,
                     "NextFootholdId": 229,
                     "PreviousFootholdId": 257,
-                    "groupID": 20,
+                    "groupID": 19,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -24734,7 +24734,7 @@
                     "OwnerId": "a06770d3-2811-4449-875a-35da4543a163",
                     "Id": 797,
                     "StartPoint": {
-                      "x": 170.87999,
+                      "x": 170.88,
                       "y": -2.88
                     },
                     "EndPoint": {
@@ -24742,7 +24742,7 @@
                       "y": -3.48
                     },
                     "Variance": {
-                      "x": 2.543132E-05,
+                      "x": 0.0,
                       "y": -1.0
                     }
                   },
@@ -24750,7 +24750,7 @@
                     "Length": 1.02000046,
                     "NextFootholdId": 287,
                     "PreviousFootholdId": 800,
-                    "groupID": 25,
+                    "groupID": 24,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -24781,7 +24781,7 @@
                     "Length": 1.02000046,
                     "NextFootholdId": 801,
                     "PreviousFootholdId": 287,
-                    "groupID": 25,
+                    "groupID": 24,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -24812,7 +24812,7 @@
                     "Length": 0.6000004,
                     "NextFootholdId": 798,
                     "PreviousFootholdId": 802,
-                    "groupID": 25,
+                    "groupID": 24,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -24843,7 +24843,7 @@
                     "Length": 0.6000004,
                     "NextFootholdId": 803,
                     "PreviousFootholdId": 799,
-                    "groupID": 25,
+                    "groupID": 24,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -24874,7 +24874,7 @@
                     "Length": 0.6000004,
                     "NextFootholdId": 800,
                     "PreviousFootholdId": 804,
-                    "groupID": 25,
+                    "groupID": 24,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -24905,7 +24905,7 @@
                     "Length": 0.6000004,
                     "NextFootholdId": 805,
                     "PreviousFootholdId": 801,
-                    "groupID": 25,
+                    "groupID": 24,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -24936,7 +24936,7 @@
                     "Length": 0.5999999,
                     "NextFootholdId": 802,
                     "PreviousFootholdId": 806,
-                    "groupID": 25,
+                    "groupID": 24,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -24967,7 +24967,7 @@
                     "Length": 0.5999999,
                     "NextFootholdId": 807,
                     "PreviousFootholdId": 803,
-                    "groupID": 25,
+                    "groupID": 24,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -24998,7 +24998,7 @@
                     "Length": 0.5999999,
                     "NextFootholdId": 804,
                     "PreviousFootholdId": 808,
-                    "groupID": 25,
+                    "groupID": 24,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -25029,7 +25029,7 @@
                     "Length": 0.5999999,
                     "NextFootholdId": 809,
                     "PreviousFootholdId": 805,
-                    "groupID": 25,
+                    "groupID": 24,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -25060,7 +25060,7 @@
                     "Length": 0.5999999,
                     "NextFootholdId": 806,
                     "PreviousFootholdId": 810,
-                    "groupID": 25,
+                    "groupID": 24,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -25091,7 +25091,7 @@
                     "Length": 0.5999999,
                     "NextFootholdId": 811,
                     "PreviousFootholdId": 807,
-                    "groupID": 25,
+                    "groupID": 24,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -25122,7 +25122,7 @@
                     "Length": 0.5999998,
                     "NextFootholdId": 808,
                     "PreviousFootholdId": 813,
-                    "groupID": 25,
+                    "groupID": 24,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -25153,7 +25153,7 @@
                     "Length": 0.5999998,
                     "NextFootholdId": 812,
                     "PreviousFootholdId": 809,
-                    "groupID": 25,
+                    "groupID": 24,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -25184,7 +25184,7 @@
                     "Length": 0.180000186,
                     "NextFootholdId": 283,
                     "PreviousFootholdId": 811,
-                    "groupID": 25,
+                    "groupID": 24,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -25215,7 +25215,7 @@
                     "Length": 0.600000143,
                     "NextFootholdId": 810,
                     "PreviousFootholdId": 814,
-                    "groupID": 25,
+                    "groupID": 24,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -25246,7 +25246,7 @@
                     "Length": 0.6,
                     "NextFootholdId": 813,
                     "PreviousFootholdId": 816,
-                    "groupID": 25,
+                    "groupID": 24,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -25277,7 +25277,7 @@
                     "Length": 0.6,
                     "NextFootholdId": 817,
                     "PreviousFootholdId": 0,
-                    "groupID": 24,
+                    "groupID": 23,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -25308,7 +25308,7 @@
                     "Length": 0.6,
                     "NextFootholdId": 814,
                     "PreviousFootholdId": 818,
-                    "groupID": 25,
+                    "groupID": 24,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -25339,7 +25339,7 @@
                     "Length": 0.6,
                     "NextFootholdId": 819,
                     "PreviousFootholdId": 815,
-                    "groupID": 24,
+                    "groupID": 23,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -25370,7 +25370,7 @@
                     "Length": 0.599999964,
                     "NextFootholdId": 816,
                     "PreviousFootholdId": 820,
-                    "groupID": 25,
+                    "groupID": 24,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -25401,7 +25401,7 @@
                     "Length": 0.599999964,
                     "NextFootholdId": 821,
                     "PreviousFootholdId": 817,
-                    "groupID": 24,
+                    "groupID": 23,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -25432,7 +25432,7 @@
                     "Length": 0.6,
                     "NextFootholdId": 818,
                     "PreviousFootholdId": 822,
-                    "groupID": 25,
+                    "groupID": 24,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -25463,7 +25463,7 @@
                     "Length": 0.6,
                     "NextFootholdId": 823,
                     "PreviousFootholdId": 819,
-                    "groupID": 24,
+                    "groupID": 23,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -25494,7 +25494,7 @@
                     "Length": 0.6,
                     "NextFootholdId": 820,
                     "PreviousFootholdId": 824,
-                    "groupID": 25,
+                    "groupID": 24,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -25525,7 +25525,7 @@
                     "Length": 0.6,
                     "NextFootholdId": 825,
                     "PreviousFootholdId": 821,
-                    "groupID": 24,
+                    "groupID": 23,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -25556,7 +25556,7 @@
                     "Length": 0.5999999,
                     "NextFootholdId": 822,
                     "PreviousFootholdId": 826,
-                    "groupID": 25,
+                    "groupID": 24,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -25587,7 +25587,7 @@
                     "Length": 0.5999999,
                     "NextFootholdId": 827,
                     "PreviousFootholdId": 823,
-                    "groupID": 24,
+                    "groupID": 23,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -25618,7 +25618,7 @@
                     "Length": 0.5999999,
                     "NextFootholdId": 824,
                     "PreviousFootholdId": 829,
-                    "groupID": 25,
+                    "groupID": 24,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -25649,7 +25649,7 @@
                     "Length": 0.5999999,
                     "NextFootholdId": 828,
                     "PreviousFootholdId": 825,
-                    "groupID": 24,
+                    "groupID": 23,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -25680,7 +25680,7 @@
                     "Length": 0.179999828,
                     "NextFootholdId": 258,
                     "PreviousFootholdId": 827,
-                    "groupID": 24,
+                    "groupID": 23,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -25711,7 +25711,7 @@
                     "Length": 0.5999999,
                     "NextFootholdId": 826,
                     "PreviousFootholdId": 830,
-                    "groupID": 25,
+                    "groupID": 24,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -25742,7 +25742,7 @@
                     "Length": 0.600000143,
                     "NextFootholdId": 829,
                     "PreviousFootholdId": 831,
-                    "groupID": 25,
+                    "groupID": 24,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -25773,7 +25773,7 @@
                     "Length": 0.6000004,
                     "NextFootholdId": 830,
                     "PreviousFootholdId": 832,
-                    "groupID": 25,
+                    "groupID": 24,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -25804,7 +25804,7 @@
                     "Length": 0.6000004,
                     "NextFootholdId": 831,
                     "PreviousFootholdId": 833,
-                    "groupID": 25,
+                    "groupID": 24,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -25835,7 +25835,7 @@
                     "Length": 0.6000004,
                     "NextFootholdId": 832,
                     "PreviousFootholdId": 0,
-                    "groupID": 25,
+                    "groupID": 24,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -25866,7 +25866,7 @@
                     "Length": 1.02000046,
                     "NextFootholdId": 288,
                     "PreviousFootholdId": 836,
-                    "groupID": 26,
+                    "groupID": 25,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -25897,7 +25897,7 @@
                     "Length": 1.02000046,
                     "NextFootholdId": 837,
                     "PreviousFootholdId": 288,
-                    "groupID": 26,
+                    "groupID": 25,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -25928,7 +25928,7 @@
                     "Length": 0.6000004,
                     "NextFootholdId": 834,
                     "PreviousFootholdId": 838,
-                    "groupID": 26,
+                    "groupID": 25,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -25959,7 +25959,7 @@
                     "Length": 0.6000004,
                     "NextFootholdId": 839,
                     "PreviousFootholdId": 835,
-                    "groupID": 26,
+                    "groupID": 25,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -25990,7 +25990,7 @@
                     "Length": 0.5999999,
                     "NextFootholdId": 836,
                     "PreviousFootholdId": 840,
-                    "groupID": 26,
+                    "groupID": 25,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -26021,7 +26021,7 @@
                     "Length": 0.5999999,
                     "NextFootholdId": 841,
                     "PreviousFootholdId": 837,
-                    "groupID": 26,
+                    "groupID": 25,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -26052,7 +26052,7 @@
                     "Length": 0.5999999,
                     "NextFootholdId": 838,
                     "PreviousFootholdId": 842,
-                    "groupID": 26,
+                    "groupID": 25,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -26083,7 +26083,7 @@
                     "Length": 0.5999999,
                     "NextFootholdId": 843,
                     "PreviousFootholdId": 839,
-                    "groupID": 26,
+                    "groupID": 25,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -26114,7 +26114,7 @@
                     "Length": 0.5999999,
                     "NextFootholdId": 840,
                     "PreviousFootholdId": 844,
-                    "groupID": 26,
+                    "groupID": 25,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -26145,7 +26145,7 @@
                     "Length": 0.5999999,
                     "NextFootholdId": 845,
                     "PreviousFootholdId": 841,
-                    "groupID": 26,
+                    "groupID": 25,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -26176,7 +26176,7 @@
                     "Length": 0.5999998,
                     "NextFootholdId": 842,
                     "PreviousFootholdId": 846,
-                    "groupID": 26,
+                    "groupID": 25,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -26207,7 +26207,7 @@
                     "Length": 0.5999998,
                     "NextFootholdId": 847,
                     "PreviousFootholdId": 843,
-                    "groupID": 26,
+                    "groupID": 25,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -26238,7 +26238,7 @@
                     "Length": 0.180000186,
                     "NextFootholdId": 844,
                     "PreviousFootholdId": 292,
-                    "groupID": 26,
+                    "groupID": 25,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -26269,7 +26269,7 @@
                     "Length": 0.600000143,
                     "NextFootholdId": 849,
                     "PreviousFootholdId": 845,
-                    "groupID": 26,
+                    "groupID": 25,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -26300,7 +26300,7 @@
                     "Length": 0.6,
                     "NextFootholdId": 0,
                     "PreviousFootholdId": 850,
-                    "groupID": 24,
+                    "groupID": 23,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -26331,7 +26331,7 @@
                     "Length": 0.6,
                     "NextFootholdId": 851,
                     "PreviousFootholdId": 847,
-                    "groupID": 26,
+                    "groupID": 25,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -26362,7 +26362,7 @@
                     "Length": 0.6,
                     "NextFootholdId": 848,
                     "PreviousFootholdId": 852,
-                    "groupID": 24,
+                    "groupID": 23,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -26393,7 +26393,7 @@
                     "Length": 0.6,
                     "NextFootholdId": 853,
                     "PreviousFootholdId": 849,
-                    "groupID": 26,
+                    "groupID": 25,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -26424,7 +26424,7 @@
                     "Length": 0.599999964,
                     "NextFootholdId": 850,
                     "PreviousFootholdId": 854,
-                    "groupID": 24,
+                    "groupID": 23,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -26455,7 +26455,7 @@
                     "Length": 0.599999964,
                     "NextFootholdId": 855,
                     "PreviousFootholdId": 851,
-                    "groupID": 26,
+                    "groupID": 25,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -26486,7 +26486,7 @@
                     "Length": 0.6,
                     "NextFootholdId": 852,
                     "PreviousFootholdId": 856,
-                    "groupID": 24,
+                    "groupID": 23,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -26517,7 +26517,7 @@
                     "Length": 0.6,
                     "NextFootholdId": 857,
                     "PreviousFootholdId": 853,
-                    "groupID": 26,
+                    "groupID": 25,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -26548,7 +26548,7 @@
                     "Length": 0.6,
                     "NextFootholdId": 854,
                     "PreviousFootholdId": 858,
-                    "groupID": 24,
+                    "groupID": 23,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -26579,7 +26579,7 @@
                     "Length": 0.6,
                     "NextFootholdId": 859,
                     "PreviousFootholdId": 855,
-                    "groupID": 26,
+                    "groupID": 25,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -26610,7 +26610,7 @@
                     "Length": 0.5999999,
                     "NextFootholdId": 856,
                     "PreviousFootholdId": 860,
-                    "groupID": 24,
+                    "groupID": 23,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -26641,7 +26641,7 @@
                     "Length": 0.5999999,
                     "NextFootholdId": 861,
                     "PreviousFootholdId": 857,
-                    "groupID": 26,
+                    "groupID": 25,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -26672,7 +26672,7 @@
                     "Length": 0.5999999,
                     "NextFootholdId": 858,
                     "PreviousFootholdId": 862,
-                    "groupID": 24,
+                    "groupID": 23,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -26703,7 +26703,7 @@
                     "Length": 0.5999999,
                     "NextFootholdId": 863,
                     "PreviousFootholdId": 859,
-                    "groupID": 26,
+                    "groupID": 25,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -26734,7 +26734,7 @@
                     "Length": 0.179999828,
                     "NextFootholdId": 860,
                     "PreviousFootholdId": 282,
-                    "groupID": 24,
+                    "groupID": 23,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -26765,7 +26765,7 @@
                     "Length": 0.5999999,
                     "NextFootholdId": 864,
                     "PreviousFootholdId": 861,
-                    "groupID": 26,
+                    "groupID": 25,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -26796,7 +26796,7 @@
                     "Length": 0.600000143,
                     "NextFootholdId": 865,
                     "PreviousFootholdId": 863,
-                    "groupID": 26,
+                    "groupID": 25,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -26827,7 +26827,7 @@
                     "Length": 0.6000004,
                     "NextFootholdId": 866,
                     "PreviousFootholdId": 864,
-                    "groupID": 26,
+                    "groupID": 25,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -26858,7 +26858,7 @@
                     "Length": 0.6000004,
                     "NextFootholdId": 867,
                     "PreviousFootholdId": 865,
-                    "groupID": 26,
+                    "groupID": 25,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -26889,7 +26889,7 @@
                     "Length": 0.6000004,
                     "NextFootholdId": 0,
                     "PreviousFootholdId": 866,
-                    "groupID": 26,
+                    "groupID": 25,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -26920,7 +26920,7 @@
                     "Length": 0.419999957,
                     "NextFootholdId": 0,
                     "PreviousFootholdId": 286,
-                    "groupID": 25,
+                    "groupID": 24,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -26951,7 +26951,7 @@
                     "Length": 0.419999957,
                     "NextFootholdId": 289,
                     "PreviousFootholdId": 0,
-                    "groupID": 26,
+                    "groupID": 25,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -26982,7 +26982,7 @@
                     "Length": 0.6,
                     "NextFootholdId": 293,
                     "PreviousFootholdId": 298,
-                    "groupID": 27,
+                    "groupID": 26,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -27013,7 +27013,7 @@
                     "Length": 1.02,
                     "NextFootholdId": 298,
                     "PreviousFootholdId": 0,
-                    "groupID": 27,
+                    "groupID": 26,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -27044,7 +27044,7 @@
                     "Length": 0.6,
                     "NextFootholdId": 299,
                     "PreviousFootholdId": 297,
-                    "groupID": 27,
+                    "groupID": 26,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -27075,7 +27075,7 @@
                     "Length": 1.02,
                     "NextFootholdId": 0,
                     "PreviousFootholdId": 299,
-                    "groupID": 27,
+                    "groupID": 26,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -27106,7 +27106,7 @@
                     "Length": 1.02000046,
                     "NextFootholdId": 307,
                     "PreviousFootholdId": 875,
-                    "groupID": 28,
+                    "groupID": 27,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -27137,7 +27137,7 @@
                     "Length": 0.6000004,
                     "NextFootholdId": 874,
                     "PreviousFootholdId": 876,
-                    "groupID": 28,
+                    "groupID": 27,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -27168,7 +27168,7 @@
                     "Length": 0.6000004,
                     "NextFootholdId": 875,
                     "PreviousFootholdId": 877,
-                    "groupID": 28,
+                    "groupID": 27,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -27199,7 +27199,7 @@
                     "Length": 0.5999999,
                     "NextFootholdId": 876,
                     "PreviousFootholdId": 878,
-                    "groupID": 28,
+                    "groupID": 27,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -27230,7 +27230,7 @@
                     "Length": 0.5999999,
                     "NextFootholdId": 877,
                     "PreviousFootholdId": 0,
-                    "groupID": 28,
+                    "groupID": 27,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -27261,7 +27261,7 @@
                     "Length": 1.02000046,
                     "NextFootholdId": 880,
                     "PreviousFootholdId": 307,
-                    "groupID": 28,
+                    "groupID": 27,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -27292,7 +27292,7 @@
                     "Length": 0.6000004,
                     "NextFootholdId": 881,
                     "PreviousFootholdId": 879,
-                    "groupID": 28,
+                    "groupID": 27,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -27323,7 +27323,7 @@
                     "Length": 0.6000004,
                     "NextFootholdId": 882,
                     "PreviousFootholdId": 880,
-                    "groupID": 28,
+                    "groupID": 27,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -27354,7 +27354,7 @@
                     "Length": 0.5999999,
                     "NextFootholdId": 883,
                     "PreviousFootholdId": 881,
-                    "groupID": 28,
+                    "groupID": 27,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -27385,7 +27385,7 @@
                     "Length": 0.179999828,
                     "NextFootholdId": 300,
                     "PreviousFootholdId": 882,
-                    "groupID": 28,
+                    "groupID": 27,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -27416,7 +27416,7 @@
                     "Length": 0.420000076,
                     "NextFootholdId": 0,
                     "PreviousFootholdId": 306,
-                    "groupID": 28,
+                    "groupID": 27,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -27602,7 +27602,7 @@
                     "Length": 0.6,
                     "NextFootholdId": 891,
                     "PreviousFootholdId": 0,
-                    "groupID": 42,
+                    "groupID": 40,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -27633,7 +27633,7 @@
                     "Length": 0.6,
                     "NextFootholdId": 892,
                     "PreviousFootholdId": 890,
-                    "groupID": 42,
+                    "groupID": 40,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -27664,7 +27664,7 @@
                     "Length": 0.599999964,
                     "NextFootholdId": 893,
                     "PreviousFootholdId": 891,
-                    "groupID": 42,
+                    "groupID": 40,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -27695,7 +27695,7 @@
                     "Length": 0.6,
                     "NextFootholdId": 0,
                     "PreviousFootholdId": 892,
-                    "groupID": 42,
+                    "groupID": 40,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -27819,7 +27819,7 @@
                     "Length": 0.420000076,
                     "NextFootholdId": 0,
                     "PreviousFootholdId": 323,
-                    "groupID": 29,
+                    "groupID": 28,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -27850,7 +27850,7 @@
                     "Length": 0.420000076,
                     "NextFootholdId": 317,
                     "PreviousFootholdId": 0,
-                    "groupID": 29,
+                    "groupID": 28,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -27881,7 +27881,7 @@
                     "Length": 0.419999957,
                     "NextFootholdId": 324,
                     "PreviousFootholdId": 0,
-                    "groupID": 30,
+                    "groupID": 29,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -27912,7 +27912,7 @@
                     "Length": 0.419999957,
                     "NextFootholdId": 0,
                     "PreviousFootholdId": 332,
-                    "groupID": 30,
+                    "groupID": 29,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -27943,7 +27943,7 @@
                     "Length": 0.419999957,
                     "NextFootholdId": 0,
                     "PreviousFootholdId": 240,
-                    "groupID": 21,
+                    "groupID": 20,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -27974,7 +27974,7 @@
                     "Length": 0.419999957,
                     "NextFootholdId": 333,
                     "PreviousFootholdId": 0,
-                    "groupID": 22,
+                    "groupID": 21,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -28005,7 +28005,7 @@
                     "Length": 0.6000004,
                     "NextFootholdId": 904,
                     "PreviousFootholdId": 0,
-                    "groupID": 43,
+                    "groupID": 41,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -28036,7 +28036,7 @@
                     "Length": 0.6000004,
                     "NextFootholdId": 905,
                     "PreviousFootholdId": 903,
-                    "groupID": 43,
+                    "groupID": 41,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -28067,7 +28067,7 @@
                     "Length": 0.6000004,
                     "NextFootholdId": 906,
                     "PreviousFootholdId": 904,
-                    "groupID": 43,
+                    "groupID": 41,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -28098,7 +28098,7 @@
                     "Length": 0.5999999,
                     "NextFootholdId": 0,
                     "PreviousFootholdId": 905,
-                    "groupID": 43,
+                    "groupID": 41,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -28129,7 +28129,7 @@
                     "Length": 0.6000004,
                     "NextFootholdId": 0,
                     "PreviousFootholdId": 908,
-                    "groupID": 44,
+                    "groupID": 42,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -28160,7 +28160,7 @@
                     "Length": 0.6000004,
                     "NextFootholdId": 907,
                     "PreviousFootholdId": 909,
-                    "groupID": 44,
+                    "groupID": 42,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -28191,7 +28191,7 @@
                     "Length": 0.6000004,
                     "NextFootholdId": 908,
                     "PreviousFootholdId": 910,
-                    "groupID": 44,
+                    "groupID": 42,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -28222,7 +28222,7 @@
                     "Length": 0.5999999,
                     "NextFootholdId": 909,
                     "PreviousFootholdId": 0,
-                    "groupID": 44,
+                    "groupID": 42,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -28253,7 +28253,7 @@
                     "Length": 0.420000076,
                     "NextFootholdId": 337,
                     "PreviousFootholdId": 0,
-                    "groupID": 31,
+                    "groupID": 30,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -28284,7 +28284,7 @@
                     "Length": 1.02000046,
                     "NextFootholdId": 344,
                     "PreviousFootholdId": 914,
-                    "groupID": 21,
+                    "groupID": 20,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -28315,7 +28315,7 @@
                     "Length": 1.02000046,
                     "NextFootholdId": 915,
                     "PreviousFootholdId": 344,
-                    "groupID": 21,
+                    "groupID": 20,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -28346,7 +28346,7 @@
                     "Length": 0.6000004,
                     "NextFootholdId": 912,
                     "PreviousFootholdId": 916,
-                    "groupID": 21,
+                    "groupID": 20,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -28377,7 +28377,7 @@
                     "Length": 0.6000004,
                     "NextFootholdId": 917,
                     "PreviousFootholdId": 913,
-                    "groupID": 21,
+                    "groupID": 20,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -28408,7 +28408,7 @@
                     "Length": 0.6000004,
                     "NextFootholdId": 914,
                     "PreviousFootholdId": 918,
-                    "groupID": 21,
+                    "groupID": 20,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -28439,7 +28439,7 @@
                     "Length": 0.6000004,
                     "NextFootholdId": 919,
                     "PreviousFootholdId": 915,
-                    "groupID": 21,
+                    "groupID": 20,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -28470,7 +28470,7 @@
                     "Length": 0.6000004,
                     "NextFootholdId": 916,
                     "PreviousFootholdId": 920,
-                    "groupID": 21,
+                    "groupID": 20,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -28501,7 +28501,7 @@
                     "Length": 0.6000004,
                     "NextFootholdId": 921,
                     "PreviousFootholdId": 917,
-                    "groupID": 21,
+                    "groupID": 20,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -28532,7 +28532,7 @@
                     "Length": 0.6000004,
                     "NextFootholdId": 918,
                     "PreviousFootholdId": 922,
-                    "groupID": 21,
+                    "groupID": 20,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -28563,7 +28563,7 @@
                     "Length": 0.6000004,
                     "NextFootholdId": 923,
                     "PreviousFootholdId": 919,
-                    "groupID": 21,
+                    "groupID": 20,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -28594,7 +28594,7 @@
                     "Length": 0.6000004,
                     "NextFootholdId": 920,
                     "PreviousFootholdId": 924,
-                    "groupID": 21,
+                    "groupID": 20,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -28625,7 +28625,7 @@
                     "Length": 0.6000004,
                     "NextFootholdId": 925,
                     "PreviousFootholdId": 921,
-                    "groupID": 21,
+                    "groupID": 20,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -28656,7 +28656,7 @@
                     "Length": 0.6000004,
                     "NextFootholdId": 922,
                     "PreviousFootholdId": 926,
-                    "groupID": 21,
+                    "groupID": 20,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -28687,7 +28687,7 @@
                     "Length": 0.6000004,
                     "NextFootholdId": 927,
                     "PreviousFootholdId": 923,
-                    "groupID": 21,
+                    "groupID": 20,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -28718,7 +28718,7 @@
                     "Length": 0.6000004,
                     "NextFootholdId": 924,
                     "PreviousFootholdId": 928,
-                    "groupID": 21,
+                    "groupID": 20,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -28749,7 +28749,7 @@
                     "Length": 0.6000004,
                     "NextFootholdId": 929,
                     "PreviousFootholdId": 925,
-                    "groupID": 21,
+                    "groupID": 20,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -28780,7 +28780,7 @@
                     "Length": 0.5999999,
                     "NextFootholdId": 926,
                     "PreviousFootholdId": 930,
-                    "groupID": 21,
+                    "groupID": 20,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -28811,7 +28811,7 @@
                     "Length": 0.5999999,
                     "NextFootholdId": 931,
                     "PreviousFootholdId": 927,
-                    "groupID": 21,
+                    "groupID": 20,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -28842,7 +28842,7 @@
                     "Length": 0.5999999,
                     "NextFootholdId": 928,
                     "PreviousFootholdId": 932,
-                    "groupID": 21,
+                    "groupID": 20,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -28873,7 +28873,7 @@
                     "Length": 0.5999999,
                     "NextFootholdId": 933,
                     "PreviousFootholdId": 929,
-                    "groupID": 21,
+                    "groupID": 20,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -28904,7 +28904,7 @@
                     "Length": 0.5999999,
                     "NextFootholdId": 930,
                     "PreviousFootholdId": 934,
-                    "groupID": 21,
+                    "groupID": 20,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -28935,7 +28935,7 @@
                     "Length": 0.5999999,
                     "NextFootholdId": 935,
                     "PreviousFootholdId": 931,
-                    "groupID": 21,
+                    "groupID": 20,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -28966,7 +28966,7 @@
                     "Length": 0.5999998,
                     "NextFootholdId": 932,
                     "PreviousFootholdId": 937,
-                    "groupID": 21,
+                    "groupID": 20,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -28997,7 +28997,7 @@
                     "Length": 0.5999998,
                     "NextFootholdId": 936,
                     "PreviousFootholdId": 933,
-                    "groupID": 21,
+                    "groupID": 20,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -29028,7 +29028,7 @@
                     "Length": 0.180000186,
                     "NextFootholdId": 237,
                     "PreviousFootholdId": 935,
-                    "groupID": 21,
+                    "groupID": 20,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -29059,7 +29059,7 @@
                     "Length": 0.600000143,
                     "NextFootholdId": 934,
                     "PreviousFootholdId": 938,
-                    "groupID": 21,
+                    "groupID": 20,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -29090,7 +29090,7 @@
                     "Length": 0.6,
                     "NextFootholdId": 937,
                     "PreviousFootholdId": 940,
-                    "groupID": 21,
+                    "groupID": 20,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -29152,7 +29152,7 @@
                     "Length": 0.6,
                     "NextFootholdId": 938,
                     "PreviousFootholdId": 942,
-                    "groupID": 21,
+                    "groupID": 20,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -29214,7 +29214,7 @@
                     "Length": 0.599999964,
                     "NextFootholdId": 940,
                     "PreviousFootholdId": 944,
-                    "groupID": 21,
+                    "groupID": 20,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -29276,7 +29276,7 @@
                     "Length": 0.6,
                     "NextFootholdId": 942,
                     "PreviousFootholdId": 946,
-                    "groupID": 21,
+                    "groupID": 20,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -29338,7 +29338,7 @@
                     "Length": 0.6,
                     "NextFootholdId": 944,
                     "PreviousFootholdId": 948,
-                    "groupID": 21,
+                    "groupID": 20,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -29400,7 +29400,7 @@
                     "Length": 0.5999999,
                     "NextFootholdId": 946,
                     "PreviousFootholdId": 950,
-                    "groupID": 21,
+                    "groupID": 20,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -29462,7 +29462,7 @@
                     "Length": 0.5999999,
                     "NextFootholdId": 948,
                     "PreviousFootholdId": 953,
-                    "groupID": 21,
+                    "groupID": 20,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -29555,7 +29555,7 @@
                     "Length": 0.5999999,
                     "NextFootholdId": 950,
                     "PreviousFootholdId": 954,
-                    "groupID": 21,
+                    "groupID": 20,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -29586,7 +29586,7 @@
                     "Length": 0.600000143,
                     "NextFootholdId": 953,
                     "PreviousFootholdId": 955,
-                    "groupID": 21,
+                    "groupID": 20,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -29617,7 +29617,7 @@
                     "Length": 0.6000004,
                     "NextFootholdId": 954,
                     "PreviousFootholdId": 956,
-                    "groupID": 21,
+                    "groupID": 20,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -29648,7 +29648,7 @@
                     "Length": 0.6000004,
                     "NextFootholdId": 955,
                     "PreviousFootholdId": 957,
-                    "groupID": 21,
+                    "groupID": 20,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -29679,7 +29679,7 @@
                     "Length": 0.6000004,
                     "NextFootholdId": 956,
                     "PreviousFootholdId": 0,
-                    "groupID": 21,
+                    "groupID": 20,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -29710,7 +29710,7 @@
                     "Length": 1.02000046,
                     "NextFootholdId": 345,
                     "PreviousFootholdId": 960,
-                    "groupID": 23,
+                    "groupID": 22,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -29741,7 +29741,7 @@
                     "Length": 1.02000046,
                     "NextFootholdId": 961,
                     "PreviousFootholdId": 345,
-                    "groupID": 23,
+                    "groupID": 22,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -29772,7 +29772,7 @@
                     "Length": 0.6000004,
                     "NextFootholdId": 958,
                     "PreviousFootholdId": 962,
-                    "groupID": 23,
+                    "groupID": 22,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -29803,7 +29803,7 @@
                     "Length": 0.6000004,
                     "NextFootholdId": 963,
                     "PreviousFootholdId": 959,
-                    "groupID": 23,
+                    "groupID": 22,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -29834,7 +29834,7 @@
                     "Length": 0.6000004,
                     "NextFootholdId": 960,
                     "PreviousFootholdId": 964,
-                    "groupID": 23,
+                    "groupID": 22,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -29865,7 +29865,7 @@
                     "Length": 0.6000004,
                     "NextFootholdId": 965,
                     "PreviousFootholdId": 961,
-                    "groupID": 23,
+                    "groupID": 22,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -29896,7 +29896,7 @@
                     "Length": 0.6000004,
                     "NextFootholdId": 962,
                     "PreviousFootholdId": 966,
-                    "groupID": 23,
+                    "groupID": 22,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -29927,7 +29927,7 @@
                     "Length": 0.6000004,
                     "NextFootholdId": 967,
                     "PreviousFootholdId": 963,
-                    "groupID": 23,
+                    "groupID": 22,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -29958,7 +29958,7 @@
                     "Length": 0.6000004,
                     "NextFootholdId": 964,
                     "PreviousFootholdId": 968,
-                    "groupID": 23,
+                    "groupID": 22,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -29989,7 +29989,7 @@
                     "Length": 0.6000004,
                     "NextFootholdId": 969,
                     "PreviousFootholdId": 965,
-                    "groupID": 23,
+                    "groupID": 22,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -30020,7 +30020,7 @@
                     "Length": 0.6000004,
                     "NextFootholdId": 966,
                     "PreviousFootholdId": 970,
-                    "groupID": 23,
+                    "groupID": 22,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -30051,7 +30051,7 @@
                     "Length": 0.6000004,
                     "NextFootholdId": 971,
                     "PreviousFootholdId": 967,
-                    "groupID": 23,
+                    "groupID": 22,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -30082,7 +30082,7 @@
                     "Length": 0.6000004,
                     "NextFootholdId": 968,
                     "PreviousFootholdId": 972,
-                    "groupID": 23,
+                    "groupID": 22,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -30113,7 +30113,7 @@
                     "Length": 0.6000004,
                     "NextFootholdId": 973,
                     "PreviousFootholdId": 969,
-                    "groupID": 23,
+                    "groupID": 22,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -30144,7 +30144,7 @@
                     "Length": 0.6000004,
                     "NextFootholdId": 970,
                     "PreviousFootholdId": 974,
-                    "groupID": 23,
+                    "groupID": 22,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -30175,7 +30175,7 @@
                     "Length": 0.6000004,
                     "NextFootholdId": 975,
                     "PreviousFootholdId": 971,
-                    "groupID": 23,
+                    "groupID": 22,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -30206,7 +30206,7 @@
                     "Length": 0.5999999,
                     "NextFootholdId": 972,
                     "PreviousFootholdId": 976,
-                    "groupID": 23,
+                    "groupID": 22,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -30237,7 +30237,7 @@
                     "Length": 0.5999999,
                     "NextFootholdId": 977,
                     "PreviousFootholdId": 973,
-                    "groupID": 23,
+                    "groupID": 22,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -30268,7 +30268,7 @@
                     "Length": 0.5999999,
                     "NextFootholdId": 974,
                     "PreviousFootholdId": 978,
-                    "groupID": 23,
+                    "groupID": 22,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -30299,7 +30299,7 @@
                     "Length": 0.5999999,
                     "NextFootholdId": 979,
                     "PreviousFootholdId": 975,
-                    "groupID": 23,
+                    "groupID": 22,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -30330,7 +30330,7 @@
                     "Length": 0.5999999,
                     "NextFootholdId": 976,
                     "PreviousFootholdId": 980,
-                    "groupID": 23,
+                    "groupID": 22,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -30361,7 +30361,7 @@
                     "Length": 0.5999999,
                     "NextFootholdId": 981,
                     "PreviousFootholdId": 977,
-                    "groupID": 23,
+                    "groupID": 22,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -30392,7 +30392,7 @@
                     "Length": 0.5999998,
                     "NextFootholdId": 978,
                     "PreviousFootholdId": 982,
-                    "groupID": 23,
+                    "groupID": 22,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -30423,7 +30423,7 @@
                     "Length": 0.5999998,
                     "NextFootholdId": 983,
                     "PreviousFootholdId": 979,
-                    "groupID": 23,
+                    "groupID": 22,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -30454,7 +30454,7 @@
                     "Length": 0.180000186,
                     "NextFootholdId": 980,
                     "PreviousFootholdId": 256,
-                    "groupID": 23,
+                    "groupID": 22,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -30485,7 +30485,7 @@
                     "Length": 0.600000143,
                     "NextFootholdId": 985,
                     "PreviousFootholdId": 981,
-                    "groupID": 23,
+                    "groupID": 22,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -30516,7 +30516,7 @@
                     "Length": 0.6,
                     "NextFootholdId": 0,
                     "PreviousFootholdId": 986,
-                    "groupID": 20,
+                    "groupID": 19,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -30547,7 +30547,7 @@
                     "Length": 0.6,
                     "NextFootholdId": 987,
                     "PreviousFootholdId": 983,
-                    "groupID": 23,
+                    "groupID": 22,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -30578,7 +30578,7 @@
                     "Length": 0.6,
                     "NextFootholdId": 984,
                     "PreviousFootholdId": 988,
-                    "groupID": 20,
+                    "groupID": 19,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -30609,7 +30609,7 @@
                     "Length": 0.6,
                     "NextFootholdId": 989,
                     "PreviousFootholdId": 985,
-                    "groupID": 23,
+                    "groupID": 22,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -30640,7 +30640,7 @@
                     "Length": 0.599999964,
                     "NextFootholdId": 986,
                     "PreviousFootholdId": 990,
-                    "groupID": 20,
+                    "groupID": 19,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -30671,7 +30671,7 @@
                     "Length": 0.599999964,
                     "NextFootholdId": 991,
                     "PreviousFootholdId": 987,
-                    "groupID": 23,
+                    "groupID": 22,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -30702,7 +30702,7 @@
                     "Length": 0.6,
                     "NextFootholdId": 988,
                     "PreviousFootholdId": 992,
-                    "groupID": 20,
+                    "groupID": 19,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -30733,7 +30733,7 @@
                     "Length": 0.6,
                     "NextFootholdId": 993,
                     "PreviousFootholdId": 989,
-                    "groupID": 23,
+                    "groupID": 22,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -30764,7 +30764,7 @@
                     "Length": 0.6,
                     "NextFootholdId": 990,
                     "PreviousFootholdId": 994,
-                    "groupID": 20,
+                    "groupID": 19,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -30795,7 +30795,7 @@
                     "Length": 0.6,
                     "NextFootholdId": 995,
                     "PreviousFootholdId": 991,
-                    "groupID": 23,
+                    "groupID": 22,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -30826,7 +30826,7 @@
                     "Length": 0.5999999,
                     "NextFootholdId": 992,
                     "PreviousFootholdId": 996,
-                    "groupID": 20,
+                    "groupID": 19,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -30857,7 +30857,7 @@
                     "Length": 0.5999999,
                     "NextFootholdId": 997,
                     "PreviousFootholdId": 993,
-                    "groupID": 23,
+                    "groupID": 22,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -30888,7 +30888,7 @@
                     "Length": 0.5999999,
                     "NextFootholdId": 994,
                     "PreviousFootholdId": 998,
-                    "groupID": 20,
+                    "groupID": 19,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -30919,7 +30919,7 @@
                     "Length": 0.5999999,
                     "NextFootholdId": 999,
                     "PreviousFootholdId": 995,
-                    "groupID": 23,
+                    "groupID": 22,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -30950,7 +30950,7 @@
                     "Length": 0.179999828,
                     "NextFootholdId": 996,
                     "PreviousFootholdId": 236,
-                    "groupID": 20,
+                    "groupID": 19,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -30981,7 +30981,7 @@
                     "Length": 0.5999999,
                     "NextFootholdId": 1000,
                     "PreviousFootholdId": 997,
-                    "groupID": 23,
+                    "groupID": 22,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -31012,7 +31012,7 @@
                     "Length": 0.600000143,
                     "NextFootholdId": 1001,
                     "PreviousFootholdId": 999,
-                    "groupID": 23,
+                    "groupID": 22,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -31043,7 +31043,7 @@
                     "Length": 0.6000004,
                     "NextFootholdId": 1002,
                     "PreviousFootholdId": 1000,
-                    "groupID": 23,
+                    "groupID": 22,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -31074,7 +31074,7 @@
                     "Length": 0.6000004,
                     "NextFootholdId": 1003,
                     "PreviousFootholdId": 1001,
-                    "groupID": 23,
+                    "groupID": 22,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -31105,7 +31105,7 @@
                     "Length": 0.6000004,
                     "NextFootholdId": 0,
                     "PreviousFootholdId": 1002,
-                    "groupID": 23,
+                    "groupID": 22,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -31136,7 +31136,7 @@
                     "Length": 1.02000046,
                     "NextFootholdId": 346,
                     "PreviousFootholdId": 1005,
-                    "groupID": 22,
+                    "groupID": 21,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -31167,7 +31167,7 @@
                     "Length": 0.6000004,
                     "NextFootholdId": 1004,
                     "PreviousFootholdId": 1006,
-                    "groupID": 22,
+                    "groupID": 21,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -31198,7 +31198,7 @@
                     "Length": 0.6000004,
                     "NextFootholdId": 1005,
                     "PreviousFootholdId": 1007,
-                    "groupID": 22,
+                    "groupID": 21,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -31229,7 +31229,7 @@
                     "Length": 0.6000004,
                     "NextFootholdId": 1006,
                     "PreviousFootholdId": 1008,
-                    "groupID": 22,
+                    "groupID": 21,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -31260,7 +31260,7 @@
                     "Length": 0.6000004,
                     "NextFootholdId": 1007,
                     "PreviousFootholdId": 1009,
-                    "groupID": 22,
+                    "groupID": 21,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -31291,7 +31291,7 @@
                     "Length": 0.6000004,
                     "NextFootholdId": 1008,
                     "PreviousFootholdId": 1010,
-                    "groupID": 22,
+                    "groupID": 21,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -31322,7 +31322,7 @@
                     "Length": 0.6000004,
                     "NextFootholdId": 1009,
                     "PreviousFootholdId": 1011,
-                    "groupID": 22,
+                    "groupID": 21,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -31353,7 +31353,7 @@
                     "Length": 0.6000004,
                     "NextFootholdId": 1010,
                     "PreviousFootholdId": 1012,
-                    "groupID": 22,
+                    "groupID": 21,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -31384,7 +31384,7 @@
                     "Length": 0.5999999,
                     "NextFootholdId": 1011,
                     "PreviousFootholdId": 1013,
-                    "groupID": 22,
+                    "groupID": 21,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -31415,7 +31415,7 @@
                     "Length": 0.5999999,
                     "NextFootholdId": 1012,
                     "PreviousFootholdId": 1014,
-                    "groupID": 22,
+                    "groupID": 21,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -31446,7 +31446,7 @@
                     "Length": 0.5999999,
                     "NextFootholdId": 1013,
                     "PreviousFootholdId": 1015,
-                    "groupID": 22,
+                    "groupID": 21,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -31477,7 +31477,7 @@
                     "Length": 0.5999998,
                     "NextFootholdId": 1014,
                     "PreviousFootholdId": 1016,
-                    "groupID": 22,
+                    "groupID": 21,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -31508,7 +31508,7 @@
                     "Length": 0.180000186,
                     "NextFootholdId": 1015,
                     "PreviousFootholdId": 336,
-                    "groupID": 22,
+                    "groupID": 21,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -31539,7 +31539,7 @@
                     "Length": 1.02000046,
                     "NextFootholdId": 1018,
                     "PreviousFootholdId": 346,
-                    "groupID": 22,
+                    "groupID": 21,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -31570,7 +31570,7 @@
                     "Length": 0.6000004,
                     "NextFootholdId": 1019,
                     "PreviousFootholdId": 1017,
-                    "groupID": 22,
+                    "groupID": 21,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -31601,7 +31601,7 @@
                     "Length": 0.6000004,
                     "NextFootholdId": 1020,
                     "PreviousFootholdId": 1018,
-                    "groupID": 22,
+                    "groupID": 21,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -31632,7 +31632,7 @@
                     "Length": 0.6000004,
                     "NextFootholdId": 1021,
                     "PreviousFootholdId": 1019,
-                    "groupID": 22,
+                    "groupID": 21,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -31663,7 +31663,7 @@
                     "Length": 0.6000004,
                     "NextFootholdId": 1022,
                     "PreviousFootholdId": 1020,
-                    "groupID": 22,
+                    "groupID": 21,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -31694,7 +31694,7 @@
                     "Length": 0.179999828,
                     "NextFootholdId": 241,
                     "PreviousFootholdId": 1021,
-                    "groupID": 22,
+                    "groupID": 21,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -31725,7 +31725,7 @@
                     "Length": 0.6000004,
                     "NextFootholdId": 1024,
                     "PreviousFootholdId": 0,
-                    "groupID": 45,
+                    "groupID": 43,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -31756,7 +31756,7 @@
                     "Length": 0.6000004,
                     "NextFootholdId": 1025,
                     "PreviousFootholdId": 1023,
-                    "groupID": 45,
+                    "groupID": 43,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -31787,7 +31787,7 @@
                     "Length": 0.5999999,
                     "NextFootholdId": 1026,
                     "PreviousFootholdId": 1024,
-                    "groupID": 45,
+                    "groupID": 43,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -31818,7 +31818,7 @@
                     "Length": 0.5999999,
                     "NextFootholdId": 1027,
                     "PreviousFootholdId": 1025,
-                    "groupID": 45,
+                    "groupID": 43,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -31849,7 +31849,7 @@
                     "Length": 0.5999999,
                     "NextFootholdId": 1028,
                     "PreviousFootholdId": 1026,
-                    "groupID": 45,
+                    "groupID": 43,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -31880,7 +31880,7 @@
                     "Length": 0.5999998,
                     "NextFootholdId": 1029,
                     "PreviousFootholdId": 1027,
-                    "groupID": 45,
+                    "groupID": 43,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -31911,7 +31911,7 @@
                     "Length": 0.600000143,
                     "NextFootholdId": 0,
                     "PreviousFootholdId": 1028,
-                    "groupID": 45,
+                    "groupID": 43,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -31942,7 +31942,7 @@
                     "Length": 0.420000076,
                     "NextFootholdId": 0,
                     "PreviousFootholdId": 248,
-                    "groupID": 22,
+                    "groupID": 21,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -32066,7 +32066,7 @@
                     "Length": 0.6,
                     "NextFootholdId": 0,
                     "PreviousFootholdId": 1035,
-                    "groupID": 46,
+                    "groupID": 44,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -32097,7 +32097,7 @@
                     "Length": 0.6,
                     "NextFootholdId": 1034,
                     "PreviousFootholdId": 1036,
-                    "groupID": 46,
+                    "groupID": 44,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -32128,7 +32128,7 @@
                     "Length": 0.599999964,
                     "NextFootholdId": 1035,
                     "PreviousFootholdId": 1037,
-                    "groupID": 46,
+                    "groupID": 44,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -32159,7 +32159,7 @@
                     "Length": 0.6,
                     "NextFootholdId": 1036,
                     "PreviousFootholdId": 0,
-                    "groupID": 46,
+                    "groupID": 44,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -32252,7 +32252,7 @@
                     "Length": 0.419999957,
                     "NextFootholdId": 350,
                     "PreviousFootholdId": 0,
-                    "groupID": 32,
+                    "groupID": 31,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -32267,11 +32267,11 @@
                     "OwnerId": "a06770d3-2811-4449-875a-35da4543a163",
                     "Id": 1040,
                     "StartPoint": {
-                      "x": 168.419983,
+                      "x": 168.42,
                       "y": -1.5
                     },
                     "EndPoint": {
-                      "x": 168.419983,
+                      "x": 168.42,
                       "y": -1.08
                     },
                     "Variance": {
@@ -32283,7 +32283,7 @@
                     "Length": 0.419999957,
                     "NextFootholdId": 0,
                     "PreviousFootholdId": 350,
-                    "groupID": 32,
+                    "groupID": 31,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -32298,11 +32298,11 @@
                     "OwnerId": "a06770d3-2811-4449-875a-35da4543a163",
                     "Id": 1041,
                     "StartPoint": {
-                      "x": 169.079987,
+                      "x": 169.08,
                       "y": -1.08
                     },
                     "EndPoint": {
-                      "x": 169.079987,
+                      "x": 169.08,
                       "y": -1.5
                     },
                     "Variance": {
@@ -32314,7 +32314,7 @@
                     "Length": 0.420000076,
                     "NextFootholdId": 351,
                     "PreviousFootholdId": 0,
-                    "groupID": 33,
+                    "groupID": 32,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -32329,12 +32329,12 @@
                     "OwnerId": "a06770d3-2811-4449-875a-35da4543a163",
                     "Id": 1042,
                     "StartPoint": {
-                      "x": 168.419983,
-                      "y": -2.70000029
+                      "x": 168.42,
+                      "y": -2.7
                     },
                     "EndPoint": {
-                      "x": 168.419983,
-                      "y": -2.28000021
+                      "x": 168.42,
+                      "y": -2.28
                     },
                     "Variance": {
                       "x": 0.0,
@@ -32345,7 +32345,7 @@
                     "Length": 0.420000076,
                     "NextFootholdId": 0,
                     "PreviousFootholdId": 351,
-                    "groupID": 33,
+                    "groupID": 32,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -32360,12 +32360,12 @@
                     "OwnerId": "a06770d3-2811-4449-875a-35da4543a163",
                     "Id": 1043,
                     "StartPoint": {
-                      "x": 169.079987,
-                      "y": -2.28000021
+                      "x": 169.08,
+                      "y": -2.28
                     },
                     "EndPoint": {
-                      "x": 169.079987,
-                      "y": -2.70000029
+                      "x": 169.08,
+                      "y": -2.7
                     },
                     "Variance": {
                       "x": 0.0,
@@ -32376,7 +32376,7 @@
                     "Length": 0.420000076,
                     "NextFootholdId": 352,
                     "PreviousFootholdId": 0,
-                    "groupID": 34,
+                    "groupID": 33,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -32407,7 +32407,7 @@
                     "Length": 0.420000076,
                     "NextFootholdId": 0,
                     "PreviousFootholdId": 352,
-                    "groupID": 34,
+                    "groupID": 33,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -32438,7 +32438,7 @@
                     "Length": 0.419999957,
                     "NextFootholdId": 353,
                     "PreviousFootholdId": 0,
-                    "groupID": 35,
+                    "groupID": 34,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -32469,7 +32469,7 @@
                     "Length": 0.419999957,
                     "NextFootholdId": 0,
                     "PreviousFootholdId": 353,
-                    "groupID": 35,
+                    "groupID": 34,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -32500,7 +32500,7 @@
                     "Length": 0.8199997,
                     "NextFootholdId": 0,
                     "PreviousFootholdId": 0,
-                    "groupID": 47,
+                    "groupID": 45,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -83361,7 +83361,7 @@
               "@type": "MOD.Core.TransformComponent",
               "Position": {
                 "x": 0.9333,
-                "y": -0.6708,
+                "y": -0.4871,
                 "z": 0.0
               },
               "QuaternionRotation": {
@@ -83372,7 +83372,7 @@
               },
               "Scale": {
                 "x": 17.5572243,
-                "y": 1.47247314,
+                "y": 0.7376598,
                 "z": 1.0
               },
               "Enable": true
@@ -83421,7 +83421,7 @@
               "@type": "MOD.Core.TransformComponent",
               "Position": {
                 "x": 0.9411,
-                "y": 2.3616,
+                "y": 2.4909,
                 "z": 0.0
               },
               "QuaternionRotation": {
@@ -83431,8 +83431,8 @@
                 "w": 1.0
               },
               "Scale": {
-                "x": 13.9796247,
-                "y": 1.47247314,
+                "x": 13.9796257,
+                "y": 0.9553823,
                 "z": 1.0
               },
               "Enable": true
@@ -83481,7 +83481,7 @@
               "@type": "MOD.Core.TransformComponent",
               "Position": {
                 "x": 10.1766,
-                "y": 1.1608,
+                "y": 1.2832,
                 "z": 0.0
               },
               "QuaternionRotation": {
@@ -83492,7 +83492,7 @@
               },
               "Scale": {
                 "x": 7.72510672,
-                "y": 1.47247314,
+                "y": 0.9825976,
                 "z": 1.0
               },
               "Enable": true
@@ -83541,7 +83541,7 @@
               "@type": "MOD.Core.TransformComponent",
               "Position": {
                 "x": -8.3098,
-                "y": 1.1616,
+                "y": 1.3076,
                 "z": 0.0
               },
               "QuaternionRotation": {
@@ -83552,7 +83552,7 @@
               },
               "Scale": {
                 "x": 7.72510672,
-                "y": 1.47247314,
+                "y": 0.8886645,
                 "z": 1.0
               },
               "Enable": true
@@ -83857,63 +83857,6 @@
         }
       },
       {
-        "id": "9c5d87bb-d640-496f-81ce-9da94f319f90",
-        "path": "/maps/DeepMineLevel/Stage7/Decoration_1/object-14936",
-        "componentNames": "MOD.Core.TransformComponent,MOD.Core.SpriteRendererComponent",
-        "jsonString": {
-          "name": "object-14936",
-          "path": "/maps/DeepMineLevel/Stage7/Decoration_1/object-14936",
-          "nameEditable": true,
-          "enable": true,
-          "visible": true,
-          "localize": false,
-          "displayOrder": 0,
-          "pathConstraints": "/////9c5d87bb-d640-496f-81ce-9da94f319f90",
-          "revision": 1,
-          "origin": {
-            "type": "Model",
-            "entry_id": "MapObject",
-            "sub_entity_id": null,
-            "root_entity_id": "92c3baaf-60ef-4ece-8f4f-11cdcb50bfa8",
-            "replaced_model_id": null
-          },
-          "modelId": "mapobject",
-          "@components": [
-            {
-              "@type": "MOD.Core.TransformComponent",
-              "Position": {
-                "x": -9.4044,
-                "y": -4.3383,
-                "z": 0.0
-              },
-              "QuaternionRotation": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0,
-                "w": 1.0
-              },
-              "Scale": {
-                "x": 1.0,
-                "y": 1.0,
-                "z": 1.0
-              },
-              "Enable": true
-            },
-            {
-              "@type": "MOD.Core.SpriteRendererComponent",
-              "ActionSheet": {},
-              "EndFrameIndex": 2147483647,
-              "RenderSetting": 0,
-              "SortingLayer": "MapLayer0",
-              "SpriteRUID": "27770d9cdaf248bc926e4c6e75987707",
-              "StartFrameIndex": 0,
-              "Enable": true
-            }
-          ],
-          "@version": 1
-        }
-      },
-      {
         "id": "5f84aa99-d11a-438f-beea-2c061d7c32c2",
         "path": "/maps/DeepMineLevel/Stage7/Decoration_1/object-11328_2",
         "componentNames": "MOD.Core.TransformComponent,MOD.Core.SpriteRendererComponent",
@@ -83924,7 +83867,7 @@
           "enable": true,
           "visible": true,
           "localize": false,
-          "displayOrder": 1,
+          "displayOrder": 0,
           "pathConstraints": "/////",
           "revision": 1,
           "origin": {
@@ -83982,7 +83925,7 @@
           "enable": true,
           "visible": true,
           "localize": false,
-          "displayOrder": 2,
+          "displayOrder": 1,
           "pathConstraints": "/////",
           "revision": 1,
           "origin": {
@@ -84039,7 +83982,7 @@
           "enable": true,
           "visible": true,
           "localize": false,
-          "displayOrder": 3,
+          "displayOrder": 2,
           "pathConstraints": "/////",
           "revision": 1,
           "origin": {
@@ -84097,7 +84040,7 @@
           "enable": true,
           "visible": true,
           "localize": false,
-          "displayOrder": 4,
+          "displayOrder": 3,
           "pathConstraints": "/////",
           "revision": 1,
           "origin": {
@@ -84154,7 +84097,7 @@
           "enable": true,
           "visible": true,
           "localize": false,
-          "displayOrder": 5,
+          "displayOrder": 4,
           "pathConstraints": "/////",
           "revision": 1,
           "origin": {
@@ -84211,7 +84154,7 @@
           "enable": true,
           "visible": true,
           "localize": false,
-          "displayOrder": 6,
+          "displayOrder": 5,
           "pathConstraints": "/////",
           "revision": 1,
           "origin": {
@@ -84269,7 +84212,7 @@
           "enable": true,
           "visible": true,
           "localize": false,
-          "displayOrder": 7,
+          "displayOrder": 6,
           "pathConstraints": "/////",
           "revision": 1,
           "origin": {
@@ -84326,7 +84269,7 @@
           "enable": true,
           "visible": true,
           "localize": false,
-          "displayOrder": 8,
+          "displayOrder": 7,
           "pathConstraints": "/////",
           "revision": 1,
           "origin": {
@@ -84383,7 +84326,7 @@
           "enable": true,
           "visible": true,
           "localize": false,
-          "displayOrder": 9,
+          "displayOrder": 8,
           "pathConstraints": "/////",
           "revision": 1,
           "origin": {
@@ -84440,7 +84383,7 @@
           "enable": true,
           "visible": true,
           "localize": false,
-          "displayOrder": 10,
+          "displayOrder": 9,
           "pathConstraints": "/////",
           "revision": 1,
           "origin": {
@@ -84497,7 +84440,7 @@
           "enable": true,
           "visible": true,
           "localize": false,
-          "displayOrder": 11,
+          "displayOrder": 10,
           "pathConstraints": "/////",
           "revision": 1,
           "origin": {
@@ -84622,7 +84565,7 @@
           "enable": true,
           "visible": true,
           "localize": false,
-          "displayOrder": 12,
+          "displayOrder": 11,
           "pathConstraints": "/////",
           "revision": 1,
           "origin": {
@@ -84679,7 +84622,7 @@
           "enable": true,
           "visible": true,
           "localize": false,
-          "displayOrder": 13,
+          "displayOrder": 12,
           "pathConstraints": "/////",
           "revision": 1,
           "origin": {
@@ -84736,7 +84679,7 @@
           "enable": true,
           "visible": true,
           "localize": false,
-          "displayOrder": 14,
+          "displayOrder": 13,
           "pathConstraints": "/////",
           "revision": 1,
           "origin": {
@@ -84794,7 +84737,7 @@
           "enable": true,
           "visible": true,
           "localize": false,
-          "displayOrder": 15,
+          "displayOrder": 14,
           "pathConstraints": "/////f1e393fd-04a6-4565-9640-1fd14e5b1d3d",
           "revision": 1,
           "origin": {
@@ -84851,7 +84794,7 @@
           "enable": true,
           "visible": true,
           "localize": false,
-          "displayOrder": 16,
+          "displayOrder": 15,
           "pathConstraints": "/////",
           "revision": 1,
           "origin": {
@@ -84908,7 +84851,7 @@
           "enable": true,
           "visible": true,
           "localize": false,
-          "displayOrder": 17,
+          "displayOrder": 16,
           "pathConstraints": "/////",
           "revision": 1,
           "origin": {
