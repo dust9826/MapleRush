@@ -181,7 +181,7 @@ script GameConstants extends Logic
 
 	property number DashRangeSpriteWidth = 2.28
 
-	property boolean CheatMode = true
+	property boolean CheatMode = false
 
 	property boolean DrawGizmo = false
 
