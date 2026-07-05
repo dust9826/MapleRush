@@ -26,7 +26,10 @@ script RankingDataStorageLogic extends Logic
 
 	method void InitAndWait()
 		local config = RankingConfigData()
-		config.Key = "Ranking"
+		-- ★ 리더보드 초기화(2026-07-05): board 키 "Ranking" → "Ranking2".
+		--   SortableDataStorage 이름이 바뀌어 기존 등록 점수는 고아가 되고(파괴적 삭제 아님, 키 되돌리면 원복),
+		--   전 유저가 빈 리더보드에서 새로 시작한다. 최고기록 저장키 초기화(user_best_record_v2)와 짝을 이룸.
+		config.Key = "Ranking2"
 		-- ★ 도입 수정: 주간(Week) → None. GetCycleIndex가 항상 1을 반환 → 단일 전체(비순환) 리더보드.
 		config.CycleEnum = _CycleEnum.None
 		config.ViewCount = 100
@@ -117,6 +120,7 @@ script RankingDataStorageLogic extends Logic
 			local data = dataList[i]
 			byProfileCode[data.ProfileCode] = data
 		end
+		log("[RankingDataStorageLogic] UpdateDataTable: key=" .. tostring(config.Key) .. " cycle=" .. tostring(cycleIndex) .. " entries=" .. tostring(#dataList))
 	end
 
 	@ExecSpace("ServerOnly")
