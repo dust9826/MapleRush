@@ -14,7 +14,7 @@ script SelectBackdrop extends Logic
 	@HideFromInspector property any overlay = nil
 
 	method void EnsurePools()
-		-- 풀 1회 빌드(순수 데이터, 클라/서버 공통). 일러스트는 인트로 컷씬 7장 재활용.
+		-- 풀 1회 빌드(순수 데이터, 클라/서버 공통). 인트로 컷씬 7장 + 추가 일러스트 1장.
 		if self.illusts ~= nil then return end
 		self.illusts = {
 			"ba75a198e091494ca6e59e1c881cfaeb",
@@ -24,6 +24,7 @@ script SelectBackdrop extends Logic
 			"3e2de5ba7dba4a4787014788faf789a7",
 			"846e0351d5274dc7a872e6618529eac6",
 			"d5afe4b5f99d454da07c866d6261d05e",
+			"695f2ae4171c4b998965d6b825cfa3cd",
 		}
 		self.tips = {
 			"공격 받기 직전에 대시를 사용하면 슬로우 모션이 발생합니다.",
