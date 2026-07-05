@@ -30482,7 +30482,7 @@
                     }
                   },
                   {
-                    "Length": 0.7700043,
+                    "Length": 0.7699529,
                     "NextFootholdId": 0,
                     "PreviousFootholdId": 0,
                     "groupID": 48,
@@ -30497,8 +30497,39 @@
                       "isCustomFoothold": true,
                       "inertiaOption": 0
                     },
-                    "OwnerId": "b6ea3725-d92e-444d-a279-0bdede95eb47",
+                    "OwnerId": "02722334-52c4-40c2-adcb-98ed5688dedc",
                     "Id": 983,
+                    "StartPoint": {
+                      "x": 134.1458,
+                      "y": -2.9089
+                    },
+                    "EndPoint": {
+                      "x": 134.7442,
+                      "y": -3.3934
+                    },
+                    "Variance": {
+                      "x": 0.7771955,
+                      "y": -0.629259169
+                    }
+                  },
+                  {
+                    "Length": 0.7700043,
+                    "NextFootholdId": 0,
+                    "PreviousFootholdId": 0,
+                    "groupID": 49,
+                    "layer": 1,
+                    "sortingLayerName": "MapLayer0",
+                    "attribute": {
+                      "walk": 1.0,
+                      "force": 0.0,
+                      "drag": 1.0,
+                      "isBlockVertical": false,
+                      "isDynamic": false,
+                      "isCustomFoothold": true,
+                      "inertiaOption": 0
+                    },
+                    "OwnerId": "b6ea3725-d92e-444d-a279-0bdede95eb47",
+                    "Id": 984,
                     "StartPoint": {
                       "x": 135.4262,
                       "y": -2.4835
@@ -30516,37 +30547,6 @@
                     "Length": 0.769989,
                     "NextFootholdId": 0,
                     "PreviousFootholdId": 0,
-                    "groupID": 49,
-                    "layer": 1,
-                    "sortingLayerName": "MapLayer0",
-                    "attribute": {
-                      "walk": 1.0,
-                      "force": 0.0,
-                      "drag": 1.0,
-                      "isBlockVertical": false,
-                      "isDynamic": false,
-                      "isCustomFoothold": true,
-                      "inertiaOption": 0
-                    },
-                    "OwnerId": "45848d2f-98c3-4003-825a-e2fcccba24fa",
-                    "Id": 984,
-                    "StartPoint": {
-                      "x": 134.5173,
-                      "y": -1.747
-                    },
-                    "EndPoint": {
-                      "x": 135.2873,
-                      "y": -1.747
-                    },
-                    "Variance": {
-                      "x": 1.0,
-                      "y": 0.0
-                    }
-                  },
-                  {
-                    "Length": 0.7700043,
-                    "NextFootholdId": 0,
-                    "PreviousFootholdId": 0,
                     "groupID": 50,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
@@ -30559,15 +30559,15 @@
                       "isCustomFoothold": true,
                       "inertiaOption": 0
                     },
-                    "OwnerId": "3ca28dcf-5637-4a30-87f5-9fb92d504697",
+                    "OwnerId": "45848d2f-98c3-4003-825a-e2fcccba24fa",
                     "Id": 985,
                     "StartPoint": {
-                      "x": 135.4308,
-                      "y": -1.0028
+                      "x": 134.5173,
+                      "y": -1.747
                     },
                     "EndPoint": {
-                      "x": 136.2008,
-                      "y": -1.0028
+                      "x": 135.2873,
+                      "y": -1.747
                     },
                     "Variance": {
                       "x": 1.0,
@@ -30590,8 +30590,39 @@
                       "isCustomFoothold": true,
                       "inertiaOption": 0
                     },
-                    "OwnerId": "d2766c63-714a-4e5d-a0e7-9aea10c9072f",
+                    "OwnerId": "3ca28dcf-5637-4a30-87f5-9fb92d504697",
                     "Id": 986,
+                    "StartPoint": {
+                      "x": 135.4308,
+                      "y": -1.0028
+                    },
+                    "EndPoint": {
+                      "x": 136.2008,
+                      "y": -1.0028
+                    },
+                    "Variance": {
+                      "x": 1.0,
+                      "y": 0.0
+                    }
+                  },
+                  {
+                    "Length": 0.7700043,
+                    "NextFootholdId": 0,
+                    "PreviousFootholdId": 0,
+                    "groupID": 52,
+                    "layer": 1,
+                    "sortingLayerName": "MapLayer0",
+                    "attribute": {
+                      "walk": 1.0,
+                      "force": 0.0,
+                      "drag": 1.0,
+                      "isBlockVertical": false,
+                      "isDynamic": false,
+                      "isCustomFoothold": true,
+                      "inertiaOption": 0
+                    },
+                    "OwnerId": "d2766c63-714a-4e5d-a0e7-9aea10c9072f",
+                    "Id": 987,
                     "StartPoint": {
                       "x": 134.4998,
                       "y": -0.2412
@@ -30609,7 +30640,7 @@
                     "Length": 0.769989,
                     "NextFootholdId": 0,
                     "PreviousFootholdId": 0,
-                    "groupID": 52,
+                    "groupID": 53,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -30622,7 +30653,7 @@
                       "inertiaOption": 0
                     },
                     "OwnerId": "6cb284a3-b6a9-498c-ac76-3c95e7c1ef5a",
-                    "Id": 987,
+                    "Id": 988,
                     "StartPoint": {
                       "x": 135.4239,
                       "y": 0.5107
@@ -30640,7 +30671,7 @@
                     "Length": 0.7700043,
                     "NextFootholdId": 0,
                     "PreviousFootholdId": 0,
-                    "groupID": 53,
+                    "groupID": 54,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -30653,7 +30684,7 @@
                       "inertiaOption": 0
                     },
                     "OwnerId": "300fd7a0-c335-450f-adeb-8dcc90047ee5",
-                    "Id": 988,
+                    "Id": 989,
                     "StartPoint": {
                       "x": 134.5683,
                       "y": 1.31
@@ -30669,9 +30700,9 @@
                   },
                   {
                     "Length": 0.230863675,
-                    "NextFootholdId": 990,
+                    "NextFootholdId": 991,
                     "PreviousFootholdId": 0,
-                    "groupID": 54,
+                    "groupID": 55,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -30684,7 +30715,7 @@
                       "inertiaOption": 0
                     },
                     "OwnerId": "d0466533-839c-4239-8d17-f9c7ac169f23",
-                    "Id": 989,
+                    "Id": 990,
                     "StartPoint": {
                       "x": 154.8071,
                       "y": 6.8322
@@ -30700,9 +30731,9 @@
                   },
                   {
                     "Length": 0.260777831,
-                    "NextFootholdId": 991,
-                    "PreviousFootholdId": 989,
-                    "groupID": 54,
+                    "NextFootholdId": 992,
+                    "PreviousFootholdId": 990,
+                    "groupID": 55,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -30715,7 +30746,7 @@
                       "inertiaOption": 0
                     },
                     "OwnerId": "d0466533-839c-4239-8d17-f9c7ac169f23",
-                    "Id": 990,
+                    "Id": 991,
                     "StartPoint": {
                       "x": 155.0371,
                       "y": 6.8522
@@ -30731,9 +30762,9 @@
                   },
                   {
                     "Length": 0.3701302,
-                    "NextFootholdId": 992,
-                    "PreviousFootholdId": 990,
-                    "groupID": 54,
+                    "NextFootholdId": 993,
+                    "PreviousFootholdId": 991,
+                    "groupID": 55,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -30746,7 +30777,7 @@
                       "inertiaOption": 0
                     },
                     "OwnerId": "d0466533-839c-4239-8d17-f9c7ac169f23",
-                    "Id": 991,
+                    "Id": 992,
                     "StartPoint": {
                       "x": 155.2971,
                       "y": 6.8722
@@ -30762,9 +30793,9 @@
                   },
                   {
                     "Length": 0.430007935,
-                    "NextFootholdId": 993,
-                    "PreviousFootholdId": 991,
-                    "groupID": 54,
+                    "NextFootholdId": 994,
+                    "PreviousFootholdId": 992,
+                    "groupID": 55,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -30777,7 +30808,7 @@
                       "inertiaOption": 0
                     },
                     "OwnerId": "d0466533-839c-4239-8d17-f9c7ac169f23",
-                    "Id": 992,
+                    "Id": 993,
                     "StartPoint": {
                       "x": 155.6671,
                       "y": 6.8822
@@ -30793,9 +30824,9 @@
                   },
                   {
                     "Length": 0.270174146,
-                    "NextFootholdId": 994,
-                    "PreviousFootholdId": 992,
-                    "groupID": 54,
+                    "NextFootholdId": 995,
+                    "PreviousFootholdId": 993,
+                    "groupID": 55,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -30808,7 +30839,7 @@
                       "inertiaOption": 0
                     },
                     "OwnerId": "d0466533-839c-4239-8d17-f9c7ac169f23",
-                    "Id": 993,
+                    "Id": 994,
                     "StartPoint": {
                       "x": 156.0971,
                       "y": 6.8822
@@ -30824,9 +30855,9 @@
                   },
                   {
                     "Length": 0.270744,
-                    "NextFootholdId": 995,
-                    "PreviousFootholdId": 993,
-                    "groupID": 54,
+                    "NextFootholdId": 996,
+                    "PreviousFootholdId": 994,
+                    "groupID": 55,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -30839,7 +30870,7 @@
                       "inertiaOption": 0
                     },
                     "OwnerId": "d0466533-839c-4239-8d17-f9c7ac169f23",
-                    "Id": 994,
+                    "Id": 995,
                     "StartPoint": {
                       "x": 156.3671,
                       "y": 6.8722
@@ -30856,8 +30887,8 @@
                   {
                     "Length": 0.4000001,
                     "NextFootholdId": 0,
-                    "PreviousFootholdId": 994,
-                    "groupID": 54,
+                    "PreviousFootholdId": 995,
+                    "groupID": 55,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -30870,7 +30901,7 @@
                       "inertiaOption": 0
                     },
                     "OwnerId": "d0466533-839c-4239-8d17-f9c7ac169f23",
-                    "Id": 995,
+                    "Id": 996,
                     "StartPoint": {
                       "x": 156.6371,
                       "y": 6.8522
@@ -30887,8 +30918,8 @@
                   {
                     "Length": 1.68000793,
                     "NextFootholdId": 0,
-                    "PreviousFootholdId": 997,
-                    "groupID": 55,
+                    "PreviousFootholdId": 998,
+                    "groupID": 56,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -30901,7 +30932,7 @@
                       "inertiaOption": 0
                     },
                     "OwnerId": "1effc0da-f79b-4b47-8759-6f6c3d08e89d",
-                    "Id": 996,
+                    "Id": 997,
                     "StartPoint": {
                       "x": 174.1671,
                       "y": 2.1009
@@ -30917,9 +30948,9 @@
                   },
                   {
                     "Length": 1.61999512,
-                    "NextFootholdId": 996,
-                    "PreviousFootholdId": 998,
-                    "groupID": 55,
+                    "NextFootholdId": 997,
+                    "PreviousFootholdId": 999,
+                    "groupID": 56,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -30932,7 +30963,7 @@
                       "inertiaOption": 0
                     },
                     "OwnerId": "90c978ab-8abb-48be-a22f-c1d269e31474",
-                    "Id": 997,
+                    "Id": 998,
                     "StartPoint": {
                       "x": 172.6353,
                       "y": 2.1017
@@ -30948,9 +30979,9 @@
                   },
                   {
                     "Length": 1.68000793,
-                    "NextFootholdId": 997,
+                    "NextFootholdId": 998,
                     "PreviousFootholdId": 0,
-                    "groupID": 55,
+                    "groupID": 56,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -30963,7 +30994,7 @@
                       "inertiaOption": 0
                     },
                     "OwnerId": "cc933178-7e98-4d63-9a31-fa8a5ef86dea",
-                    "Id": 998,
+                    "Id": 999,
                     "StartPoint": {
                       "x": 171.0181,
                       "y": 2.1056
@@ -30981,7 +31012,7 @@
                     "Length": 0.7700043,
                     "NextFootholdId": 0,
                     "PreviousFootholdId": 0,
-                    "groupID": 56,
+                    "groupID": 57,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -30994,7 +31025,7 @@
                       "inertiaOption": 0
                     },
                     "OwnerId": "cb5b5e36-72b0-41eb-9434-b76c44aa34a5",
-                    "Id": 999,
+                    "Id": 1000,
                     "StartPoint": {
                       "x": 192.5591,
                       "y": 0.7715
@@ -31012,37 +31043,6 @@
                     "Length": 0.769989,
                     "NextFootholdId": 0,
                     "PreviousFootholdId": 0,
-                    "groupID": 57,
-                    "layer": 1,
-                    "sortingLayerName": "MapLayer0",
-                    "attribute": {
-                      "walk": 1.0,
-                      "force": 0.0,
-                      "drag": 1.0,
-                      "isBlockVertical": false,
-                      "isDynamic": false,
-                      "isCustomFoothold": true,
-                      "inertiaOption": 0
-                    },
-                    "OwnerId": "795639a7-78f6-4638-b795-7d7252e092f6",
-                    "Id": 1000,
-                    "StartPoint": {
-                      "x": 193.4145,
-                      "y": 0.109
-                    },
-                    "EndPoint": {
-                      "x": 194.1845,
-                      "y": 0.109
-                    },
-                    "Variance": {
-                      "x": 1.0,
-                      "y": 0.0
-                    }
-                  },
-                  {
-                    "Length": 0.7700043,
-                    "NextFootholdId": 0,
-                    "PreviousFootholdId": 0,
                     "groupID": 58,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
@@ -31055,15 +31055,15 @@
                       "isCustomFoothold": true,
                       "inertiaOption": 0
                     },
-                    "OwnerId": "3fe76d12-38ef-460b-a820-fb048709ca7a",
+                    "OwnerId": "795639a7-78f6-4638-b795-7d7252e092f6",
                     "Id": 1001,
                     "StartPoint": {
-                      "x": 194.3414,
-                      "y": -0.5382
+                      "x": 193.4145,
+                      "y": 0.109
                     },
                     "EndPoint": {
-                      "x": 195.1114,
-                      "y": -0.5382
+                      "x": 194.1845,
+                      "y": 0.109
                     },
                     "Variance": {
                       "x": 1.0,
@@ -31086,15 +31086,15 @@
                       "isCustomFoothold": true,
                       "inertiaOption": 0
                     },
-                    "OwnerId": "f3c37d9b-10c4-49b1-831b-0296ec57688e",
+                    "OwnerId": "3fe76d12-38ef-460b-a820-fb048709ca7a",
                     "Id": 1002,
                     "StartPoint": {
-                      "x": 193.4315,
-                      "y": -1.4068
+                      "x": 194.3414,
+                      "y": -0.5382
                     },
                     "EndPoint": {
-                      "x": 194.2015,
-                      "y": -1.4068
+                      "x": 195.1114,
+                      "y": -0.5382
                     },
                     "Variance": {
                       "x": 1.0,
@@ -31117,8 +31117,39 @@
                       "isCustomFoothold": true,
                       "inertiaOption": 0
                     },
-                    "OwnerId": "d8467f03-1ad2-4fbc-bfc8-9e3e6510396c",
+                    "OwnerId": "f3c37d9b-10c4-49b1-831b-0296ec57688e",
                     "Id": 1003,
+                    "StartPoint": {
+                      "x": 193.4315,
+                      "y": -1.4068
+                    },
+                    "EndPoint": {
+                      "x": 194.2015,
+                      "y": -1.4068
+                    },
+                    "Variance": {
+                      "x": 1.0,
+                      "y": 0.0
+                    }
+                  },
+                  {
+                    "Length": 0.7700043,
+                    "NextFootholdId": 0,
+                    "PreviousFootholdId": 0,
+                    "groupID": 61,
+                    "layer": 1,
+                    "sortingLayerName": "MapLayer0",
+                    "attribute": {
+                      "walk": 1.0,
+                      "force": 0.0,
+                      "drag": 1.0,
+                      "isBlockVertical": false,
+                      "isDynamic": false,
+                      "isCustomFoothold": true,
+                      "inertiaOption": 0
+                    },
+                    "OwnerId": "d8467f03-1ad2-4fbc-bfc8-9e3e6510396c",
+                    "Id": 1004,
                     "StartPoint": {
                       "x": 194.3342,
                       "y": -2.0112
@@ -31136,7 +31167,7 @@
                     "Length": 0.769989,
                     "NextFootholdId": 0,
                     "PreviousFootholdId": 0,
-                    "groupID": 61,
+                    "groupID": 62,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
                     "attribute": {
@@ -31149,7 +31180,7 @@
                       "inertiaOption": 0
                     },
                     "OwnerId": "921f59db-afc8-4e64-8876-48350b78d52b",
-                    "Id": 1004,
+                    "Id": 1005,
                     "StartPoint": {
                       "x": 193.419,
                       "y": -2.7464
@@ -31167,37 +31198,6 @@
                     "Length": 0.7700043,
                     "NextFootholdId": 0,
                     "PreviousFootholdId": 0,
-                    "groupID": 62,
-                    "layer": 1,
-                    "sortingLayerName": "MapLayer0",
-                    "attribute": {
-                      "walk": 1.0,
-                      "force": 0.0,
-                      "drag": 1.0,
-                      "isBlockVertical": false,
-                      "isDynamic": false,
-                      "isCustomFoothold": true,
-                      "inertiaOption": 0
-                    },
-                    "OwnerId": "4c482c53-6ae7-473d-9e88-55a8e9a296dc",
-                    "Id": 1005,
-                    "StartPoint": {
-                      "x": 194.4041,
-                      "y": 0.7704
-                    },
-                    "EndPoint": {
-                      "x": 195.1741,
-                      "y": 0.7704
-                    },
-                    "Variance": {
-                      "x": 1.0,
-                      "y": 0.0
-                    }
-                  },
-                  {
-                    "Length": 0.7699529,
-                    "NextFootholdId": 0,
-                    "PreviousFootholdId": 0,
                     "groupID": 63,
                     "layer": 1,
                     "sortingLayerName": "MapLayer0",
@@ -31210,19 +31210,19 @@
                       "isCustomFoothold": true,
                       "inertiaOption": 0
                     },
-                    "OwnerId": "02722334-52c4-40c2-adcb-98ed5688dedc",
+                    "OwnerId": "4c482c53-6ae7-473d-9e88-55a8e9a296dc",
                     "Id": 1006,
                     "StartPoint": {
-                      "x": 134.1458,
-                      "y": -2.9089
+                      "x": 194.4041,
+                      "y": 0.7704
                     },
                     "EndPoint": {
-                      "x": 134.7442,
-                      "y": -3.3934
+                      "x": 195.1741,
+                      "y": 0.7704
                     },
                     "Variance": {
-                      "x": 0.7771955,
-                      "y": -0.629259169
+                      "x": 1.0,
+                      "y": 0.0
                     }
                   }
                 ]
@@ -96442,7 +96442,7 @@
               "@type": "MOD.Core.TransformComponent",
               "Position": {
                 "x": 0.9471,
-                "y": -4.9316,
+                "y": -4.8749,
                 "z": 0.0
               },
               "QuaternionRotation": {
@@ -96450,6 +96450,11 @@
                 "y": 0.0,
                 "z": 0.0,
                 "w": 1.0
+              },
+              "Scale": {
+                "x": 46.3828239,
+                "y": 6.55564547,
+                "z": 1.0
               },
               "Enable": true
             },
