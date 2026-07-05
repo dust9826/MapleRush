@@ -28,6 +28,11 @@ script SoundManager extends Logic
 	@HideFromInspector
 	property string pendingRuid = ""
 
+	-- 현재 재생 중(또는 시작 중)인 BGM RUID. 같은 곡을 다시 요청하면 재시작하지 않고 그대로 이어가기 위한 판정용(KeepBGM).
+	-- StartNewBgm에서 세팅, 완전 정지 시 "". 스토리 중반 BGM==타이틀 BGM일 때 컷씬 종료 후 매끄러운 연결에 사용.
+	@HideFromInspector
+	property string currentBgmRuid = ""
+
 	-- 사운드 키→RUID 맵. SoundTable.userdataset(=docs/sound.csv 이관)에서 시작 시 로드.
 	-- 사운드를 추가/교체하려면 CSV만 편집하면 됨(코드 수정 0). enabled=TRUE + RUID 있는 행만 등록.
 	@HideFromInspector
@@ -163,6 +168,7 @@ script SoundManager extends Logic
 		-- 새 곡을 마스터 볼륨 0 상태에서 '정상 볼륨'으로 재생 시작(트랙 실제 재생) → 이후 OnUpdate가 페이드인.
 		-- (PlayBGM에 볼륨 0을 넘기면 엔진이 트랙을 재생하지 않으므로 반드시 bgmVolume을 넘긴다.)
 		_SoundService:StopBGM(true)
+		self.currentBgmRuid = ruid                   -- 현재 곡 추적(KeepBGM 판정용)
 		self.fadeMul = 0.0
 		self:ApplyBgmVolume()                        -- SetBGMVolume(0): 시작 순간 무음
 		_SoundService:PlayBGM(ruid, self.bgmVolume)
@@ -181,6 +187,16 @@ script SoundManager extends Logic
 		-- 배경음 전환 요청(논블로킹). 재생 중이면 페이드아웃 예약(완료 후 pendingRuid 재생), 아니면 즉시 시작+페이드인.
 		-- 실제 램프는 OnUpdate가 프레임 단위로 진행 → 호출부(OnUpdate/RPC)를 절대 블로킹하지 않음.
 		if ruid == nil or ruid == "" then return end
+		-- ★KeepBGM: 요청한 곡이 지금 재생 중인 곡과 같으면 재시작하지 않고 그대로 이어간다(처음부터 재생/끊김 방지).
+		--   스토리 중반 BGM이 타이틀 BGM과 같은 경우, 컷씬 종료 후 타이틀 화면에서 같은 곡이 매끄럽게 이어짐.
+		if ruid == self.currentBgmRuid and _SoundService:IsPlayBGM() then
+			-- 같은 곡인데 마침 페이드아웃/정지가 예약돼 있었다면 취소하고 정상 볼륨으로 되돌린다(이어가기).
+			if self.fadePhase == "out" then
+				self.pendingRuid = ""
+				self.fadePhase = "in"
+			end
+			return
+		end
 		if _SoundService:IsPlayBGM() and self.BgmFadeOutTime > 0 then
 			self.pendingRuid = ruid
 			self.fadePhase = "out"      -- OnUpdate가 fadeMul을 0까지 낮춘 뒤 pendingRuid를 재생
@@ -199,6 +215,7 @@ script SoundManager extends Logic
 			_SoundService:StopBGM(true)
 			self.fadeMul = 1.0
 			self.fadePhase = ""
+			self.currentBgmRuid = ""
 		end
 	end
 
@@ -219,6 +236,7 @@ script SoundManager extends Logic
 				else
 					_SoundService:StopBGM(true)
 					self.fadePhase = ""            -- 재생할 곡 없음 → 정지
+					self.currentBgmRuid = ""
 				end
 			else
 				self:ApplyBgmVolume()
