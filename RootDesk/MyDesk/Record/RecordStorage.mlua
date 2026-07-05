@@ -15,6 +15,11 @@ script RecordStorage extends Logic
 	@Sync property SyncTable<string, number> StageBests
 
 	-- ===== 서버 전용 상태 =====
+	-- 최고기록 저장 키(버전 접미사). 저장된 기록을 전체 초기화하려면 이 접미사를 올린다(_v2 → _v3 …).
+	--   과거 키의 blob은 고아가 되고(파괴적 삭제 아님, 되돌리면 원복), 모든 유저가 다음 로드에서 '기록 없음'으로 새로 시작.
+	--   (2026-07-05 최고기록 데이터 초기화: user_best_record → _v2)
+	property string SaveKey = "user_best_record_v2"
+
 	property string ownerUserId = ""
 	property boolean loaded = false
 	property integer bestScore = 0
@@ -41,13 +46,13 @@ script RecordStorage extends Logic
 
 	@ExecSpace("ServerOnly")
 	method void LoadFor(string userId)
-		-- 유저 입장 시 1회 로드(캐시 우선, datastorage.md §4.1). blob 1키("user_best_record")로 저장.
+		-- 유저 입장 시 1회 로드(캐시 우선, datastorage.md §4.1). blob 1키(SaveKey)로 저장.
 		if self.loaded and self.ownerUserId == userId then return end
 		self.ownerUserId = userId
 		self:EnsureCache()
 		---@type UserDataStorage
 		local storage = _DataStorageService:GetUserDataStorage(userId)
-		local err, raw = storage:GetAndWait("user_best_record")
+		local err, raw = storage:GetAndWait(self.SaveKey)
 		if err == 0 and raw ~= nil and raw ~= "" then
 			local rec = _UtilLogic:StringToTable(raw)
 			if rec ~= nil then
@@ -242,7 +247,7 @@ script RecordStorage extends Logic
 		local blob = _UtilLogic:TableToString(rec)
 		---@type UserDataStorage
 		local storage = _DataStorageService:GetUserDataStorage(self.ownerUserId)
-		storage:SetAsync("user_best_record", blob, function(errorCode, value)
+		storage:SetAsync(self.SaveKey, blob, function(errorCode, value)
 			if errorCode ~= 0 then log_warning("[RecordStorage] save failed (err=" .. tostring(errorCode) .. ")") end
 		end)
 	end
