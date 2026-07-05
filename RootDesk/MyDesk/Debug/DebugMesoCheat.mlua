@@ -13,9 +13,9 @@ script DebugMesoCheat extends Logic
 
 	@ExecSpace("ClientOnly")
 	method void OnKeyDown(KeyDownEvent event)
-		-- M키 누르면 서버에 메소 +10 요청.
+		-- M키 누르면 서버에 메소 +10 요청. (임시 비활성화 — 되살리려면 아래 주석 해제)
 		if event.key == KeyboardKey.M then
-			self:RequestAddMeso()
+			-- self:RequestAddMeso()
 		end
 	end
 
