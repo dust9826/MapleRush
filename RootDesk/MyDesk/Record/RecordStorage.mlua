@@ -11,6 +11,8 @@ script RecordStorage extends Logic
 	@Sync property integer BestStageInFloor = 0     -- 해당 층 내 클리어한 일반 스테이지 수
 	@Sync property string BestPhase = ""            -- "normal" | "shop" | "boss_cleared"
 	@Sync property number BestTime = 0.0            -- 위 진행도 도달까지 최소 누적 시간(초)
+	-- 전 층 완주 최소 시간(초). 0 = 미완주. 랭킹 명세 §3.1의 개인 최고 기록이자 로비 '내 기록' 표시값.
+	@Sync property number BestClearTime = 0.0
 	-- 스테이지별 이전 최고 시간(HUD 이전기록 라인). key "floor-progress" -> 초.
 	@Sync property SyncTable<string, number> StageBests
 
@@ -31,13 +33,6 @@ script RecordStorage extends Logic
 
 	-- 인코딩 밴드 (기획서 §6.3). TIME_MAX = 10^8 센티초 상한.
 	property integer TIME_MAX = 100000000
-
-	-- ★ 리더보드 순위 재정의(2026-07-05): 순위 = 3층(전 층) 클리어타임 짧을수록 상위, 동타임이면 플레이 수 많을수록 상위.
-	--   미완주자는 완주자 전원보다 하위(플레이 수 순). 로컬 베스트 기록(층/진행도/시간, 자기경쟁 표시)은 종전 유지 — 리더보드 점수만 교체.
-	property number bestClearTime = 0.0                     -- 3층 전 층 클리어 최소 누적시간(초). 0 = 미완주.
-	property integer RANK_PLAY_MOD = 10000000              -- 플레이 수 하위 7자리(9,999,999로 클램프)
-	property integer RANK_TIME_UNIT = 10000000            -- 클리어타임 자리 배수(10^7)
-	property integer RANK_CLEAR_BASE = 10000000000000000  -- 완주 플래그 자리(10^16)
 
 	method void EnsureCache()
 		-- stageCache lazy 초기화(LoadFor가 OnBeginPlay보다 먼저 불려도 안전).
@@ -76,7 +71,7 @@ script RecordStorage extends Logic
 		self.BestPhase = ""
 		self.BestTime = 0.0
 		self.bestScore = 0
-		self.bestClearTime = 0.0
+		self.BestClearTime = 0.0
 		self.totalRuns = 0
 		self.stageCache = {}
 		-- StageBests(@Sync)는 세션 시작 시 비어 있고 로드는 유저당 1회 → 별도 clear 불필요(솔로 전제).
@@ -91,7 +86,7 @@ script RecordStorage extends Logic
 		self.BestStageInFloor = math.floor(tonumber(rec.maxStageInFloor) or 0)
 		self.BestPhase = tostring(rec.bestFloorPhase or "")
 		self.BestTime = tonumber(rec.bestTime) or 0.0
-		self.bestClearTime = tonumber(rec.bestClearTime) or 0.0
+		self.BestClearTime = tonumber(rec.bestClearTime) or 0.0
 		self.totalRuns = math.floor(tonumber(rec.totalRuns) or 0)
 		self.stageCache = {}
 		if rec.stageRecords ~= nil then
@@ -133,42 +128,22 @@ script RecordStorage extends Logic
 		return centis / 100.0
 	end
 
-	method integer EncodeRankScore(number clearTime, integer playCount)
-		-- ★ 리더보드 순위 점수(2026-07-05 재정의). 우선순위: 완주 > 클리어타임(짧을수록) > 플레이 수(많을수록).
-		--   자리 구성: [완주 10^16] + [(10^8 - centis) × 10^7] + [플레이 수 하위 7자리]. int64 안전(최대 ~1.1×10^16).
-		local play = playCount
-		if play < 0 then play = 0 end
-		if play > self.RANK_PLAY_MOD - 1 then play = self.RANK_PLAY_MOD - 1 end
-
-		if clearTime <= 0 then
-			-- 미완주: 완주 플래그 0 + 클리어타임 0 → 완주자 전원보다 하위. 플레이 수만으로 정렬.
-			return play
-		end
-
+	method integer EncodeRankScore(number clearTime)
+		-- ★ 리더보드 순위 점수(랭킹 명세 §3.2 재정의). 완주 시간 하나만으로 비교한다 — 플레이 수/콤보/처치 수 미반영.
+		--   SortableDataStorage는 내림차순 정렬이므로 (10^8 - 센티초)로 뒤집어 "짧을수록 큰 점수"로 만든다.
+		--   미완주(clearTime<=0)는 0을 반환하고 호출부가 제출을 건너뛴다(패키지도 score<=0은 목록에서 제외).
+		--   0.01초 단위 저장이라 완전히 같은 시간 = 완전히 같은 점수 → 패키지 RankMode=Rank가 공동 순위를 부여한다.
+		if clearTime <= 0 then return 0 end
 		local centis = math.floor(clearTime * 100)
 		if centis < 0 then centis = 0 end
 		if centis > self.TIME_MAX - 1 then centis = self.TIME_MAX - 1 end
-		local timePart = self.TIME_MAX - centis   -- 짧을수록 큰 값
-		return self.RANK_CLEAR_BASE + timePart * self.RANK_TIME_UNIT + play
-	end
-
-	method boolean RankHasClear(integer score)
-		-- 순위 점수가 3층(전 층) 완주를 포함하는지.
-		return score >= self.RANK_CLEAR_BASE
+		return self.TIME_MAX - centis
 	end
 
 	method number DecodeRankClearTime(integer score)
-		-- 순위 점수에서 클리어타임(초) 복원. 미완주면 -1.
-		if score < self.RANK_CLEAR_BASE then return -1.0 end
-		local rem = score - self.RANK_CLEAR_BASE
-		local timePart = rem // self.RANK_TIME_UNIT
-		local centis = self.TIME_MAX - timePart
-		return centis / 100.0
-	end
-
-	method integer DecodeRankPlayCount(integer score)
-		-- 순위 점수에서 플레이 수 복원.
-		return score % self.RANK_PLAY_MOD
+		-- 순위 점수에서 완주 시간(초) 복원(EncodeRankScore의 역). 유효하지 않은 점수면 -1.
+		if score <= 0 or score > self.TIME_MAX then return -1.0 end
+		return (self.TIME_MAX - score) / 100.0
 	end
 
 	@ExecSpace("ServerOnly")
@@ -185,8 +160,9 @@ script RecordStorage extends Logic
 
 	@ExecSpace("ServerOnly")
 	method boolean SubmitRun(integer floor, integer normalsCleared, boolean shopDone, boolean bossCleared, number elapsed)
-		-- 런 종료(사망/클리어) 시: ① 로컬 베스트 기록(층/진행도/시간) 갱신 — 자기경쟁 표시용(종전 유지).
-		--   ② 3층 클리어타임 최소값 갱신. ③ 리더보드 순위 점수(완주 > 클리어타임 > 플레이 수) 재계산·등록(§6.4).
+		-- 런 종료(사망/클리어) 시 로컬 기록 처리와 글로벌 제출을 분리한다(랭킹 명세 §6-1).
+		--   ① 로컬 베스트 기록(층/진행도/시간)은 미완주 런에서도 항상 갱신 — 자기경쟁 표시용.
+		--   ② 전 층 완주(fullClear)일 때만 BestClearTime 갱신 + 리더보드 제출. 게임 오버는 글로벌 랭킹에 남지 않는다.
 		--   반환값: 로컬 신기록이면 true.
 		self.totalRuns = self.totalRuns + 1
 
@@ -210,16 +186,19 @@ script RecordStorage extends Logic
 			log("[RecordStorage] NEW LOCAL RECORD floor=" .. tostring(floor) .. " prog=" .. tostring(progress) .. " time=" .. tostring(elapsed))
 		end
 
-		-- ② 전 층(3층) 클리어면 클리어타임 최소값 갱신. bossCleared=true는 최종 층 클리어에서만 전달됨(FloorManager.GameClear).
+		-- ② 전 층 완주만 글로벌 대상. bossCleared=true는 최종 층 클리어에서만 전달됨(FloorManager.GameClear).
 		local fullClear = bossCleared and floor >= _GameConstants.MaxFloors
-		if fullClear and (self.bestClearTime <= 0 or elapsed < self.bestClearTime) then
-			self.bestClearTime = elapsed
-			log("[RecordStorage] NEW BEST CLEAR TIME=" .. tostring(elapsed))
+		if fullClear then
+			if self.BestClearTime <= 0 or elapsed < self.BestClearTime then
+				self.BestClearTime = elapsed
+				log("[RecordStorage] NEW BEST CLEAR TIME=" .. tostring(elapsed))
+			end
+			-- 이번 런이 개인 베스트보다 느려도 현재 베스트로 제출한다(첫 제출이 ProfileCode 미확정 등으로 실패했던 경우 복구용).
+			--   SetScoreAndWait(force=false)가 기존 점수 이하는 무시하므로 중복 등록 비용은 없다.
+			self:SubmitToLeaderboard(self:EncodeRankScore(self.BestClearTime))
+		else
+			log("[RecordStorage] 미완주 런 — 글로벌 리더보드 제출 안 함 (floor=" .. tostring(floor) .. " boss=" .. tostring(bossCleared) .. ")")
 		end
-
-		-- ③ 리더보드 순위 점수 재계산·등록. 플레이 수(totalRuns)가 매 런 증가하므로 항상 등록한다.
-		local rankScore = self:EncodeRankScore(self.bestClearTime, self.totalRuns)
-		self:SubmitToLeaderboard(rankScore)
 
 		self:Persist()
 		return isNew
@@ -240,7 +219,7 @@ script RecordStorage extends Logic
 			bestFloorPhase = self.BestPhase,
 			bestTime = self.BestTime,
 			bestScore = self.bestScore,
-			bestClearTime = self.bestClearTime,
+			bestClearTime = self.BestClearTime,
 			totalRuns = self.totalRuns,
 			stageRecords = sr,
 		}
@@ -254,8 +233,12 @@ script RecordStorage extends Logic
 
 	@ExecSpace("ServerOnly")
 	method void SubmitToLeaderboard(integer score)
-		-- 글로벌 리더보드 등록(ranking-basic-package). score=EncodeRankScore(클리어타임, 플레이 수).
-		-- 매 런 호출되며 순위 점수는 단조 증가(플레이 수 +1)라 force=false로도 항상 갱신됨. tag=닉네임(§8.2 표시용).
+		-- 글로벌 리더보드 등록(ranking-basic-package). score=EncodeRankScore(완주 시간) — 전 층 완주 런에서만 호출된다.
+		-- force=false라 기존 점수보다 클 때(=더 빠른 완주)만 갱신된다. tag=닉네임(§3.3 목록 표시용).
+		if score <= 0 then
+			log_warning("[RecordStorage] leaderboard submit skipped — 완주 점수 아님(score=" .. tostring(score) .. ")")
+			return
+		end
 		if self.ownerUserId == "" then return end
 		if _RankingDataStorageLogic.IsInit == false then
 			log_warning("[RecordStorage] leaderboard not init — submit skipped")
@@ -298,27 +281,33 @@ script RecordStorage extends Logic
 			return
 		end
 		local cycleIndex = _RankingDataStorageLogic.ConfigData:GetCycleIndex(_DateTimeLogic:GetTimeElapsed())
-		-- 내 순위
+		-- 내 순위 — 미완주자는 애초에 리더보드에 등록되지 않으므로 조회해도 Rank=0(로비가 안내 문구로 처리).
+		--   BestClearTime은 싱글턴 소유자(ownerUserId)의 값이라 요청자와 다를 수 있다(MetaProgression의 senderUserId 가드와 동일 이슈).
+		--   따라서 '요청자 == 소유자'일 때만 미완주 조기 반환으로 DataStorage 조회를 아끼고, 그 외에는 정상 조회한다.
 		local myRank = 0
-		local myData = _RankingDataCacheLogic:GetMyRankingDataAndWait(profileCode, cycleIndex)
-		if myData ~= nil then myRank = myData.Rank end
-		-- 상위 topN → 표시용 행 문자열 배열(RPC는 table). 클리어타임·플레이 수는 score 디코드(EncodeRankScore 역).
+		local skipQuery = (senderUserId == self.ownerUserId) and self.BestClearTime <= 0
+		if skipQuery == false then
+			local myData = _RankingDataCacheLogic:GetMyRankingDataAndWait(profileCode, cycleIndex)
+			if myData ~= nil then myRank = myData.Rank end
+		end
+		-- 상위 topN → 표시용 행 문자열 배열(RPC는 table). 행은 "순위. 플레이어명   완주시간"만 담는다(§3.3).
 		local validPageNo = _RankingDataStorageLogic:GetValidPageNo(1, topN)
 		local list = _RankingDataStorageLogic:GetRankingDataList(validPageNo, topN)
 		local rows = {}
+		local rowCount = 0
 		for i = 1, #list do
 			---@type RankingData
 			local d = list[i]
-			local name = d.Tag
-			if name == nil or name == "" then name = "익명" end
-			local plays = self:DecodeRankPlayCount(d.Score)
-			if self:RankHasClear(d.Score) then
-				local timeStr = self:FormatBest(self:DecodeRankClearTime(d.Score))
-				rows[i] = tostring(d.Rank) .. ".  " .. name .. "   " .. timeStr .. "  (" .. tostring(plays) .. "판)"
-			else
-				rows[i] = tostring(d.Rank) .. ".  " .. name .. "   미완주  (" .. tostring(plays) .. "판)"
+			local clearTime = self:DecodeRankClearTime(d.Score)
+			-- 완주 점수로 디코드되지 않는 행(구 인코딩 잔존 데이터 등)은 목록에서 제외한다.
+			if clearTime >= 0 then
+				local name = d.Tag
+				if name == nil or name == "" then name = "익명" end
+				rowCount = rowCount + 1
+				rows[rowCount] = tostring(d.Rank) .. ".  " .. name .. "   " .. self:FormatBest(clearTime)
 			end
 		end
+		log("[RecordStorage] leaderboard rows=" .. tostring(rowCount) .. " myRank=" .. tostring(myRank) .. " myClear=" .. tostring(self.BestClearTime))
 		self:ClientReceiveLeaderboard(myRank, rows, senderUserId)
 	end
 

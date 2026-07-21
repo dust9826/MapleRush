@@ -26,10 +26,12 @@ script RankingDataStorageLogic extends Logic
 
 	method void InitAndWait()
 		local config = RankingConfigData()
-		-- ★ 리더보드 초기화(2026-07-05): board 키 "Ranking" → "Ranking2".
+		-- ★ 리더보드 초기화(2026-07-21): board 키 "Ranking2" → "Ranking3".
+		--   순위 점수 인코딩이 [완주 플래그+시간+플레이 수] → [완주 시간만]으로 바뀌어(RecordStorage.EncodeRankScore),
+		--   구 점수(10^16 자리)가 신 점수(10^8 자리)보다 항상 크게 정렬된다. 새 주기로 시작해야 완주 시간 순 정렬이 성립.
 		--   SortableDataStorage 이름이 바뀌어 기존 등록 점수는 고아가 되고(파괴적 삭제 아님, 키 되돌리면 원복),
-		--   전 유저가 빈 리더보드에서 새로 시작한다. 최고기록 저장키 초기화(user_best_record_v2)와 짝을 이룸.
-		config.Key = "Ranking2"
+		--   전 유저가 빈 리더보드에서 새로 시작한다.
+		config.Key = "Ranking3"
 		-- ★ 도입 수정: 주간(Week) → None. GetCycleIndex가 항상 1을 반환 → 단일 전체(비순환) 리더보드.
 		config.CycleEnum = _CycleEnum.None
 		config.ViewCount = 100
