@@ -1,7 +1,7 @@
 ---
 id: MR-AH
 title: 콤보 시스템 (DMC5식 스타일 랭크 D~SSS + 우측중앙 HUD)
-status: review
+status: done
 owner: D4LGONA
 area: mixed
 touches: [RootDesk/MyDesk/Combo/ComboManager.mlua, RootDesk/MyDesk/UI/ComboHud.mlua, RootDesk/MyDesk/Enemy/EnemyHealth.mlua, RootDesk/MyDesk/Enemy/Boss/GroggyGauge.mlua, RootDesk/MyDesk/Stage/StageManager.mlua, RootDesk/MyDesk/Stage/GameStateManager.mlua, RootDesk/MyDesk/Stage/FloorManager.mlua, RootDesk/MyDesk/Sound/SoundTable.csv, ui/HUD.ui]
@@ -46,6 +46,22 @@ updated: 2026-07-24
 - TEST-L ESC(서버 게임시계 정지) 2초: 11.464 → 11.464, 재개 1초 후 10.454
 - TEST-M 클라 미러 5.102 → 4.087(1초), HUD 실엔티티 `enable=true grade='D' kills='2 KILLS' fill=0.341`
 - 미검증(수동): 실제 화면 스크린샷(연출 룩앤필). 로직·바인딩·값 반영은 전부 로그로 확인됨.
+
+## 리뷰에서 잡은 버그 (PR #100, 410ba6a)
+`Count`와 `LastEvent`가 별개 @Sync라 클라 도착 순서가 보장되지 않는다. 실측 결과 `Count`(0)가 먼저 와서
+`ComboHud.OnUpdate`가 그 프레임에 패널을 꺼버렸고, 뒤늦게 온 하락 이벤트의 문구가 화면에 영영 안 보였다
+(+ `eventText` 영구 잔류 → 다음 콤보 시작 시 지난 문구가 스쳐 보임).
+→ **완전 해제 케이스에서 `COMBO DOWN`/`STYLE DOWN`이 전혀 동작하지 않던 상태.** 한 단계 하락은 정상이었다.
+
+수정: `count<=0` 프레임에 즉시 숨기지 않고 문구 표시 시간만큼 대기 후 페이드아웃 + `HidePanel()`에서 잔류 문구 정리.
+실측: `0.60~1.60s enable=true event='COMBO DOWN'` → `1.80s alpha=0.91` → `2.20s enable=false event=''`.
+
+**교훈**: 서로 다른 @Sync 프로퍼티에 걸친 클라 연출은 도착 순서를 가정하면 안 된다.
+값(Count)과 연출 트리거(LastEvent)가 분리돼 있으면, 값 쪽 분기가 연출을 앞질러 지워버릴 수 있다.
+
+## 후속 후보 (비차단)
+- `ComboHud.gaugeTrack` 바인딩 미사용 — 트랙 색 동적 변경 계획 없으면 정리
+- 콤보 효과음 RUID 확보 시 `SoundTable.csv`의 `sfx_combo_up` / `_up_high` / `_down` 채우기 (코드 수정 0)
 
 ## Notes / decisions
 - **시계**: `WallClock:ServerNow()` 기반 스냅샷 차분(만료시각 `expireAt`). ESC 일시정지는 WallClock이 서버 시계를 얼리므로 자동 처리 — 별도 훅 불필요.
