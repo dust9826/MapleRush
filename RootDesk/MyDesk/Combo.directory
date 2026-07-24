@@ -1,0 +1,23 @@
+{
+  "Id": "",
+  "GameId": "",
+  "EntryKey": "directory://be61f6cb44d344568ba8709d41ba04e7",
+  "ContentType": "x-mod/directory",
+  "Content": "",
+  "Usage": 0,
+  "UsePublish": 1,
+  "UseService": 0,
+  "CoreVersion": "26.5.0.0",
+  "StudioVersion": "",
+  "DynamicLoading": 0,
+  "ContentProto": {
+    "Use": "Json",
+    "Json": {
+      "entry_id": "directory://be61f6cb44d344568ba8709d41ba04e7",
+      "name": "Combo",
+      "lock": false,
+      "folding": false,
+      "nameEditable": true
+    }
+  }
+}

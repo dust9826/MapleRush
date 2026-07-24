@@ -1,0 +1,272 @@
+@Logic
+script ComboManager extends Logic
+
+	-- 콤보(스타일 랭크) 상태머신. 기획서: docs/MapleRush_Combo_doc.md
+	-- 서버 권위 — 처치/그로기 판정, 등급, 잔여시간을 전부 서버가 관리하고 HUD는 표시만 한다.
+	-- 시계는 WallClock:ServerNow()(ESC 일시정지가 자동 제외되는 게임시계) 위에 얹고,
+	-- 비전투 구간(상점/보상/노드/맵전환/사망~재개)은 _RunTimer.Active 게이팅으로 정지시킨다.
+	-- ⛔ delta 누산 금지 — 만료시각(expireAt) 스냅샷 차분만 사용.
+	-- ⚠ 콤보는 표시 전용이다. 공격력·재화·드롭·랭킹 어디에도 반영하지 않는다(기획서 §1, §9).
+
+	-- ===== 튜닝 값 (기획서 §3: 플레이테스트에서 이 두 종류만 우선 조정) =====
+	property number ComboDuration = 12.0
+
+	property integer ThresholdD = 2
+
+	property integer ThresholdC = 5
+
+	property integer ThresholdB = 10
+
+	property integer ThresholdA = 17
+
+	property integer ThresholdS = 25
+
+	property integer ThresholdSS = 40
+
+	property integer ThresholdSSS = 70
+
+	-- ===== 표시 상태 (@Sync) =====
+	-- 연속 처치 수. 첫 처치(1)부터 누적되지만 등급 표시는 D(2)부터.
+	@Sync
+	property integer Count = 0
+
+	-- 콤보 등급 인덱스. 0=무등급 / 1=D / 2=C / 3=B / 4=A / 5=S / 6=SS / 7=SSS.
+	@Sync
+	property integer Grade = 0
+
+	-- 마지막 동기화 시점의 잔여시간(초). 클라는 여기서부터 자기 시계로 미러한다.
+	@Sync
+	property number RemainingAtSync = 0.0
+
+	-- 잔여시간이 실제로 감소 중인지(전투 활성 & 런 진행 중).
+	@Sync
+	property boolean Ticking = false
+
+	-- 1회성 연출 트리거. "종류|등급|시리얼" 문자열 — 시리얼이 매번 바뀌므로 같은 연출도 확실히 재동기화된다.
+	-- 종류: up(등급상승) / downtime(시간 하락) / downdeath(사망 하락) / reset(런 종료 초기화).
+	@Sync
+	property string LastEvent = ""
+
+	-- ===== 서버 내부 상태 =====
+	-- Ticking 중일 때의 만료 시각(ServerNow 기준).
+	@HideFromInspector property number expireAt = -999.0
+
+	-- Ticking이 꺼져 있을 때 보존된 잔여시간(초).
+	@HideFromInspector property number remaining = 0.0
+
+	-- 연출 이벤트 시리얼(중복 문자열 방지용).
+	@HideFromInspector property integer eventSerial = 0
+
+	-- ===== 클라 내부 상태 =====
+	-- 서버 상태를 받은 시점의 클라 게임시계 스냅샷(라이브 게이지 미러용).
+	@HideFromInspector property number clientSegStart = 0.0
+
+	-- 클라: HUD 컨트롤러 참조 (ComboHud가 OnBeginPlay에서 등록).
+	@HideFromInspector property any hud = nil
+
+	method integer Threshold(integer grade)
+		-- 등급 인덱스 → 필요 연속 처치 수. 무등급(0)은 0.
+		if grade == 1 then return self.ThresholdD end
+		if grade == 2 then return self.ThresholdC end
+		if grade == 3 then return self.ThresholdB end
+		if grade == 4 then return self.ThresholdA end
+		if grade == 5 then return self.ThresholdS end
+		if grade == 6 then return self.ThresholdSS end
+		if grade == 7 then return self.ThresholdSSS end
+		return 0
+	end
+
+	method string GradeName(integer grade)
+		-- 등급 인덱스 → HUD 표기 문자열. 무등급은 "".
+		if grade == 1 then return "D" end
+		if grade == 2 then return "C" end
+		if grade == 3 then return "B" end
+		if grade == 4 then return "A" end
+		if grade == 5 then return "S" end
+		if grade == 6 then return "SS" end
+		if grade == 7 then return "SSS" end
+		return ""
+	end
+
+	method integer GradeForCount(integer count)
+		-- 연속 처치 수 → 등급 인덱스. SSS 도달 이후에는 처치 수만 늘고 등급은 SSS 유지(기획서 §3).
+		local g = 0
+		for i = 1, 7 do
+			if count >= self:Threshold(i) then g = i end
+		end
+		return g
+	end
+
+	@ExecSpace("ServerOnly")
+	method number ServerRemaining()
+		-- 현재 잔여시간(초). Ticking 중이면 만료시각과의 차분, 아니면 보존값.
+		if self.Ticking then
+			local r = self.expireAt - _WallClock:ServerNow()
+			if r < 0 then r = 0 end
+			return r
+		end
+		return self.remaining
+	end
+
+	@ExecSpace("ServerOnly")
+	method void Publish()
+		-- 현재 잔여시간을 클라로 동기화(클라는 Count/Ticking/RemainingAtSync 변화 시 세그먼트를 다시 스냅샷한다).
+		self.RemainingAtSync = self:ServerRemaining()
+	end
+
+	@ExecSpace("ServerOnly")
+	method void SetTicking(boolean on)
+		-- 감소 on/off. 끌 때는 남은 시간을 보존하고, 켤 때는 보존값으로 만료시각을 다시 잡는다(정지 직전부터 이어감).
+		if on == self.Ticking then return end
+		if on then
+			self.expireAt = _WallClock:ServerNow() + self.remaining
+			self.Ticking = true
+		else
+			self.remaining = self:ServerRemaining()
+			self.Ticking = false
+		end
+		self:Publish()
+	end
+
+	@ExecSpace("ServerOnly")
+	method void Refresh()
+		-- 잔여시간을 기본 지속시간(12초)으로 갱신.
+		self.remaining = self.ComboDuration
+		if self.Ticking then self.expireAt = _WallClock:ServerNow() + self.ComboDuration end
+	end
+
+	@ExecSpace("ServerOnly")
+	method void FireEvent(string kind, integer grade)
+		-- 1회성 연출 트리거를 클라로 전달(문자열 1개로 묶어 동기화 순서 문제 제거).
+		self.eventSerial += 1
+		self.LastEvent = kind .. "|" .. tostring(grade) .. "|" .. tostring(self.eventSerial)
+	end
+
+	method void OnUpdate(number delta)
+		-- 서버: (1) 전투 활성 여부에 따라 감소 on/off, (2) 잔여시간 소진 시 한 단계 하락.
+		if self:IsServer() == false then return end
+		-- 전투 활성 = 런 진행 중 + RunTimer 누적 중. RunTimer.Active는 이미
+		-- "전투 스테이지 진입=true / 클리어·사망·상점·보상·맵전환=false"로 배선돼 기획서 §5 정지 목록과 일치한다.
+		local want = _RunTimer.Running and _RunTimer.Active
+		if want ~= self.Ticking then self:SetTicking(want) end
+		if self.Count <= 0 then return end
+		if self.Ticking == false then return end
+		if _WallClock:ServerNow() >= self.expireAt then
+			self:Demote("downtime")
+		end
+	end
+
+	@ExecSpace("ServerOnly")
+	method void OnEnemyKilled(string enemyKind)
+		-- 일반 적 사망 확정 시 +1 (EnemyHealth.Die에서 1회만 호출 — 다단히트/광역 중복집계 없음).
+		-- 보스 처치는 콤보 대상이 아니다(기획서 §4.1: 보스 기여는 그로기 진입뿐).
+		if enemyKind == "boss" then return end
+		self:AddCombo("kill")
+	end
+
+	@ExecSpace("ServerOnly")
+	method void OnBossGroggy()
+		-- 보스가 그로기 상태에 "새로 진입"할 때마다 +1 (기획서 §4.5/4.6).
+		self:AddCombo("groggy")
+	end
+
+	@ExecSpace("ServerOnly")
+	method void AddCombo(string source)
+		-- 연속 처치 수 +1 + 잔여시간 12초 갱신 + 등급 상승 판정. 런 진행 중이 아니면 무시(로비/튜토리얼).
+		if _GameStateManager.RunActive == false then return end
+		self.Count += 1
+		self:Refresh()
+		local g = self:GradeForCount(self.Count)
+		if g > self.Grade then
+			self.Grade = g
+			self:FireEvent("up", g)
+			log("[ComboManager] GRADE UP -> " .. self:GradeName(g) .. " (count=" .. tostring(self.Count) .. ", src=" .. source .. ")")
+		else
+			log("[ComboManager] +1 (" .. source .. ") count=" .. tostring(self.Count) .. " grade=" .. self:GradeName(self.Grade))
+		end
+		self:Publish()
+	end
+
+	@ExecSpace("ServerOnly")
+	method void OnPlayerDeath()
+		-- 사망 시 한 단계 하락. D 또는 무등급이면 완전 해제(기획서 §6).
+		if self.Count <= 0 and self.Grade <= 0 then return end
+		self:Demote("downdeath")
+	end
+
+	@ExecSpace("ServerOnly")
+	method void Demote(string kind)
+		-- 한 단계 하락 공통 처리: 등급 -1 + 처치 수를 새 등급 최소값으로 + 잔여시간 12초 재설정.
+		-- D(1) 또는 무등급(0)에서의 하락은 완전 초기화(기획서 §5/§6).
+		if self.Grade <= 1 then
+			log("[ComboManager] COMBO CLEARED (" .. kind .. ") — grade was " .. self:GradeName(self.Grade))
+			self.Count = 0
+			self.Grade = 0
+			self.remaining = 0
+			self.expireAt = -999.0
+			self:Publish()
+			self:FireEvent(kind, 0)
+			return
+		end
+		local ng = self.Grade - 1
+		self.Grade = ng
+		self.Count = self:Threshold(ng)
+		self:Refresh()
+		self:Publish()
+		self:FireEvent(kind, ng)
+		log("[ComboManager] DEMOTE (" .. kind .. ") -> " .. self:GradeName(ng) .. " (count=" .. tostring(self.Count) .. ")")
+	end
+
+	@ExecSpace("ServerOnly")
+	method void ResetAll()
+		-- 런 종료/시작 시 완전 초기화. 다음 런으로 이어지지 않으며 영구 저장하지 않는다(기획서 §6).
+		local had = self.Count > 0 or self.Grade > 0
+		self.Count = 0
+		self.Grade = 0
+		self.remaining = 0
+		self.expireAt = -999.0
+		self.Ticking = false
+		self:Publish()
+		if had then self:FireEvent("reset", 0) end
+		log("[ComboManager] reset (run boundary)")
+	end
+
+	method number ClientRemaining()
+		-- 클라 HUD 표시용 잔여시간(초). Ticking 세그먼트는 클라 WallClock:Now()로 미러(ESC 정지 자동 제외).
+		if self.Ticking then
+			local r = self.RemainingAtSync - (_WallClock:Now() - self.clientSegStart)
+			if r < 0 then r = 0 end
+			return r
+		end
+		return self.RemainingAtSync
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnSyncProperty(string name, any value)
+		-- 표시 상태가 바뀔 때마다 클라 세그먼트 기준점을 다시 잡고, 연출 이벤트는 HUD로 전달.
+		if name == "Count" or name == "Ticking" or name == "RemainingAtSync" then
+			self.clientSegStart = _WallClock:Now()
+			return
+		end
+		if name == "LastEvent" then
+			self:DispatchEvent()
+		end
+	end
+
+	@ExecSpace("ClientOnly")
+	method void DispatchEvent()
+		-- "종류|등급|시리얼" 파싱 후 HUD 연출 호출. HUD 미등록이면 무시(로그만).
+		if self.LastEvent == "" then return end
+		local kind = string.match(self.LastEvent, "^([^|]+)|")
+		local gradeStr = string.match(self.LastEvent, "^[^|]+|([^|]+)|")
+		if kind == nil or gradeStr == nil then return end
+		local grade = tonumber(gradeStr)
+		if grade == nil then grade = 0 end
+		if self.hud == nil or isvalid(self.hud) == false then
+			log("[ComboManager] combo event '" .. kind .. "' but HUD not registered")
+			return
+		end
+		self.hud:OnComboEvent(kind, grade)
+	end
+
+end

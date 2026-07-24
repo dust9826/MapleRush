@@ -51,3 +51,6 @@ sfx_item_rock,sfx,a95d1bf786f14216abae27c52bafe749,TRUE,wired:PlayerItems,아이
 sfx_item_smoke,sfx,ad63f4c64f304b6c876fb68511addb87,TRUE,wired:PlayerItems,아이템 - 연막
 sfx_item_flash,sfx,ccf258b8a89942a1b93e4e4f1a2932ad,TRUE,wired:PlayerItems,아이템 - 섬광
 sfx_jumppad,sfx,5b84bbcf3b9f4c9b945d16775e65df5e,TRUE,wired:Spring,점프대 사용
+sfx_combo_up,sfx,,FALSE,wired:ComboHud,콤보 등급 상승(D~S) - RUID 미확보(무음)
+sfx_combo_up_high,sfx,,FALSE,wired:ComboHud,콤보 등급 상승(SS/SSS 고유음) - RUID 미확보(무음)
+sfx_combo_down,sfx,,FALSE,wired:ComboHud,콤보 등급 하락(사망/시간소진) - RUID 미확보(무음)

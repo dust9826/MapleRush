@@ -554,6 +554,8 @@ script StageManager extends Logic
 		_GameStateManager.RunActive = false
 		-- 런 포기: 타이머만 정지(기록 미제출 — 사망/클리어만 기록, 기획서 §4.3).
 		_RunTimer:StopRun()
+		-- 런 포기도 런 종료 → 콤보 초기화.
+		_ComboManager:ResetAll()
 		local map = self:GetMap()
 		if map ~= nil and isvalid(map) then
 			local enemies = map:GetChildComponentsByTypeName("script.EnemyHealth", true)
@@ -754,6 +756,9 @@ script StageManager extends Logic
 		if self.StageActive == false then return end
 		-- 사망 순간 런 타이머 정지(부활 페이드 동안 미누적; 부활 시 ResetStage가 재활성).
 		_RunTimer:SetActive(false)
+		-- 콤보 한 단계 하락(D/무등급이면 해제). 잔여시간은 12초로 재설정되고,
+		-- 감소는 RunTimer.Active 게이팅에 의해 전투 재개 시점부터 다시 흐른다 (combo_doc §6).
+		_ComboManager:OnPlayerDeath()
 		-- 사망(회귀) 효과음 — 죽은 플레이어 클라에서 1회 재생 (목숨 잔여 무관).
 		local deadPc = player.PlayerComponent
 		if deadPc ~= nil then self:ClientPlayerDeathSfx(deadPc.UserId) end
@@ -808,6 +813,8 @@ script StageManager extends Logic
 		_GameStateManager.RunActive = false
 		-- 런 타이머 종료 + 베스트 기록 판정/저장/리더보드 등록(사망 종료 → bossCleared=false).
 		local runTime = _RunTimer:StopRun()
+		-- 런 종료 → 콤보 전량 초기화(다음 런으로 이어지지 않음, 영구저장 없음 — combo_doc §6).
+		_ComboManager:ResetAll()
 		_RecordStorage:SubmitRun(_GameStateManager.CurrentFloor, _FloorManager.NormalsClearedThisFloor, _FloorManager.ShopDoneThisFloor, false, runTime)
 		local score = _GameStateManager.NormalClears + _GameStateManager.BossClears * 3
 		_MetaProgression:AwardScore(score)

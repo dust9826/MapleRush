@@ -73,6 +73,9 @@ script GroggyGauge extends Component
 			self.IsGroggy = true
 			self.groggyEndAt = _WallClock:ServerNow() + _GameConstants.GroggyDuration
 			self:PlayGroggySfx()
+			-- 콤보 +1: 그로기 "새 진입" 1회만. 위 `if self.IsGroggy then return end` 가드 덕분에
+			-- 같은 그로기 구간의 반복 충전/이벤트는 여기 도달하지 않는다 (combo_doc §4.5/4.6).
+			_ComboManager:OnBossGroggy()
 			log("[GroggyGauge] *** GROGGY TRIGGERED *** (" .. tostring(_GameConstants.GroggyDuration) .. "s)")
 		end
 	end
