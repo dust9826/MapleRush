@@ -42,6 +42,8 @@ script GameStateManager extends Logic
 		self.CurrentLives = self.MaxLives
 		self.AttackStat = _PlayerConfig.BaseAttack + _MetaProgression:GetBonusAttack()
 		self.RunActive = true
+		-- 새 런 시작 → 콤보 상태 초기화(이전 런의 등급/처치수가 새 런으로 새는 것 방지 — combo_doc §6).
+		_ComboManager:ResetAll()
 		log("[GameStateManager] run started: lives=" .. tostring(self.CurrentLives) .. " ATK=" .. tostring(self.AttackStat) .. " (meta bonus lives+" .. tostring(_MetaProgression:GetBonusLives()) .. " atk+" .. tostring(_MetaProgression:GetBonusAttack()) .. ")")
 	end
 

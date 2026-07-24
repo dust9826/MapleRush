@@ -342,6 +342,8 @@ script FloorManager extends Logic
 		_GameStateManager.RunActive = false
 		-- 런 타이머 종료 + 베스트 기록(최종 클리어 → bossCleared=true = 전 층 클리어).
 		local runTime = _RunTimer:StopRun()
+		-- 런 종료 → 콤보 전량 초기화 (combo_doc §6).
+		_ComboManager:ResetAll()
 		_RecordStorage:SubmitRun(_GameStateManager.CurrentFloor, self.NormalsClearedThisFloor, self.ShopDoneThisFloor, true, runTime)
 		local score = _GameStateManager.NormalClears + _GameStateManager.BossClears * 3
 		log("[FloorManager] GAME CLEAR! score=" .. tostring(score))

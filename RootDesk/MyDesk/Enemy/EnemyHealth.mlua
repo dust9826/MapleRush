@@ -88,6 +88,9 @@ script EnemyHealth extends Component
 		self.IsDead = true
 		log("[EnemyHealth] " .. self.Entity.Name .. " died (killed by " .. source .. ")")
 		_StageManager:OnEnemyKilled(self.EnemyKind)
+		-- 콤보 집계: 사망 "확정" 시점 1회만(위 IsDead 가드가 보장) → 다단히트/광역 중복집계 없음.
+		--   보스는 내부에서 제외된다(보스 기여는 그로기 진입뿐 — combo_doc §4.1).
+		_ComboManager:OnEnemyKilled(self.EnemyKind)
 		-- 튜토리얼 전멸 카운트 (튜토리얼 중이 아니면 내부에서 무시).
 		_TutorialManager:NotifyEnemyKilled()
 		-- 보스 사망음 (테마 보스별 sfx_boss_<kind>_death).

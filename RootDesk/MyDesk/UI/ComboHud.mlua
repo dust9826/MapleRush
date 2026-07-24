@@ -1,0 +1,306 @@
+@Component
+script ComboHud extends Component
+
+	-- 콤보 HUD (화면 우측 중앙 세로형). 기획서: docs/MapleRush_Combo_doc.md §7
+	-- 표시 전용 — 서버 권위 상태(_ComboManager)를 읽기만 하고 아무 것도 되돌려 쓰지 않는다.
+	-- 시계는 _WallClock:Now()(클라 게임시계) → 상점/보상/ESC 정지 구간에서 게이지·연출이 함께 멈춘다.
+
+	-- 콤보 패널 루트 (등급/처치수/게이지/이벤트문구를 통째로 켜고 끔).
+	property Entity comboPanel = "c408c35c-0937-4fbe-89e8-0fcba54e7c74"
+
+	-- 패널 전체 투명도 (완전 초기화 시 페이드아웃).
+	property CanvasGroupComponent comboCanvas = "c408c35c-0937-4fbe-89e8-0fcba54e7c74"
+
+	-- 패널 스케일 (등급 상승 반동 / 소멸 축소).
+	property UITransformComponent panelTransform = "c408c35c-0937-4fbe-89e8-0fcba54e7c74"
+
+	property TextComponent gradeText = "d883e67a-e8ed-4dc6-9fb4-d4e895d834da"
+
+	property TextComponent killsText = "8428624d-3518-4074-9151-a69b16e72c87"
+
+	property SpriteGUIRendererComponent gaugeTrack = "f215f8f8-4800-44d7-aef2-abc29660f617"
+
+	property SpriteGUIRendererComponent gaugeFill = "8e8156ae-e3cd-4928-9e40-4c3b11031573"
+
+	property TextComponent eventText = "1aa1ab5d-bc7c-43d0-b57f-a78cfd38770e"
+
+	-- 등급 상승 반동(확대→복귀) 길이(초).
+	property number PunchDuration = 0.28
+
+	-- 상승/하락 문구 표시 길이(초).
+	property number EventDuration = 1.2
+
+	-- 완전 초기화 시 축소·페이드아웃 길이(초).
+	property number FadeDuration = 0.35
+
+	-- 잔여시간 경고 임계(비율). 이하에서 게이지에만 색 변화·펄스.
+	property number WarnRatio = 0.25
+
+	-- 등급 문구 테두리 두께(px). 큰 글자 윤곽용 — 기본 1px.
+	property number GradeOutlineWidth = 1.0
+
+	-- 등급 문구 테두리 색(D~S 공통). SS/SSS는 GradeGlow 색으로 대체된다.
+	property Color GradeOutlineColor = Color(0.05, 0.06, 0.09, 1)
+
+	@HideFromInspector property number punchStart = -999.0
+
+	@HideFromInspector property number eventStart = -999.0
+
+	@HideFromInspector property number fadeStart = -999.0
+
+	@HideFromInspector property boolean fading = false
+
+	-- 해제 문구를 다 보여 준 뒤 페이드아웃을 시작할 게임시각. -999=예약 없음.
+	@HideFromInspector property number pendingFadeAt = -999.0
+
+	@ExecSpace("ClientOnly")
+	method void OnBeginPlay()
+		-- 콤보 매니저에 HUD 등록(연출 이벤트 수신) + 패널 기본 숨김.
+		_ComboManager.hud = self
+		if isvalid(self.comboPanel) then self.comboPanel.Enable = false end
+		if isvalid(self.eventText) then self.eventText.Text = "" end
+		log("[ComboHud] OnBeginPlay: registered to ComboManager")
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnEndPlay()
+		-- 등록 해제 (맵 언로드 시 죽은 참조 방지).
+		if _ComboManager.hud == self then _ComboManager.hud = nil end
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnUpdate(number delta)
+		-- 서버 상태 폴링 → 등급/처치수/게이지 갱신 + 반동·페이드아웃 진행.
+		if isvalid(self.comboPanel) == false then return end
+		local now = _WallClock:Now()
+		local count = _ComboManager.Count
+
+		-- 페이드아웃 중(또는 예약 중) 새 콤보가 시작되면 즉시 취소하고 되살린다.
+		if count > 0 then
+			if self.fading then
+				self.fading = false
+				self:ApplyAlpha(1.0)
+			end
+			self.pendingFadeAt = -999.0
+		end
+
+		if self.fading then
+			local t = (now - self.fadeStart) / self.FadeDuration
+			if t >= 1.0 then
+				self.fading = false
+				self:HidePanel()
+				return
+			end
+			self:ApplyAlpha(1.0 - t)
+			self:ApplyScale(1.0 - 0.25 * t)
+			return
+		end
+
+		if count <= 0 then
+			-- 표시할 콤보 없음. 단, 해제 문구(COMBO/STYLE DOWN)를 다 보여 준 뒤에 축소·페이드아웃한다.
+			if self.comboPanel.Enable == false then return end
+			-- ★Count와 LastEvent는 별개 @Sync라 도착 순서가 보장되지 않는다. 실측 결과 Count가 먼저 와서,
+			--   여기서 즉시 숨겨 버리면 뒤늦게 도착한 하락 이벤트가 문구를 띄워도 화면엔 영영 안 보인다
+			--   (BeginFade도 Enable=false라 무시됨). → 문구 표시 시간만큼 기다렸다가 페이드아웃한다.
+			--   Count가 0이 되는 경로(Demote 완전해제 / ResetAll)는 항상 이벤트를 함께 쏘므로 이 대기는 낭비되지 않는다.
+			if self.pendingFadeAt <= 0 then
+				self.pendingFadeAt = now + self.EventDuration
+			end
+			if now < self.pendingFadeAt then
+				self:UpdateGrade(0)
+				self:UpdateKills(0)
+				self:UpdateGauge(now)
+				self:UpdateEventText(now)
+				return
+			end
+			self.pendingFadeAt = -999.0
+			self:BeginFade(now)
+			return
+		end
+
+		if self.comboPanel.Enable == false then
+			self.comboPanel.Enable = true
+			self:ApplyAlpha(1.0)
+			self:ApplyScale(1.0)
+		end
+
+		self:UpdateGrade(_ComboManager.Grade)
+		self:UpdateKills(count)
+		self:UpdateGauge(now)
+		self:UpdatePunch(now)
+		self:UpdateEventText(now)
+	end
+
+	@ExecSpace("ClientOnly")
+	method void UpdateGrade(integer grade)
+		-- 등급 문구: D(1) 이상에서만 표시. SS/SSS는 더 강한 색 + 광원(아웃라인)으로 구분.
+		if isvalid(self.gradeText) == false then return end
+		if grade <= 0 then
+			self.gradeText.Text = ""
+			return
+		end
+		self.gradeText.Text = _ComboManager:GradeName(grade)
+		self.gradeText.FontColor = self:GradeColor(grade)
+		-- 등급 문구는 항상 1px 테두리. 밝은 배경/이펙트 위에서도 글자 윤곽이 살아난다.
+		-- SS/SSS만 테두리 색을 광원색으로 바꿔 §7의 "더 강한 색상과 광원" 구분을 유지(두께는 동일 1px).
+		self.gradeText.UseOutLine = true
+		self.gradeText.OutlineWidth = self.GradeOutlineWidth
+		if grade >= 6 then
+			self.gradeText.OutlineColor = self:GradeGlow(grade)
+		else
+			self.gradeText.OutlineColor = self.GradeOutlineColor
+		end
+	end
+
+	@ExecSpace("ClientOnly")
+	method void UpdateKills(integer count)
+		-- 연속 처치 수: 첫 처치 후부터 `N KILLS`.
+		if isvalid(self.killsText) == false then return end
+		self.killsText.Text = tostring(count) .. " KILLS"
+	end
+
+	@ExecSpace("ClientOnly")
+	method void UpdateGauge(number now)
+		-- 잔여시간 게이지. 25% 이하에서만 게이지 색 변화 + 약한 펄스(등급 문구는 점멸시키지 않는다).
+		if isvalid(self.gaugeFill) == false then return end
+		local dur = _ComboManager.ComboDuration
+		local ratio = 0.0
+		if dur > 0 then ratio = _ComboManager:ClientRemaining() / dur end
+		if ratio < 0 then ratio = 0 elseif ratio > 1 then ratio = 1 end
+		self.gaugeFill.FillAmount = ratio
+		if ratio <= self.WarnRatio then
+			-- 약한 펄스: 경고색↔밝은 경고색 사이를 부드럽게 오간다(게임시계 기준 — 정지 구간에선 멈춤).
+			local p = 0.5 + 0.5 * math.sin(now * 9.0)
+			self.gaugeFill.Color = Color(0.95, 0.30 + 0.25 * p, 0.20, 1)
+		else
+			self.gaugeFill.Color = Color(0.98, 0.78, 0.22, 1)
+		end
+	end
+
+	@ExecSpace("ClientOnly")
+	method void UpdatePunch(number now)
+		-- 등급 상승 반동: 확대 후 빠르게 1.0으로 복귀(1회성).
+		local t = (now - self.punchStart) / self.PunchDuration
+		if t < 0 or t >= 1.0 then
+			self:ApplyScale(1.0)
+			return
+		end
+		local k = 1.0 - t
+		self:ApplyScale(1.0 + 0.35 * k * k)
+	end
+
+	@ExecSpace("ClientOnly")
+	method void UpdateEventText(number now)
+		-- 상승/하락 문구 만료 처리.
+		if isvalid(self.eventText) == false then return end
+		if self.eventText.Text == "" then return end
+		if now - self.eventStart >= self.EventDuration then
+			self.eventText.Text = ""
+		end
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnComboEvent(string kind, integer grade)
+		-- ComboManager가 서버 이벤트를 동기화하면 호출: 1회성 연출 + 효과음.
+		local now = _WallClock:Now()
+		if kind == "up" then
+			self.fading = false
+			if isvalid(self.comboPanel) then self.comboPanel.Enable = true end
+			self:ApplyAlpha(1.0)
+			self.punchStart = now
+			self:ShowEventText("STYLE UP!", self:GradeColor(grade), now)
+			-- SS/SSS는 고유 효과음으로 구분(기획서 §7).
+			if grade >= 6 then
+				_SoundManager:PlaySFXKey("sfx_combo_up_high")
+			else
+				_SoundManager:PlaySFXKey("sfx_combo_up")
+			end
+			log("[ComboHud] event up -> " .. _ComboManager:GradeName(grade))
+		elseif kind == "downdeath" then
+			self:ShowEventText("COMBO DOWN", Color(1, 0.35, 0.35, 1), now)
+			_SoundManager:PlaySFXKey("sfx_combo_down")
+			self:StartFadeIfCleared(grade, now)
+			log("[ComboHud] event downdeath -> grade " .. tostring(grade))
+		elseif kind == "downtime" then
+			self:ShowEventText("STYLE DOWN", Color(1, 0.55, 0.25, 1), now)
+			_SoundManager:PlaySFXKey("sfx_combo_down")
+			self:StartFadeIfCleared(grade, now)
+			log("[ComboHud] event downtime -> grade " .. tostring(grade))
+		elseif kind == "reset" then
+			-- 런 종료(게임오버/클리어/포기/새 런): 문구 없이 조용히 축소·페이드아웃.
+			self:ShowEventText("", Color(1, 1, 1, 1), now)
+			self:BeginFade(now)
+			log("[ComboHud] event reset -> fade out")
+		end
+	end
+
+	@ExecSpace("ClientOnly")
+	method void StartFadeIfCleared(integer grade, number now)
+		-- 하락 결과가 "해제"(무등급)면 문구 표시가 끝나는 시각에 페이드아웃을 예약한다.
+		-- 게임시계 기준 예약이라 ESC 일시정지 중에는 진행되지 않는다(_TimerService는 실시간이라 부적합).
+		if grade > 0 then return end
+		self.pendingFadeAt = now + self.EventDuration
+	end
+
+	@ExecSpace("ClientOnly")
+	method void HidePanel()
+		-- 패널 숨김 + 표시 상태 원복. 남은 문구를 반드시 지운다 —
+		-- 안 지우면 다음 콤보로 패널이 켜지는 순간 지난 'COMBO DOWN'이 한 프레임 스쳐 보인다.
+		if isvalid(self.comboPanel) then self.comboPanel.Enable = false end
+		if isvalid(self.eventText) then self.eventText.Text = "" end
+		self.pendingFadeAt = -999.0
+		self:ApplyAlpha(1.0)
+		self:ApplyScale(1.0)
+	end
+
+	@ExecSpace("ClientOnly")
+	method void BeginFade(number now)
+		-- 축소·페이드아웃 시작(패널이 이미 숨겨져 있으면 무시).
+		if isvalid(self.comboPanel) == false then return end
+		if self.comboPanel.Enable == false then return end
+		self.fading = true
+		self.fadeStart = now
+	end
+
+	@ExecSpace("ClientOnly")
+	method void ShowEventText(string text, Color color, number now)
+		-- 상승/하락 문구 1회 표시.
+		if isvalid(self.eventText) == false then return end
+		self.eventText.Text = text
+		self.eventText.FontColor = color
+		self.eventStart = now
+	end
+
+	@ExecSpace("ClientOnly")
+	method void ApplyAlpha(number a)
+		-- 패널 전체 투명도.
+		if isvalid(self.comboCanvas) then self.comboCanvas.GroupAlpha = a end
+	end
+
+	@ExecSpace("ClientOnly")
+	method void ApplyScale(number s)
+		-- 패널 전체 스케일(반동/소멸 연출).
+		if isvalid(self.panelTransform) then self.panelTransform.UIScale = Vector3(s, s, 1) end
+	end
+
+	@ExecSpace("ClientOnly")
+	method Color GradeColor(integer grade)
+		-- 등급별 문구 색. 위로 갈수록 채도·온도가 올라간다.
+		if grade == 1 then return Color(0.78, 0.80, 0.84, 1) end
+		if grade == 2 then return Color(0.55, 0.86, 0.62, 1) end
+		if grade == 3 then return Color(0.42, 0.78, 0.96, 1) end
+		if grade == 4 then return Color(0.55, 0.60, 0.98, 1) end
+		if grade == 5 then return Color(0.99, 0.85, 0.35, 1) end
+		if grade == 6 then return Color(1.00, 0.58, 0.16, 1) end
+		if grade == 7 then return Color(1.00, 0.26, 0.28, 1) end
+		return Color(1, 1, 1, 1)
+	end
+
+	@ExecSpace("ClientOnly")
+	method Color GradeGlow(integer grade)
+		-- SS/SSS 광원(아웃라인) 색.
+		if grade >= 7 then return Color(1.0, 0.85, 0.30, 1) end
+		return Color(1.0, 0.90, 0.55, 1)
+	end
+
+end
