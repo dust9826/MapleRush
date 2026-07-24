@@ -36,6 +36,12 @@ script ComboHud extends Component
 	-- 잔여시간 경고 임계(비율). 이하에서 게이지에만 색 변화·펄스.
 	property number WarnRatio = 0.25
 
+	-- 등급 문구 테두리 두께(px). 큰 글자 윤곽용 — 기본 1px.
+	property number GradeOutlineWidth = 1.0
+
+	-- 등급 문구 테두리 색(D~S 공통). SS/SSS는 GradeGlow 색으로 대체된다.
+	property Color GradeOutlineColor = Color(0.05, 0.06, 0.09, 1)
+
 	@HideFromInspector property number punchStart = -999.0
 
 	@HideFromInspector property number eventStart = -999.0
@@ -134,12 +140,14 @@ script ComboHud extends Component
 		end
 		self.gradeText.Text = _ComboManager:GradeName(grade)
 		self.gradeText.FontColor = self:GradeColor(grade)
+		-- 등급 문구는 항상 1px 테두리. 밝은 배경/이펙트 위에서도 글자 윤곽이 살아난다.
+		-- SS/SSS만 테두리 색을 광원색으로 바꿔 §7의 "더 강한 색상과 광원" 구분을 유지(두께는 동일 1px).
+		self.gradeText.UseOutLine = true
+		self.gradeText.OutlineWidth = self.GradeOutlineWidth
 		if grade >= 6 then
-			self.gradeText.UseOutLine = true
 			self.gradeText.OutlineColor = self:GradeGlow(grade)
-			self.gradeText.OutlineWidth = 3
 		else
-			self.gradeText.UseOutLine = false
+			self.gradeText.OutlineColor = self.GradeOutlineColor
 		end
 	end
 
