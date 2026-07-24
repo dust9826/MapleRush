@@ -88,9 +88,7 @@ script ComboHud extends Component
 			local t = (now - self.fadeStart) / self.FadeDuration
 			if t >= 1.0 then
 				self.fading = false
-				self.comboPanel.Enable = false
-				self:ApplyAlpha(1.0)
-				self:ApplyScale(1.0)
+				self:HidePanel()
 				return
 			end
 			self:ApplyAlpha(1.0 - t)
@@ -101,19 +99,22 @@ script ComboHud extends Component
 		if count <= 0 then
 			-- 표시할 콤보 없음. 단, 해제 문구(COMBO/STYLE DOWN)를 다 보여 준 뒤에 축소·페이드아웃한다.
 			if self.comboPanel.Enable == false then return end
-			if self.pendingFadeAt > 0 then
-				if now < self.pendingFadeAt then
-					self:UpdateGrade(0)
-					self:UpdateKills(0)
-					self:UpdateGauge(now)
-					self:UpdateEventText(now)
-					return
-				end
-				self.pendingFadeAt = -999.0
-				self:BeginFade(now)
+			-- ★Count와 LastEvent는 별개 @Sync라 도착 순서가 보장되지 않는다. 실측 결과 Count가 먼저 와서,
+			--   여기서 즉시 숨겨 버리면 뒤늦게 도착한 하락 이벤트가 문구를 띄워도 화면엔 영영 안 보인다
+			--   (BeginFade도 Enable=false라 무시됨). → 문구 표시 시간만큼 기다렸다가 페이드아웃한다.
+			--   Count가 0이 되는 경로(Demote 완전해제 / ResetAll)는 항상 이벤트를 함께 쏘므로 이 대기는 낭비되지 않는다.
+			if self.pendingFadeAt <= 0 then
+				self.pendingFadeAt = now + self.EventDuration
+			end
+			if now < self.pendingFadeAt then
+				self:UpdateGrade(0)
+				self:UpdateKills(0)
+				self:UpdateGauge(now)
+				self:UpdateEventText(now)
 				return
 			end
-			self.comboPanel.Enable = false
+			self.pendingFadeAt = -999.0
+			self:BeginFade(now)
 			return
 		end
 
@@ -239,6 +240,17 @@ script ComboHud extends Component
 		-- 게임시계 기준 예약이라 ESC 일시정지 중에는 진행되지 않는다(_TimerService는 실시간이라 부적합).
 		if grade > 0 then return end
 		self.pendingFadeAt = now + self.EventDuration
+	end
+
+	@ExecSpace("ClientOnly")
+	method void HidePanel()
+		-- 패널 숨김 + 표시 상태 원복. 남은 문구를 반드시 지운다 —
+		-- 안 지우면 다음 콤보로 패널이 켜지는 순간 지난 'COMBO DOWN'이 한 프레임 스쳐 보인다.
+		if isvalid(self.comboPanel) then self.comboPanel.Enable = false end
+		if isvalid(self.eventText) then self.eventText.Text = "" end
+		self.pendingFadeAt = -999.0
+		self:ApplyAlpha(1.0)
+		self:ApplyScale(1.0)
 	end
 
 	@ExecSpace("ClientOnly")
