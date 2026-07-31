@@ -35,7 +35,7 @@ script CombatPrimitives extends Logic
 	method table RegisterEnemyAttackBox(Vector2 boxCenter, number hw, number hh, number damage, boolean parryable, number hitDelay, Entity sourceEntity)
 		-- 적 공격 박스 레코드 등록(서버). hitDelay(텔레그래프) 후 명중 판정, 직후 만료. 반환: 레코드 테이블.
 		-- boxCenter/hw/hh는 호출부가 전방/중앙 기하로 계산해 넘김(프리미티브는 AABB만 저장).
-		-- sourceEntity: 공격 주체 적(맵/유저 산출용 — 기즈모 브로드캐스트 대상). 판정 로직엔 미사용(무손상).
+		-- sourceEntity: 공격 주체 적. 기즈모 브로드캐스트 대상 산출 + rec.source로 저장해 사망 시 일괄 취소(CancelAttacksBySource)에 사용.
 		if self.activeAttacks == nil then self.activeAttacks = {} end
 		self.nextAttackId += 1
 		local now = _WallClock:ServerNow()
@@ -53,6 +53,8 @@ script CombatPrimitives extends Logic
 			canceled = false,
 			-- 보스 패턴이 BossController에서 주입(평타/일반적은 nil). TryParry가 그로기 충전 대상 판별에 사용.
 			bossEntityId = nil,
+			-- 공격 주체(서버 전용 테이블이라 Entity 직참조 무해). 사망 시 CancelAttacksBySource가 대조.
+			source = sourceEntity,
 		}
 		table.insert(self.activeAttacks, rec)
 		-- 기즈모 통지: 남은 windup=hitDelay, 남은 life=hitDelay+0.25(=expireAt-now). 절대 ServerElapsedSeconds 누수 금지 — 상대초만.
@@ -1136,6 +1138,27 @@ script CombatPrimitives extends Logic
 		-- 전투 기즈모가 폴링하는 클라 활성 공격 목록(없으면 생성).
 		if self.clientEnemyAttacks == nil then self.clientEnemyAttacks = {} end
 		return self.clientEnemyAttacks
+	end
+
+	@ExecSpace("ServerOnly")
+	method void CancelAttacksBySource(Entity sourceEntity)
+		-- 이 적이 등록한 미해소 공격 레코드 전부 취소 + 클라 기즈모 제거. EnemyHealth.Die가 호출(러브샷 방지의 레코드판).
+		-- 죽은 적의 windup 레코드가 슬로우 트리거(AnyThreatNear)·패링(TryParry) 위협으로 잔존하는 것 방지.
+		if self.activeAttacks == nil then return end
+		if sourceEntity == nil then return end
+		local map = nil
+		if isvalid(sourceEntity) then map = sourceEntity.CurrentMap end
+		local n = 0
+		for _, rec in ipairs(self.activeAttacks) do
+			if rec.canceled == false and rec.source == sourceEntity then
+				rec.canceled = true
+				n += 1
+				self:BroadcastCancel(map, rec.id)
+			end
+		end
+		if n > 0 then
+			log("[CombatPrimitives] canceled " .. tostring(n) .. " attack record(s) (source died)")
+		end
 	end
 
 	@ExecSpace("ServerOnly")

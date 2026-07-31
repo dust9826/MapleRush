@@ -107,6 +107,8 @@ script EnemyHealth extends Component
 		-- 죽는 순간 자기가 쏜 비행 중 투사체 소멸 — "이미 죽은 몬스터의 탄"에 맞아 죽는 러브샷 방지.
 		-- OwnerName 태깅된 enemy 소유 탄만 대상(반사돼 player 소유가 된 탄, 다른 적의 탄, 플레이어 아이템 탄은 유지).
 		self:DestroyOwnedProjectiles()
+		-- 같은 원칙을 공격 레코드에도 적용 — windup 중 죽은 적의 판정 박스가 슬로우 트리거/패링 위협으로 잔존 방지.
+		_CombatPrimitives:CancelAttacksBySource(self.Entity)
 		-- 즉시 파괴하지 않고 지연 → AI가 IsDead 감지해 dead 클립 재생(사망 모션). DeadAnimDelay 후 소멸.
 		self.Entity:Destroy(self.DeadAnimDelay)
 	end
