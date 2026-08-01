@@ -1,0 +1,246 @@
+@Logic
+script EventManager extends Logic
+
+	-- Application Facade and state machine. Static data, persistence, effects, UI, and floor flow
+	-- remain behind their own ports.
+	@HideFromInspector property any activeByUser = nil
+	@HideFromInspector property integer nextInstanceSerial = 0
+
+	method void OnBeginPlay()
+		self.activeByUser = {}
+		self.nextInstanceSerial = 0
+		log("[EventManager] initialized")
+	end
+
+	method void EnsureState()
+		if self.activeByUser == nil then
+			self.activeByUser = {}
+		end
+	end
+
+	@ExecSpace("ServerOnly")
+	method any GetActiveFor(string userId)
+		self:EnsureState()
+		return self.activeByUser[userId]
+	end
+
+	@ExecSpace("ServerOnly")
+	method boolean StartEvent(string userId, string theme, string roundId)
+		self:EnsureState()
+		if userId == "" or roundId == "" then
+			log_warning("[EventManager] start rejected empty user/round")
+			return false
+		end
+		if _EventCatalog:IsReady() == false then
+			log_warning("[EventManager] start rejected catalog not ready")
+			return false
+		end
+		local current = self.activeByUser[userId]
+		if current ~= nil and current.state ~= "completed" then
+			log_warning("[EventManager] start rejected active instance="
+				.. tostring(current.instanceId))
+			return false
+		end
+
+		local eventRec = _EventCatalog:PickWeightedEvent(theme)
+		if eventRec == nil then
+			log_warning("[EventManager] start rejected no eligible event theme=" .. theme)
+			return false
+		end
+		self.nextInstanceSerial += 1
+		local instance = {
+			instanceId = "EVT-" .. tostring(self.nextInstanceSerial),
+			roundId = roundId,
+			userId = userId,
+			theme = theme,
+			eventId = eventRec.eventId,
+			state = "presented",
+			selectedChoiceId = "",
+			resolvedOutcomeId = "",
+			effectIntents = {},
+		}
+		self.activeByUser[userId] = instance
+		local snapshot = self:BuildPresentationSnapshot(instance)
+		if snapshot == nil then
+			self.activeByUser[userId] = nil
+			log_error("[EventManager] presentation build failed event=" .. eventRec.eventId)
+			return false
+		end
+		log("[EventManager] started instance=" .. instance.instanceId
+			.. " round=" .. roundId .. " theme=" .. theme .. " event=" .. eventRec.eventId)
+		self:ClientDispatchView("open", snapshot, userId)
+		return true
+	end
+
+	@ExecSpace("ServerOnly")
+	method any BuildPresentationSnapshot(any instance)
+		local eventRec = _EventCatalog:EventFor(instance.eventId)
+		local visual = _EventCatalog:VisualFor(instance.eventId)
+		if eventRec == nil or visual == nil then return nil end
+		local choices = {}
+		for _, rec in ipairs(_EventCatalog:ChoicesFor(instance.eventId)) do
+			local detail = "???"
+			if _EventDiscoveryStorage:IsDiscovered(instance.eventId, rec.choiceId) then
+				detail = rec.detail
+			end
+			table.insert(choices, {
+				choiceId = rec.choiceId,
+				label = rec.label,
+				detail = detail,
+			})
+		end
+		return {
+			instanceId = instance.instanceId,
+			eventId = instance.eventId,
+			title = eventRec.title,
+			description = eventRec.description,
+			primaryRuid = visual.primaryRuid,
+			choices = choices,
+		}
+	end
+
+	@ExecSpace("ServerOnly")
+	method table BuildEffectIntents(string eventId, string choiceId, string outcomeId)
+		local intents = {}
+		for _, rec in ipairs(_EventCatalog:EffectsFor(eventId, choiceId, outcomeId)) do
+			table.insert(intents, {
+				effectId = rec.effectId,
+				effectType = rec.effectType,
+				period = rec.period,
+				value = rec.value,
+				numericValue = tonumber(rec.value),
+				stackRule = rec.stackRule,
+				uiSummary = rec.uiSummary,
+			})
+		end
+		return intents
+	end
+
+	@ExecSpace("ServerOnly")
+	method any ResolveChoice(any instance, string choiceId)
+		if instance == nil then return nil end
+		if instance.state == "resolved" then
+			return self:BuildResultSnapshot(instance)
+		end
+		if instance.state ~= "presented" then return nil end
+
+		local validChoice = false
+		for _, choice in ipairs(_EventCatalog:ChoicesFor(instance.eventId)) do
+			if choice.choiceId == choiceId then
+				validChoice = true
+				break
+			end
+		end
+		if validChoice == false then
+			log_warning("[EventManager] invalid choice instance=" .. tostring(instance.instanceId)
+				.. " choice=" .. tostring(choiceId))
+			return nil
+		end
+
+		local outcomes = _EventCatalog:OutcomesFor(instance.eventId, choiceId)
+		local total = 0
+		for _, outcome in ipairs(outcomes) do
+			total += outcome.probability
+		end
+		if total <= 0 then
+			log_error("[EventManager] no weighted outcomes event=" .. instance.eventId
+				.. " choice=" .. choiceId)
+			return nil
+		end
+
+		local cursor = _UtilLogic:RandomDouble() * total
+		local selected = outcomes[#outcomes]
+		for _, outcome in ipairs(outcomes) do
+			cursor -= outcome.probability
+			if cursor < 0 then
+				selected = outcome
+				break
+			end
+		end
+		if selected == nil then return nil end
+
+		instance.selectedChoiceId = choiceId
+		instance.resolvedOutcomeId = selected.outcomeId
+		instance.effectIntents =
+			self:BuildEffectIntents(instance.eventId, choiceId, selected.outcomeId)
+		instance.state = "resolved"
+		_EventDiscoveryStorage:Discover(instance.eventId, choiceId)
+		_EventEffectGateway:SubmitBatch(instance, instance.effectIntents)
+		log("[EventManager] resolved instance=" .. instance.instanceId
+			.. " choice=" .. choiceId .. " outcome=" .. selected.outcomeId)
+		return self:BuildResultSnapshot(instance)
+	end
+
+	@ExecSpace("ServerOnly")
+	method any BuildResultSnapshot(any instance)
+		if instance == nil or instance.resolvedOutcomeId == "" then return nil end
+		local outcome = _EventCatalog:OutcomeFor(
+			instance.eventId,
+			instance.selectedChoiceId,
+			instance.resolvedOutcomeId
+		)
+		if outcome == nil then return nil end
+		local summaries = {}
+		for _, intent in ipairs(instance.effectIntents or {}) do
+			if intent.uiSummary ~= nil and intent.uiSummary ~= "" then
+				table.insert(summaries, intent.uiSummary)
+			end
+		end
+		return {
+			instanceId = instance.instanceId,
+			outcomeId = instance.resolvedOutcomeId,
+			resultSummary = outcome.resultSummary,
+			effectSummaries = summaries,
+		}
+	end
+
+	@ExecSpace("Server")
+	method void RequestChoose(string instanceId, string choiceId)
+		self:EnsureState()
+		local instance = self.activeByUser[senderUserId]
+		if instance == nil or instance.instanceId ~= instanceId then
+			log_warning("[EventManager] choose rejected sender=" .. tostring(senderUserId)
+				.. " instance=" .. tostring(instanceId))
+			return
+		end
+		local snapshot = self:ResolveChoice(instance, choiceId)
+		if snapshot == nil then return end
+		self:ClientDispatchView("result", snapshot, senderUserId)
+	end
+
+	@ExecSpace("Server")
+	method void RequestComplete(string instanceId)
+		self:EnsureState()
+		local instance = self.activeByUser[senderUserId]
+		if instance == nil or instance.instanceId ~= instanceId then
+			log_warning("[EventManager] complete rejected sender=" .. tostring(senderUserId)
+				.. " instance=" .. tostring(instanceId))
+			return
+		end
+		if instance.state ~= "resolved" then
+			log_warning("[EventManager] complete rejected state=" .. tostring(instance.state)
+				.. " instance=" .. instance.instanceId)
+			return
+		end
+		instance.state = "completed"
+
+		local completed = EventStageCompletedEvent()
+		completed.roundId = instance.roundId
+		completed.instanceId = instance.instanceId
+		completed.userId = instance.userId
+		completed.eventId = instance.eventId
+		self:SendEvent(completed)
+		self:ClientDispatchView("close", {}, senderUserId)
+		log("[EventManager] completed instance=" .. instance.instanceId
+			.. " round=" .. instance.roundId)
+	end
+
+	@ExecSpace("Client")
+	method void ClientDispatchView(string action, any snapshot)
+		local view = EventViewEvent()
+		view.action = action
+		view.snapshot = snapshot
+		self:SendEvent(view)
+	end
+
+end

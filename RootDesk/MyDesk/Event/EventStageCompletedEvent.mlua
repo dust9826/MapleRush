@@ -1,0 +1,9 @@
+@Event
+script EventStageCompletedEvent extends EventType
+
+	property string roundId = ""
+	property string instanceId = ""
+	property string userId = ""
+	property string eventId = ""
+
+end
