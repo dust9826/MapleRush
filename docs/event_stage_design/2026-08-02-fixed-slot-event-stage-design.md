@@ -45,14 +45,23 @@
 이벤트마다 전용 맵으로 이동하는 방식이다. 연출 확장에는 유리하지만 현재 요구사항은
 텍스트·일러스트 중심 모달이므로 맵 로딩, 위치 복원, 타이머 정지, 실패 복구 비용이 과하다.
 
-### 3.3 전용 EventManager와 얇은 통합 경계
+### 3.3 전용 이벤트 도메인과 얇은 통합 경계
 
-기존 `FloorManager`는 노드 라운드와 진행도만 소유하고, 이벤트 상태는 `EventManager`가
-소유한다. 효과는 `EventEffectGateway`, UI는 `EventController`, 영구 발견 기록은
-`EventDiscoveryStorage`로 분리한다.
+기존 `FloorManager`는 노드 라운드와 진행도만 소유한다. 정적 데이터는 `EventCatalog`,
+런타임 상태는 `EventManager`, 효과는 `EventEffectGateway`, UI는 `EventController`,
+영구 발견 기록은 `EventDiscoveryStorage`로 분리한다.
 
 이 방식을 채택한다. 기존 일반 스테이지 흐름에 대한 침범이 가장 작고, 이후 랜덤 노드,
 강제 전투, 실제 효과 실행을 독립적으로 추가할 수 있다.
+
+모듈 경계는 다음 원칙을 따른다.
+
+- 기존 모듈은 `EventManager.StartEvent` 파사드만 알고 이벤트 데이터 구조는 모른다.
+- `EventManager`는 `FloorManager`를 직접 호출하지 않고 완료 EventType을 발행한다.
+- 클라이언트 UI는 `EventManager`에 참조를 등록하지 않고 표시 EventType을 구독한다.
+- 정적 데이터, 런타임 세션, 저장소, 효과 출력, UI 표현을 서로 다른 변경 이유로 분리한다.
+- mLua에 인터페이스 문법이 없으므로 Repository, Facade, Gateway, Observer 패턴으로
+  의존성 역전 경계를 구현한다.
 
 ## 4. 현재 구조와 변경 경계
 
@@ -93,25 +102,37 @@ NodeRound
 잠금 상태, 슬롯 종류를 검증한다. 첫 유효 요청에서 라운드를 잠가 더블클릭과 지연 RPC가
 두 이벤트를 만들지 못하게 한다.
 
-현재 `NormalsClearedThisFloor`는 이벤트 진행도까지 포함할 수 있도록
-`ProgressClearedThisFloor` 의미로 정리한다. 이벤트는 결과 화면 확인과 완료 처리가
-성공한 뒤 정확히 한 번 증가한다.
+현재 `NormalsClearedThisFloor`는 `StageManager`와 HUD가 이미 참조하므로 이름은 유지한다.
+다만 의미를 “이번 층에서 소비한 일반 진행 슬롯 수”로 확장해 일반전과 이벤트를 모두 센다.
+이벤트는 결과 화면 확인과 완료 처리가 성공한 뒤 정확히 한 번 증가한다.
 
-### 5.2 EventManager
+### 5.2 EventCatalog
+
+서버 전용 정적 데이터 Repository다.
+
+책임:
+
+- UserDataSet 여섯 개 로드
+- 문자열 셀의 boolean/number 변환
+- ID·참조·확률·테마·강제 전투 검증
+- 이벤트, 선택지, 결과, 효과, 비주얼 조회
+- 현재 테마의 적격 이벤트 목록과 가중치 추첨
+
+런타임 `EventInstance`, 사용자 ID, UI, 진행도는 알지 못한다.
+
+### 5.3 EventManager
 
 서버 권위 이벤트 상태 머신이다.
 
 책임:
 
-- UserDataSet 테이블 로드와 참조 검증
-- 현재 테마의 이벤트 후보 구성
-- 이벤트 가중치 추첨
+- `EventCatalog`를 통한 현재 테마 이벤트 선택
 - `EventInstance` 생성
 - 선택지 요청 검증
 - 결과 확률 추첨과 1회 고정
 - `EffectIntent` 생성
 - 클라이언트 표시용 스냅샷 생성
-- 완료 요청 처리와 `FloorManager` 복귀
+- 완료 요청 처리와 서버 로컬 완료 EventType 발행
 
 ```text
 EventInstance
@@ -129,7 +150,10 @@ EventInstance
 `resolved` 이후 같은 선택 요청이 오면 재추첨하지 않고 기존 결과 스냅샷을 반환한다.
 `completed` 이후 완료 요청은 무시한다.
 
-### 5.3 EventEffectGateway
+`EventManager`는 `FloorManager`, `StageManager`, `ShopManager`, `RewardManager`를 직접
+참조하지 않는다.
+
+### 5.4 EventEffectGateway
 
 `EventManager`가 만든 `EffectIntent` 목록을 받는 안정된 통합 경계다.
 
@@ -158,7 +182,7 @@ stack=<stackRule>
 DataStorage를 호출하지 않는다. 추후 효과 정책을 확정하면 게이트웨이 내부만 실제 실행기로
 교체한다.
 
-### 5.4 EventController와 EventGroup.ui
+### 5.5 EventController와 EventGroup.ui
 
 이벤트는 독립적인 팝업 화면 단위로 만든다.
 
@@ -173,7 +197,10 @@ DataStorage를 호출하지 않는다. 추후 효과 정책을 확정하면 게�
 열리면서 `Node` 컨텍스트로 복귀한다. 이벤트는 비전투 구간이므로 `RunTimer`는 비활성 상태를
 유지한다.
 
-### 5.5 EventDiscoveryStorage
+`EventManager`의 클라이언트 RPC는 UI를 직접 호출하지 않고 `EventViewEvent`를 발행한다.
+`EventController`는 이 이벤트를 구독하고 해제하는 UI Adapter다.
+
+### 5.6 EventDiscoveryStorage
 
 기준 문서의 `discoveredChoiceIds`만 영구 저장한다.
 
@@ -227,18 +254,23 @@ FloorManager.NextNode
 → RequestSelectNode(roundId, 3)
 → FloorManager 검증 및 round.locked = true
 → EventManager.StartEvent(user, theme, roundId)
-→ 후보 구성 및 이벤트 추첨
+→ EventCatalog에서 후보 조회 및 이벤트 추첨
 → EventInstance(state=presented) 생성
-→ ClientOpenEvent(presentation snapshot)
+→ ClientDispatchView("open", presentation snapshot)
+→ EventViewEvent
+→ EventController.Open
 → RequestChoose(instanceId, choiceId)
 → 서버 검증 및 결과 1회 추첨
 → EventInstance(state=resolved)
 → EffectIntent 목록 생성
 → EventEffectGateway.SubmitBatch 로그
-→ ClientShowEventResult(result snapshot)
+→ ClientDispatchView("result", result snapshot)
+→ EventViewEvent
+→ EventController.ShowResult
 → RequestComplete(instanceId)
 → EventInstance(state=completed)
-→ FloorManager.OnEventCompleted(roundId)
+→ EventStageCompletedEvent(roundId)
+→ FloorManager.OnEventStageCompleted
 → 진행도 +1
 → FloorManager.NextNode
 ```
@@ -314,9 +346,12 @@ FloorManager.NextNode
 
 신규:
 
+- `RootDesk/MyDesk/Event/EventCatalog.mlua`
 - `RootDesk/MyDesk/Event/EventManager.mlua`
 - `RootDesk/MyDesk/Event/EventEffectGateway.mlua`
 - `RootDesk/MyDesk/Event/EventDiscoveryStorage.mlua`
+- `RootDesk/MyDesk/Event/EventStageCompletedEvent.mlua`
+- `RootDesk/MyDesk/Event/EventViewEvent.mlua`
 - `RootDesk/MyDesk/UI/EventController.mlua`
 - `RootDesk/MyDesk/Event/Data/*.csv`
 - `RootDesk/MyDesk/Event/Data/*.userdataset`
@@ -326,7 +361,6 @@ FloorManager.NextNode
 
 - `RootDesk/MyDesk/Stage/FloorManager.mlua`
 - `RootDesk/MyDesk/UI/NodeSelectController.mlua`
-- `RootDesk/MyDesk/Core/PlayerBootstrap.mlua`
+- `RootDesk/MyDesk/Player/PlayerBootstrap.mlua`
 
 `.ui`는 UIBuilder로만 작성하고, `.codeblock`은 Maker Refresh가 생성하도록 둔다.
-

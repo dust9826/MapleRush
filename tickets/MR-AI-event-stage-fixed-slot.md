@@ -4,7 +4,7 @@ title: 고정 3번 슬롯 이벤트 스테이지 수직 슬라이스
 status: in_progress
 owner: D4LGONA
 area: mixed
-touches: [RootDesk/MyDesk/Event/EventManager.mlua, RootDesk/MyDesk/Event/EventEffectGateway.mlua, RootDesk/MyDesk/Event/EventDiscoveryStorage.mlua, RootDesk/MyDesk/UI/EventController.mlua, RootDesk/MyDesk/Stage/FloorManager.mlua, RootDesk/MyDesk/UI/NodeSelectController.mlua, RootDesk/MyDesk/Core/PlayerBootstrap.mlua, RootDesk/MyDesk/Event/Data, ui/EventGroup.ui]
+touches: [RootDesk/MyDesk/Event/EventCatalog.mlua, RootDesk/MyDesk/Event/EventManager.mlua, RootDesk/MyDesk/Event/EventEffectGateway.mlua, RootDesk/MyDesk/Event/EventDiscoveryStorage.mlua, RootDesk/MyDesk/Event/EventStageCompletedEvent.mlua, RootDesk/MyDesk/Event/EventViewEvent.mlua, RootDesk/MyDesk/UI/EventController.mlua, RootDesk/MyDesk/Stage/FloorManager.mlua, RootDesk/MyDesk/UI/NodeSelectController.mlua, RootDesk/MyDesk/Player/PlayerBootstrap.mlua, RootDesk/MyDesk/Event/Data, ui/EventGroup.ui]
 depends_on: []
 branch: "feat/event-stage"
 created: 2026-08-02
@@ -40,19 +40,21 @@ updated: 2026-08-02
 
 ## Subtasks
 
-- [ ] 이벤트 CSV를 UserDataSet 쌍으로 옮기고 서버 로더·참조 검증 작성
-- [ ] `EventManager` 서버 상태 머신과 멱등 요청 처리 작성
+- [ ] 이벤트 CSV를 UserDataSet 쌍으로 옮기고 `EventCatalog` Repository·참조 검증 작성
+- [ ] `EventManager` 서버 상태 머신·멱등 요청·완료 이벤트 발행 작성
 - [ ] 로그 전용 `EventEffectGateway` 작성
 - [ ] `EventDiscoveryStorage` 로드·캐시·이벤트 기반 저장 작성
-- [ ] `FloorManager`에 3번 이벤트 분기, 라운드 ID, 잠금, 진행도 처리 추가
+- [ ] `FloorManager`에 3번 이벤트 분기, 라운드 ID, 잠금, 완료 이벤트 구독 추가
 - [ ] `NodeSelectController`에 3번 버튼 연결, 2번 미변경 확인
-- [ ] UIBuilder로 `EventGroup.ui` 작성하고 `EventController` 바인딩
+- [ ] `EventViewEvent` + UIBuilder `EventGroup.ui` + `EventController` Adapter 작성
 - [ ] Maker refresh → build logs → play → runtime logs 검증
 
 ## Notes / decisions
 
 - 이벤트 ID는 노드 라운드 생성 때가 아니라 3번 슬롯 선택 시 추첨한다.
 - 이벤트는 별도 맵으로 이동하지 않고 현재 MapleTile 테마 맵 위의 모달로 진행한다.
+- 정적 데이터는 Repository, 실행 진입은 Facade, 효과는 Gateway, 완료/UI 갱신은 Observer로 분리한다.
+- `EventManager`는 `FloorManager`와 UI 컨트롤러를 직접 참조하지 않는다.
 - 실제 효과 적용, 강제 전투, 2번 슬롯, 랜덤 노드 종류는 후속 티켓 범위다.
 - 사용자 소유의 `mswai update` 변경과 기존 `docs/event_stage_design` 원본 파일은 이 티켓 커밋에 섞지 않는다.
 
