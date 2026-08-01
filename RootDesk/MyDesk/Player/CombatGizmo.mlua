@@ -83,7 +83,7 @@ script CombatGizmo extends Component
 		-- (3) 브로드캐스트 적 근접/보스 공격원 (windup=노랑 / 명중임박·무패링=빨강). 만료(life 경과) 제거도 여기서.
 		local atks = _CombatPrimitives:GetClientEnemyAttacks()
 		if atks ~= nil then
-			local now = _WallClock:Now()
+			local now = _WallClock:CombatNow()
 			for i = #atks, 1, -1 do
 				local a = atks[i]
 				local elapsed = now - a.recvAt

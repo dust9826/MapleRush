@@ -13,7 +13,7 @@ script TelegraphService extends Logic
 
 	property integer nextId = 0
 
-	-- 클라 활성 텔레그래프 목록. 항목 {id,center,hw,hh,windup,parryable,kind,dirX,dirY,recvAt}. 렌더러가 폴링·보간.
+	-- 클라 활성 텔레그래프 목록. recvAt은 전송 지연이 보정된 CombatNow 기준 시작점. 렌더러가 폴링·보간.
 	property any clientList = nil
 
 	@ExecSpace("ServerOnly")
@@ -28,7 +28,7 @@ script TelegraphService extends Logic
 		if users == nil then return id end
 		for _, u in ipairs(users) do
 			if isvalid(u) and u.PlayerComponent ~= nil then
-				self:NotifyShow(id, center, hw, hh, windup, parryable, kind, dirX, dirY, u.PlayerComponent.UserId)
+				self:NotifyShow(id, center, hw, hh, windup, parryable, kind, dirX, dirY, _UtilLogic.ServerElapsedSeconds, _SlowMotion:Scale(), u.PlayerComponent.UserId)
 			end
 		end
 		return id
@@ -49,7 +49,7 @@ script TelegraphService extends Logic
 	end
 
 	@ExecSpace("Client")
-	method void NotifyShow(integer id, Vector2 center, number hw, number hh, number windup, boolean parryable, string kind, number dirX, number dirY)
+	method void NotifyShow(integer id, Vector2 center, number hw, number hh, number windup, boolean parryable, string kind, number dirX, number dirY, number serverSentAt, number sentScale)
 		-- 클라 수신: 활성 목록에 추가(같은 id 있으면 교체). recvAt 스냅샷 후 렌더러가 progress 보간.
 		-- targetUserId는 @ExecSpace("Client") 라우팅용 암묵 인자(호출부 마지막) — 선언 파라미터 아님(추가 금지).
 		if self.clientList == nil then self.clientList = {} end
@@ -66,7 +66,7 @@ script TelegraphService extends Logic
 			kind = kind,
 			dirX = dirX,
 			dirY = dirY,
-			recvAt = _WallClock:Now(),
+			recvAt = _WallClock:CombatNow() - _WallClock:NetworkTransitAge(serverSentAt) * sentScale,
 		})
 	end
 

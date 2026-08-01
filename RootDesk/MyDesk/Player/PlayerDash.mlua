@@ -29,6 +29,8 @@ script PlayerDash extends Component
 	@HideFromInspector property boolean prevControllerEnable = true
 
 	-- 서버측 대시 무적(i-frame) 종료 시각 (ServerElapsedSeconds 기준)
+	@HideFromInspector property number InvincibleFromServer = -999.0
+
 	@HideFromInspector property number InvincibleUntilServer = -999.0
 
 	@HideFromInspector property any routerHandler = nil
@@ -298,6 +300,7 @@ script PlayerDash extends Component
 	method void TryDash(Vector2 targetWorldPos)
 		-- 대시 실행: 360° 커서 방향, 거리 5, 0.1s, 이동 중 무적. 강화 대시는 횟수 미소모.
 		if self.IsDashing then return end
+		local inputServerTime = _UtilLogic.ServerElapsedSeconds
 		local empowered = self.EmpoweredReady
 		if not empowered then
 			if self.DashCount <= 0 then
@@ -341,7 +344,7 @@ script PlayerDash extends Component
 		pc.Enable = false
 
 		log("[PlayerDash] dash start! empowered=" .. tostring(empowered) .. " dir=(" .. string.format("%.2f", self.dashDir.x) .. "," .. string.format("%.2f", self.dashDir.y) .. ") len=" .. string.format("%.2f", self.dashLen) .. " left=" .. tostring(self.DashCount))
-		self:ServerDashStarted(foot.x, foot.y, self.dashDir.x, self.dashDir.y, empowered, self.dashLen)
+		self:ServerDashStarted(foot.x, foot.y, self.dashDir.x, self.dashDir.y, empowered, self.dashLen, inputServerTime)
 	end
 
 	@ExecSpace("ClientOnly")
@@ -453,9 +456,19 @@ script PlayerDash extends Component
 
 	-- ========== 서버 권위: 무적 / 경로 데미지 / 슬로우 트리거 ==========
 	@ExecSpace("Server")
-	method void ServerDashStarted(number startX, number startY, number dirX, number dirY, boolean empowered, number dashLen)
+	method void ServerDashStarted(number startX, number startY, number dirX, number dirY, boolean empowered, number dashLen, number inputServerTime)
 		-- 서버: 대시 무적 윈도우 기록 + 슬로우 트리거 판정 + 경로 데미지 적용 (일반 ATK×50% / 강화 ATK×150%).
-		self.InvincibleUntilServer = _WallClock:ServerNow() + _PlayerConfig.DashDuration
+		local now = _WallClock:ServerNow()
+		local inputAge = _WallClock:NetworkInputAge(inputServerTime)
+		self.InvincibleFromServer = now - inputAge
+		self.InvincibleUntilServer = self.InvincibleFromServer + _PlayerConfig.DashDuration
+		-- 클라이언트 경로 인자는 방향 정규화 + 설계 최대거리로 제한한다.
+		local dlen = math.sqrt(dirX * dirX + dirY * dirY)
+		if dlen <= 0.0001 then return end
+		dirX = dirX / dlen
+		dirY = dirY / dlen
+		if dashLen < 0 then dashLen = 0 end
+		if dashLen > _PlayerConfig.DashDistance then dashLen = _PlayerConfig.DashDistance end
 		-- 슬로우 모션 트리거: 대시 시작 지점 반지름 1 내 적 공격/투사체 존재 시 발동
 		if empowered == false then
 			local dashStart = Vector2(startX, startY + _GameConstants.PlayerCenterYOffset)
@@ -480,7 +493,13 @@ script PlayerDash extends Component
 	@ExecSpace("ServerOnly")
 	method boolean IsInvincibleNow()
 		-- 서버측 무적 판정 (PlayerHit이 호출, Phase 2).
-		return _WallClock:ServerNow() < self.InvincibleUntilServer
+		return self:IsInvincibleAt(_WallClock:ServerNow())
+	end
+
+	@ExecSpace("ServerOnly")
+	method boolean IsInvincibleAt(number serverTime)
+		-- RPC가 피격보다 늦게 도착한 경우에도 입력 당시의 무적 구간으로 재판정한다.
+		return serverTime >= self.InvincibleFromServer and serverTime < self.InvincibleUntilServer
 	end
 
 end
