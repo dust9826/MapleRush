@@ -44,7 +44,7 @@
 - `RootDesk/MyDesk/Event/EventCatalog.mlua` — UserDataSet Repository와 적격 이벤트 조회.
 - `RootDesk/MyDesk/Event/EventManager.mlua` — 이벤트 인스턴스 Facade와 서버 상태 머신.
 - `RootDesk/MyDesk/Event/EventEffectGateway.mlua` — 로그 전용 효과 경계.
-- `RootDesk/MyDesk/Event/EventDiscoveryStorage.mlua` — `discoveredChoiceIds` 영구 저장.
+- `RootDesk/MyDesk/Event/EventDiscoveryStorage.mlua` — `event_id|choice_id` 복합 발견 키 영구 저장.
 - `RootDesk/MyDesk/Event/EventStageCompletedEvent.mlua` — 서버 로컬 완료 알림.
 - `RootDesk/MyDesk/Event/EventViewEvent.mlua` — 클라이언트 로컬 표시 알림.
 - `RootDesk/MyDesk/UI/EventController.mlua` — 이벤트 모달의 클라이언트 표시와 입력.
@@ -391,19 +391,22 @@ git commit -m "feat: add deferred event effect gateway"
 - Consumes: `UserEnterEvent.UserId`, selected `choiceId`.
 - Produces:
   - `_EventDiscoveryStorage:LoadFor(string userId)`
-  - `_EventDiscoveryStorage:IsDiscovered(string choiceId) -> boolean`
-  - `_EventDiscoveryStorage:Discover(string choiceId) -> boolean`
+  - `_EventDiscoveryStorage:IsDiscovered(string eventId, string choiceId) -> boolean`
+  - `_EventDiscoveryStorage:Discover(string eventId, string choiceId) -> boolean`
   - `_EventDiscoveryStorage:Persist()`
 
 - [ ] **Step 1: Write the failing discovery probe**
 
 ```lua
 log("[MR-AI TEST] discovered-before="
-    .. tostring(_EventDiscoveryStorage:IsDiscovered("listen")))
-local added = _EventDiscoveryStorage:Discover("listen")
+    .. tostring(_EventDiscoveryStorage:IsDiscovered(
+        "common_adventurer_rumor", "listen")))
+local added = _EventDiscoveryStorage:Discover(
+    "common_adventurer_rumor", "listen")
 log("[MR-AI TEST] discovery-added=" .. tostring(added))
 log("[MR-AI TEST] discovered-after="
-    .. tostring(_EventDiscoveryStorage:IsDiscovered("listen")))
+    .. tostring(_EventDiscoveryStorage:IsDiscovered(
+        "common_adventurer_rumor", "listen")))
 ```
 
 Expected before implementation: missing `_EventDiscoveryStorage`.
@@ -430,9 +433,10 @@ property any discovered = nil
 }
 ```
 
-`Discover(choiceId)` returns `false` without writing if already present. For a new ID it updates the
-cache, calls `Persist()` once, logs the prefix `[EventDiscoveryStorage] discovered ` followed by the
-actual choice ID, and returns `true`.
+`Discover(eventId, choiceId)` returns `false` without writing if the composite key is already present.
+For a new key it updates the cache, calls `Persist()` once, logs the prefix
+`[EventDiscoveryStorage] discovered ` followed by `eventId|choiceId`, and returns `true`.
+The composite key is required because source data may reuse a `choice_id` in different events.
 `SetAsync` callback must log a warning when `errorCode ~= 0`.
 
 - [ ] **Step 3: Wire login loading**
@@ -601,7 +605,7 @@ self:ClientDispatchView(
         {
             choiceId = rec.choiceId,
             label = rec.label,
-            detail = _EventDiscoveryStorage:IsDiscovered(rec.choiceId)
+            detail = _EventDiscoveryStorage:IsDiscovered(instance.eventId, rec.choiceId)
                 and rec.detail
                 or "???",
         },

@@ -202,7 +202,8 @@ DataStorage를 호출하지 않는다. 추후 효과 정책을 확정하면 게�
 
 ### 5.6 EventDiscoveryStorage
 
-기준 문서의 `discoveredChoiceIds`만 영구 저장한다.
+기준 문서의 발견 선택지만 영구 저장한다. `choice_id`는 이벤트 간 중복될 수 있으므로
+저장 키는 `event_id|choice_id` 복합 키를 사용해 다른 이벤트의 정보가 함께 해금되지 않게 한다.
 
 - 로그인 시 `PlayerBootstrap` 경로에서 한 번 로드
 - 서버 메모리에 캐시
