@@ -1,0 +1,24 @@
+@Logic
+script EventEffectGateway extends Logic
+
+	-- Output Port for event effects. The v1 adapter is intentionally inert and log-only.
+	@ExecSpace("ServerOnly")
+	method void SubmitBatch(any instance, table intents)
+		local count = 0
+		for _, intent in ipairs(intents) do
+			count += 1
+			log("[EventEffect][DEFERRED]"
+				.. " instance=" .. tostring(instance.instanceId)
+				.. " event=" .. tostring(instance.eventId)
+				.. " choice=" .. tostring(instance.selectedChoiceId)
+				.. " outcome=" .. tostring(instance.resolvedOutcomeId)
+				.. " effect=" .. tostring(intent.effectId)
+				.. " period=" .. tostring(intent.period)
+				.. " type=" .. tostring(intent.effectType)
+				.. " value=" .. tostring(intent.value)
+				.. " stack=" .. tostring(intent.stackRule))
+		end
+		log("[EventEffect][DEFERRED] batch complete count=" .. tostring(count))
+	end
+
+end
