@@ -1,0 +1,86 @@
+event_id,choice_id,outcome_id,probability,forced_combat,forced_combat_reward_policy,reward_ref,result_summary_ko
+common_adventurer_rumor,listen,rumor_gain,0.7,,event_defined,normal_ability_choice,모험가들의 이야기가 유용한 전투 비법으로 이어졌다.
+common_adventurer_rumor,listen,rumor_empty,0.3,,event_defined,meso_s,소문은 헛소리였지만 떨어진 메소를 발견했다.
+common_adventurer_rumor,move_on,move_on_success,1.0,,event_defined,meso_m,쓸데없는 다툼을 피해 길을 재촉했다.
+common_lost_merchant,help_cart,help_success,1.0,,event_defined,,상인이 다음 상점에서 쓸 수 있는 표식을 건넸다.
+common_lost_merchant,take_goods,take_success,1.0,,event_defined,meso_l,수레의 짐에서 값나가는 물건을 챙겼다.
+common_roadside_chest,open_chest,chest_success,0.7,,event_defined,normal_item_choice,잠금장치 안에 쓸 만한 물건이 들어 있었다.
+common_roadside_chest,open_chest,chest_trap,0.3,,event_defined,meso_s,상자는 함정이었지만 약간의 메소는 남아 있었다.
+common_roadside_chest,leave_chest,leave_success,1.0,,event_defined,meso_s,상자 곁에서 떨어진 메소를 발견했다.
+common_wandering_smith,sharpen_blade,sharpen_success,1.0,,event_defined,normal_stat_choice,대장장이의 손길로 전투 감각이 살아났다.
+common_wandering_smith,save_time,save_success,1.0,,event_defined,meso_m,시간을 아낀 대신 메소를 챙겼다.
+common_duel_challenge,join_duel,duel_combat,1.0,elite,stage_standard,elite_combat_reward,결투가 진짜 전투로 번졌다.
+common_duel_challenge,mediate,mediate_success,1.0,,event_defined,meso_m,모험가들은 감사의 뜻으로 메소를 남겼다.
+common_ruined_shrine,pray,pray_success,1.0,,event_defined,normal_ability_choice,기도처의 잔향이 능력으로 남았다.
+common_ruined_shrine,offer_meso,offer_success,1.0,,event_defined,,공물이 다음 상점에서 쓸 표식으로 바뀌었다.
+common_injured_scout,help_scout,help_success,1.0,,event_defined,normal_stat_choice,정찰병의 조언이 성장의 단서가 됐다.
+common_injured_scout,take_map,map_success,1.0,,event_defined,meso_m,안전한 길의 지도와 메소를 챙겼다.
+common_odd_vendor,barter,barter_success,1.0,,event_defined,normal_item_choice,행상은 값을 치른 만큼의 물건을 내주었다.
+common_odd_vendor,refuse,refuse_success,1.0,,event_defined,meso_s,행상은 아쉬워하며 약간의 메소를 흘렸다.
+common_silent_camp,rest,rest_success,1.0,,event_defined,,야영지의 남은 표식이 다음 상점까지 이어진다.
+common_silent_camp,search_camp,search_success,1.0,,event_defined,meso_m,야영 장비 속에서 메소를 발견했다.
+common_stray_map,follow_map,map_combat,1.0,normal,event_defined,normal_ability_choice,지도 끝에서 길을 막은 적을 물리쳤다.
+common_stray_map,sell_map,sell_success,1.0,,event_defined,meso_m,지도를 원하는 모험가에게 팔았다.
+orbis_teal_glimmer,follow_light,follow_success,1.0,,event_defined,normal_ability_choice,잔광이 노아의 연구 흔적을 비춘다.
+orbis_teal_glimmer,safe_route,safe_success,1.0,,event_defined,meso_m,안전한 우회로에서 메소를 발견했다.
+orbis_shadow_bargain,accept_trade,trade_success,0.6,,event_defined,normal_item_choice,그림자가 약속한 물건을 건넸다.
+orbis_shadow_bargain,accept_trade,trade_fail,0.4,,event_defined,meso_m,그림자가 균열의 대가를 남겼다.
+orbis_shadow_bargain,cut_shadow,elite_combat,1.0,elite,stage_standard,elite_combat_reward,그림자가 실체를 드러내며 길을 막는다.
+orbis_empty_dock,decode_ticket,decode_success,1.0,,event_defined,,노선표가 다음 상점의 할인 표식으로 바뀌었다.
+orbis_empty_dock,salvage_parts,salvage_success,1.0,,event_defined,meso_s,쓸 만한 부품을 챙겼다.
+orbis_cloud_bridge,cross_bridge,cross_success,1.0,,event_defined,normal_item_choice,다리 끝에서 쓸 만한 물건을 발견했다.
+orbis_cloud_bridge,reinforce_bridge,reinforce_success,1.0,,event_defined,meso_m,보강 작업의 보답으로 메소를 챙겼다.
+orbis_star_chart,read_chart,chart_success,1.0,,event_defined,normal_ability_choice,항해도에서 균열을 읽는 방법을 깨달았다.
+orbis_star_chart,sell_chart,sell_success,1.0,,event_defined,meso_l,희귀한 항해도는 값비싸게 팔렸다.
+orbis_wind_vane,turn_vane,vane_success,1.0,,event_defined,normal_stat_choice,폭풍을 읽은 감각이 성장으로 남았다.
+orbis_wind_vane,ignore_vane,ignore_success,1.0,,event_defined,meso_m,풍향계를 지나며 메소를 발견했다.
+orbis_sky_pirate_signal,answer_signal,signal_success,0.5,,event_defined,normal_ability_choice,신호가 쓸 만한 전투 기술로 이어졌다.
+orbis_sky_pirate_signal,answer_signal,signal_ambush,0.5,elite,stage_standard,elite_combat_reward,신호는 공중 해적의 매복이었다.
+orbis_sky_pirate_signal,hide_signal,hide_success,1.0,,event_defined,meso_s,추적을 피해 메소만 챙겼다.
+orbis_cursed_feather,hold_feather,feather_success,1.0,,event_defined,normal_item_choice,깃털이 불길한 힘과 함께 물건을 남겼다.
+orbis_cursed_feather,burn_feather,burn_success,1.0,,event_defined,meso_m,재 속에서 메소를 건졌다.
+orbis_fallen_observatory,climb_observatory,climb_success,1.0,,event_defined,normal_ability_choice,관측 기록에서 새로운 능력의 단서를 얻었다.
+orbis_fallen_observatory,survey_ground,survey_success,1.0,,event_defined,meso_m,지상 장비에서 메소를 발견했다.
+orbis_airy_pouch,open_pouch,pouch_success,1.0,,event_defined,meso_l,주머니 속에 숨겨진 메소가 흩날렸다.
+orbis_airy_pouch,release_pouch,release_success,1.0,,event_defined,,바람이 다음 상점까지 길을 열어 주었다.
+elnath_frozen_footprints,follow_steps,follow_success,1.0,,event_defined,normal_item_choice,발자국 끝에서 쓸 만한 물품을 찾았다.
+elnath_frozen_footprints,take_detour,detour_success,1.0,,event_defined,meso_m,바람을 피해 안전하게 이동했다.
+elnath_last_campfire,save_ember,ember_success,1.0,,event_defined,,불씨가 다음 상점까지 이어질 길을 비춘다.
+elnath_last_campfire,recover_notes,notes_success,1.0,,event_defined,normal_stat_choice,노트에 남은 기록에서 성장의 단서를 얻었다.
+elnath_blizzard_echo,answer_signal,signal_success,0.5,,event_defined,normal_ability_choice,신호가 노아의 연구 기록과 맞닿는다.
+elnath_blizzard_echo,answer_signal,signal_ambush,0.5,elite,stage_standard,elite_combat_reward,신호는 균열의 매복이었다.
+elnath_blizzard_echo,record_signal,record_success,1.0,,event_defined,meso_s,신호의 좌표를 기록하고 보급품을 챙겼다.
+elnath_frozen_cabin,enter_cabin,cabin_success,1.0,,event_defined,normal_item_choice,산장 안에서 보급품을 발견했다.
+elnath_frozen_cabin,collect_firewood,wood_success,1.0,,event_defined,,장작이 다음 상점의 표식으로 바뀌었다.
+elnath_hunter_trail,follow_hunter,hunter_combat,1.0,elite,stage_standard,elite_combat_reward,발자국의 주인이 길을 가로막는다.
+elnath_hunter_trail,collect_arrows,arrows_success,1.0,,event_defined,meso_m,화살촉을 팔아 메소를 얻었다.
+elnath_ice_cave,resonate,resonate_success,1.0,,event_defined,normal_ability_choice,공명이 능력의 단서로 남았다.
+elnath_ice_cave,mark_cave,mark_success,1.0,,event_defined,meso_s,표시를 남기고 보급품을 챙겼다.
+elnath_snow_owl,follow_owl,owl_success,1.0,,event_defined,normal_stat_choice,올빼미가 이끈 곳에서 성장의 단서를 얻었다.
+elnath_snow_owl,feed_owl,feed_success,1.0,,event_defined,,올빼미가 다음 상점의 표식을 물어 왔다.
+elnath_rope_bridge,cross_rope,rope_success,1.0,,event_defined,normal_item_choice,다리 건너편에서 보급품을 얻었다.
+elnath_rope_bridge,secure_rope,secure_success,1.0,,event_defined,meso_m,보강한 대가로 메소를 얻었다.
+elnath_avalanche_warning,rush_through,avalanche_combat,1.0,normal,event_defined,normal_ability_choice,눈사태 속 적을 물리치고 길을 열었다.
+elnath_avalanche_warning,wait_out,wait_success,1.0,,event_defined,meso_s,눈이 잦아든 뒤 메소를 발견했다.
+elnath_frost_shrine,take_offering,offering_success,1.0,,event_defined,normal_stat_choice,차가운 공물이 성장의 단서가 됐다.
+elnath_frost_shrine,restore_offering,restore_success,1.0,,event_defined,,제단의 빛이 다음 상점까지 이어진다.
+mine_sealed_rail,break_seal,elite_combat,1.0,elite,stage_standard,elite_combat_reward,봉인 뒤의 수호자가 모습을 드러낸다.
+mine_sealed_rail,repair_cart,repair_success,1.0,,event_defined,meso_l,광차에서 값진 광물을 회수했다.
+mine_molten_notes,retrieve_notes,retrieve_success,1.0,,event_defined,normal_stat_choice,뜨거운 노트에서 좌표와 성장의 단서를 얻었다.
+mine_molten_notes,copy_coordinates,copy_success,1.0,,event_defined,meso_m,좌표만 옮기고 위험을 피했다.
+mine_rift_whisper,trust_whisper,combat_victory,1.0,normal,event_defined,normal_ability_choice,목소리가 연 길에서 적이 모습을 드러낸다.
+mine_rift_whisper,seal_rift,seal_success,1.0,,event_defined,,봉인한 균열이 다음 상점까지 유지된다.
+mine_abandoned_forge,use_forge,forge_success,1.0,,event_defined,normal_stat_choice,대장간의 열기가 전투 감각을 벼렸다.
+mine_abandoned_forge,collect_scrap,scrap_success,1.0,,event_defined,meso_m,고철을 팔아 메소를 얻었다.
+mine_miners_ledger,follow_ledger,ledger_success,1.0,,event_defined,normal_item_choice,장부가 가리킨 보급품을 발견했다.
+mine_miners_ledger,sell_ledger,sell_success,1.0,,event_defined,meso_l,장부를 값비싸게 팔았다.
+mine_heat_fissure,approach_fissure,fissure_success,1.0,,event_defined,normal_ability_choice,열기의 흐름에서 능력의 단서를 얻었다.
+mine_heat_fissure,avoid_fissure,avoid_success,1.0,,event_defined,meso_s,위험을 피하며 메소를 챙겼다.
+mine_chained_golem,release_golem,golem_combat,1.0,elite,stage_standard,elite_combat_reward,풀려난 골렘이 적의를 드러낸다.
+mine_chained_golem,search_rubble,rubble_success,1.0,,event_defined,meso_m,잔해 아래에서 메소를 발견했다.
+mine_collapse_warning,take_shortcut,shortcut_success,1.0,,event_defined,normal_item_choice,무너지는 갱도 끝에서 보급품을 얻었다.
+mine_collapse_warning,reinforce_tunnel,reinforce_success,1.0,,event_defined,,보강한 갱도가 다음 상점의 표식으로 이어진다.
+mine_smuggler_cache,open_cache,cache_success,1.0,,event_defined,normal_item_choice,값을 치르고 은닉처의 물건을 손에 넣었다.
+mine_smuggler_cache,report_cache,report_success,1.0,,event_defined,normal_stat_choice,신고의 보답으로 성장의 단서를 얻었다.
+mine_lava_lift,ride_lift,lift_combat,1.0,normal,event_defined,normal_ability_choice,승강기 아래의 적을 물리치고 길을 열었다.
+mine_lava_lift,cool_lift,cool_success,1.0,,event_defined,meso_l,식은 승강기에서 값진 광물을 얻었다.
