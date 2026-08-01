@@ -70,8 +70,8 @@ script TelegraphRenderer extends Logic
 
 		local list = _TelegraphService:GetClientList()
 		if list == nil then return end
-		-- now=게임 시계(WallClock). recvAt도 WallClock:Now()로 찍히므로, 일시정지 중엔 elapsed가 그대로 고정 → 게이지 진행·자동만료가 자동 정지.
-		local now = _WallClock:Now()
+		-- now=전투 시계. 일시정지와 슬로우 배율이 서버 AI 윈드업과 동일하게 반영된다.
+		local now = _WallClock:CombatNow()
 		local slot = 0
 		for i = #list, 1, -1 do
 			local t = list[i]

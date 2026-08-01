@@ -23,7 +23,7 @@ script CombatPrimitives extends Logic
 	method void OnUpdate(number delta)
 		-- 만료된 공격 레코드 정리 (서버, 매 프레임). now=게임 시계(WallClock) → 일시정지 중엔 시간이 안 흘러 만료·판정·패링 윈도우가 자동 정지·정렬 유지.
 		if self.activeAttacks == nil then return end
-		local now = _WallClock:ServerNow()
+		local now = _WallClock:ServerCombatNow()
 		for i = #self.activeAttacks, 1, -1 do
 			if self.activeAttacks[i].expireAt < now then
 				table.remove(self.activeAttacks, i)
@@ -35,10 +35,10 @@ script CombatPrimitives extends Logic
 	method table RegisterEnemyAttackBox(Vector2 boxCenter, number hw, number hh, number damage, boolean parryable, number hitDelay, Entity sourceEntity)
 		-- 적 공격 박스 레코드 등록(서버). hitDelay(텔레그래프) 후 명중 판정, 직후 만료. 반환: 레코드 테이블.
 		-- boxCenter/hw/hh는 호출부가 전방/중앙 기하로 계산해 넘김(프리미티브는 AABB만 저장).
-		-- sourceEntity: 공격 주체 적(맵/유저 산출용 — 기즈모 브로드캐스트 대상). 판정 로직엔 미사용(무손상).
+		-- sourceEntity: 공격 주체 적. 기즈모 브로드캐스트 대상 산출 + rec.source로 저장해 사망 시 일괄 취소(CancelAttacksBySource)에 사용.
 		if self.activeAttacks == nil then self.activeAttacks = {} end
 		self.nextAttackId += 1
-		local now = _WallClock:ServerNow()
+		local now = _WallClock:ServerCombatNow()
 		local rec = {
 			id = self.nextAttackId,
 			shape = "box",
@@ -53,10 +53,12 @@ script CombatPrimitives extends Logic
 			canceled = false,
 			-- 보스 패턴이 BossController에서 주입(평타/일반적은 nil). TryParry가 그로기 충전 대상 판별에 사용.
 			bossEntityId = nil,
+			-- 공격 주체(서버 전용 테이블이라 Entity 직참조 무해). 사망 시 CancelAttacksBySource가 대조.
+			source = sourceEntity,
 		}
 		table.insert(self.activeAttacks, rec)
-		-- 기즈모 통지: 남은 windup=hitDelay, 남은 life=hitDelay+0.25(=expireAt-now). 절대 ServerElapsedSeconds 누수 금지 — 상대초만.
-		self:BroadcastEnemyAttack(sourceEntity, rec.id, boxCenter, hw, hh, hitDelay, hitDelay + 0.25, parryable)
+		-- 기즈모 통지: windup/life는 전투 상대초, serverSentAt은 전송 지연 보정에만 쓰는 서버 원시시각.
+		self:BroadcastEnemyAttack(sourceEntity, rec.id, boxCenter, hw, hh, hitDelay, hitDelay + 0.25, parryable, _UtilLogic.ServerElapsedSeconds, _SlowMotion:Scale())
 		return rec
 	end
 
@@ -104,11 +106,11 @@ script CombatPrimitives extends Logic
 	end
 
 	@ExecSpace("ServerOnly")
-	method integer TryParry(Entity mapEntity, Vector2 boxCenter, number hw, number hh, number reflectDamage)
+	method integer TryParry(Entity mapEntity, Vector2 boxCenter, number hw, number hh, number reflectDamage, number inputAge)
 		-- 평타 판정 박스와 겹치는 parryable 공격 처리: 근접 공격 무효화 / 투사체 반사(ATK×200%). 반환: 패링 수.
 		local count = 0
-		-- 근접 패링 윈도우(§1.4): 명중시점 hitAt 기준 선행 Lead·후행 Trail 안에서만 성립. now/hitAt 모두 ServerElapsedSeconds.
-		local now = _WallClock:ServerNow()
+		-- 입력 RPC 전송시간을 전투시계 단위로 되감아 클라 입력 순간 기준으로 패링 창을 판정한다.
+		local now = _WallClock:ServerCombatNow() - inputAge * _SlowMotion:Scale()
 		local parryLead = _GameConstants.ParryWindowLead
 		local parryTrail = _GameConstants.ParryWindowTrail
 		if self.activeAttacks ~= nil then
@@ -157,10 +159,10 @@ script CombatPrimitives extends Logic
 	end
 
 	@ExecSpace("ServerOnly")
-	method integer TryParryOBB(Entity mapEntity, number cx, number cy, number hw, number hh, number angRad, number reflectDamage)
+	method integer TryParryOBB(Entity mapEntity, number cx, number cy, number hw, number hh, number angRad, number reflectDamage, number inputAge)
 		-- TryParry의 회전 박스(OBB) 버전 — 커서 방향 평타. 판정만 OBB로 바꾸고 윈도우/그로기/반사 로직은 TryParry와 동일.
 		local count = 0
-		local now = _WallClock:ServerNow()
+		local now = _WallClock:ServerCombatNow() - inputAge * _SlowMotion:Scale()
 		local parryLead = _GameConstants.ParryWindowLead
 		local parryTrail = _GameConstants.ParryWindowTrail
 		if self.activeAttacks ~= nil then
@@ -1073,7 +1075,7 @@ script CombatPrimitives extends Logic
 	end
 
 	@ExecSpace("ServerOnly")
-	method void BroadcastEnemyAttack(Entity sourceEntity, number id, Vector2 center, number hw, number hh, number windup, number life, boolean parryable)
+	method void BroadcastEnemyAttack(Entity sourceEntity, number id, Vector2 center, number hw, number hh, number windup, number life, boolean parryable, number serverSentAt, number sentScale)
 		-- 소스 적이 속한 맵의 모든 유저 클라에 공격 박스 통지(1인 1런 전제). DrawGizmo off면 미전송(클라 목록 미증가).
 		if _GameConstants.DrawGizmo == false then return end
 		if sourceEntity == nil or isvalid(sourceEntity) == false then return end
@@ -1083,7 +1085,7 @@ script CombatPrimitives extends Logic
 		if users == nil then return end
 		for _, u in ipairs(users) do
 			if isvalid(u) and u.PlayerComponent ~= nil then
-				self:NotifyEnemyAttack(id, center, hw, hh, windup, life, parryable, u.PlayerComponent.UserId)
+				self:NotifyEnemyAttack(id, center, hw, hh, windup, life, parryable, serverSentAt, sentScale, u.PlayerComponent.UserId)
 			end
 		end
 	end
@@ -1103,7 +1105,7 @@ script CombatPrimitives extends Logic
 	end
 
 	@ExecSpace("Client")
-	method void NotifyEnemyAttack(number id, Vector2 center, number hw, number hh, number windup, number life, boolean parryable)
+	method void NotifyEnemyAttack(number id, Vector2 center, number hw, number hh, number windup, number life, boolean parryable, number serverSentAt, number sentScale)
 		-- 클라 수신: 공격 박스 기즈모 등록(같은 id 있으면 교체). recvAt 스냅샷 후 CombatGizmo가 카운트다운.
 		-- targetUserId는 @ExecSpace("Client") 라우팅용 암묵 인자로 호출부 '마지막'에 전달 — 선언 파라미터 아님(추가 금지).
 		if self.clientEnemyAttacks == nil then self.clientEnemyAttacks = {} end
@@ -1118,7 +1120,7 @@ script CombatPrimitives extends Logic
 			parryable = parryable,
 			windup = windup,
 			life = life,
-			recvAt = _WallClock:Now(),
+			recvAt = _WallClock:CombatNow() - _WallClock:NetworkTransitAge(serverSentAt) * sentScale,
 		})
 	end
 
@@ -1136,6 +1138,27 @@ script CombatPrimitives extends Logic
 		-- 전투 기즈모가 폴링하는 클라 활성 공격 목록(없으면 생성).
 		if self.clientEnemyAttacks == nil then self.clientEnemyAttacks = {} end
 		return self.clientEnemyAttacks
+	end
+
+	@ExecSpace("ServerOnly")
+	method void CancelAttacksBySource(Entity sourceEntity)
+		-- 이 적이 등록한 미해소 공격 레코드 전부 취소 + 클라 기즈모 제거. EnemyHealth.Die가 호출(러브샷 방지의 레코드판).
+		-- 죽은 적의 windup 레코드가 슬로우 트리거(AnyThreatNear)·패링(TryParry) 위협으로 잔존하는 것 방지.
+		if self.activeAttacks == nil then return end
+		if sourceEntity == nil then return end
+		local map = nil
+		if isvalid(sourceEntity) then map = sourceEntity.CurrentMap end
+		local n = 0
+		for _, rec in ipairs(self.activeAttacks) do
+			if rec.canceled == false and rec.source == sourceEntity then
+				rec.canceled = true
+				n += 1
+				self:BroadcastCancel(map, rec.id)
+			end
+		end
+		if n > 0 then
+			log("[CombatPrimitives] canceled " .. tostring(n) .. " attack record(s) (source died)")
+		end
 	end
 
 	@ExecSpace("ServerOnly")

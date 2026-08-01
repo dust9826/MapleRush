@@ -448,6 +448,8 @@ script BossController extends Component
 		if self.phase == "windup" then
 			if self.pendingAttacks ~= nil then
 				for _, rec in ipairs(self.pendingAttacks) do
+					-- canceled를 실제로 세워야 서버측 위협 판정(AnyThreatNear 슬로우 트리거/TryParry)에서도 제외된다.
+					rec.canceled = true
 					if rec.id ~= nil then
 						_CombatPrimitives:BroadcastCancel(self.Entity.CurrentMap, rec.id)
 					end
