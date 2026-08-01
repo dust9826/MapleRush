@@ -6,17 +6,21 @@ script NodeSelectController extends Component
 	-- 타이틀은 이미지, 서브타이틀 텍스트만 동적("스테이지(X/Y)").
 	property TextComponent subtitleText = "1f7329ab-df25-4572-b22f-064953a715e2"
 
-	-- 1슬롯만 선택 가능(버튼). 2·3슬롯은 이미지 전용(선택 불가) — 스크립트 미연결.
+	-- 1번은 일반 스테이지, 3번은 이벤트. 2번은 다른 기능을 위해 미연결 예약.
 	property ButtonComponent btnNode1 = "143548d7-20f6-44e2-a88f-f1b5901056c1"
+	property ButtonComponent btnNode3 = "38d86f7d-9f18-4c55-8c18-e42ba8a6b41e"
 
 	property any hNode1 = nil
+	property any hNode3 = nil
+	property string currentRoundId = ""
 
 	@ExecSpace("ClientOnly")
 	method void OnBeginPlay()
-		-- FloorManager에 등록 + 숨김 + 1슬롯 버튼만 연결.
+		-- FloorManager에 등록 + 숨김 + 1/3번 슬롯 버튼 연결.
 		_FloorManager.nodeUI = self
 		if isvalid(self.nodeRoot) then self.nodeRoot.Enable = false end
 		self.hNode1 = self.btnNode1.Entity:ConnectEvent(ButtonClickEvent, self.OnNode1Click)
+		self.hNode3 = self.btnNode3.Entity:ConnectEvent(ButtonClickEvent, self.OnNode3Click)
 		log("[NodeSelectController] registered")
 	end
 
@@ -24,28 +28,38 @@ script NodeSelectController extends Component
 	method void OnEndPlay()
 		-- 버튼 해제.
 		if self.hNode1 ~= nil then self.btnNode1.Entity:DisconnectEvent(ButtonClickEvent, self.hNode1) end
+		if self.hNode3 ~= nil then self.btnNode3.Entity:DisconnectEvent(ButtonClickEvent, self.hNode3) end
 	end
 
 	@ExecSpace("ClientOnly")
-	method void Open(integer stageNo, integer totalStages)
-		-- 3분기 노드 선택 (현재 전부 일반 스테이지 — stage_design §2.2.3). 1슬롯만 선택 가능.
+	method void Open(integer stageNo, integer totalStages, string roundId)
+		-- 고정 노드 선택: 1번 일반, 2번 예약, 3번 이벤트.
+		self.currentRoundId = roundId
 		self.nodeRoot.Enable = true
 		if isvalid(self.subtitleText) then self.subtitleText.Text = "스테이지(" .. tostring(stageNo) .. "/" .. tostring(totalStages) .. ")" end
-		log("[NodeSelectController] opened " .. tostring(stageNo) .. "/" .. tostring(totalStages))
+		log("[NodeSelectController] opened " .. tostring(stageNo) .. "/"
+			.. tostring(totalStages) .. " round=" .. roundId)
 	end
 
 	@ExecSpace("ClientOnly")
 	method void OnNode1Click(ButtonClickEvent event)
-		-- 분기 1 (유일한 선택지).
+		-- 일반 스테이지.
 		self:SelectNode(1)
 	end
 
 	@ExecSpace("ClientOnly")
-	method void SelectNode(integer branchIdx)
-		-- 분기 확정 → 서버 통지.
+	method void OnNode3Click(ButtonClickEvent event)
+		-- 이벤트 스테이지.
+		self:SelectNode(3)
+	end
+
+	@ExecSpace("ClientOnly")
+	method void SelectNode(integer slotId)
+		-- 슬롯 확정 → 라운드 토큰과 함께 서버 통지.
 		self.nodeRoot.Enable = false
-		_FloorManager:RequestSelectNode(branchIdx)
-		log("[NodeSelectController] branch " .. tostring(branchIdx))
+		_FloorManager:RequestSelectNode(self.currentRoundId, slotId)
+		log("[NodeSelectController] slot " .. tostring(slotId)
+			.. " round=" .. self.currentRoundId)
 	end
 
 end

@@ -17,6 +17,12 @@ script FloorManager extends Logic
 	-- 서버: 이번 노드 선택의 분기별 스폰포인트 이름 [branch1, branch2, branch3] (테마맵에서 3개 추출)
 	property any nodeSpawnChoices = nil
 
+	-- 서버: 노드 선택 라운드 토큰과 중복 선택 잠금. 이벤트 완료도 같은 토큰으로 검증한다.
+	property integer nodeRoundSerial = 0
+	property string currentNodeRoundId = ""
+	property boolean nodeRoundLocked = false
+	property any eventCompletedHandler = nil
+
 	-- 서버: 현재 테마의 스테이지 덱(셔플된 미방문 스테이지 이름 배열). 노드마다 상단 최대 3장을 후보로 제시,
 	-- 선택(방문)된 스테이지는 덱에서 제거. 덱이 완전히 비면(0장) 원상복구(전체)하고 다시 셔플. 테마(층) 단위.
 	-- ★ UI는 항상 3개 문 → 덱에 2·1장만 남아도 후보 배열은 3개로 패딩(남은 카드 중복 노출). 1장이면 세 문 모두 그 스테이지.
@@ -41,6 +47,26 @@ script FloorManager extends Logic
 	property any gameClearUI = nil
 
 	@ExecSpace("ServerOnly")
+	method void OnBeginPlay()
+		self.eventCompletedHandler = _EventManager:ConnectEvent(
+			EventStageCompletedEvent,
+			self.OnEventStageCompleted
+		)
+		log("[FloorManager] event-stage observer connected")
+	end
+
+	@ExecSpace("ServerOnly")
+	method void OnEndPlay()
+		if self.eventCompletedHandler ~= nil then
+			_EventManager:DisconnectEvent(
+				EventStageCompletedEvent,
+				self.eventCompletedHandler
+			)
+			self.eventCompletedHandler = nil
+		end
+	end
+
+	@ExecSpace("ServerOnly")
 	method void StartGameFlow()
 		-- 새 런: 1층 테마 선택부터 (stage_design §2.2.1).
 		self.usedThemes = {}
@@ -49,6 +75,8 @@ script FloorManager extends Logic
 		self.NormalsClearedThisFloor = 0
 		self.ShopDoneThisFloor = false
 		self.CurrentTheme = ""
+		self.currentNodeRoundId = ""
+		self.nodeRoundLocked = false
 		self.PhaseName = "theme"
 		self:ShowThemeSelect()
 	end
@@ -133,11 +161,23 @@ script FloorManager extends Logic
 		local pc = self:FirstPlayerComponent()
 		if self.NormalsClearedThisFloor < required then
 			self.PhaseName = "normal"
+			self.nodeRoundSerial += 1
+			self.currentNodeRoundId =
+				tostring(_GameStateManager.CurrentFloor)
+				.. "-" .. self.CurrentTheme
+				.. "-" .. tostring(self.NormalsClearedThisFloor)
+				.. "-" .. tostring(self.nodeRoundSerial)
+			self.nodeRoundLocked = false
 			-- 노드 3분기 = 테마맵의 스폰포인트 3개 추출 (branchIdx → 스폰포인트).
 			self:PrepareNodeSpawns()
 			if pc ~= nil then
 				-- 분자=현재 스테이지 번호, 분모=보스전까지 전체(일반 required + 상점 1 + 보스 1).
-				self:ClientShowNodeSelect(self.NormalsClearedThisFloor + 1, required + 2, pc.UserId)
+				self:ClientShowNodeSelect(
+					self.NormalsClearedThisFloor + 1,
+					required + 2,
+					self.currentNodeRoundId,
+					pc.UserId
+				)
 			end
 		elseif self.ShopDoneThisFloor == false then
 			self.PhaseName = "shop"
@@ -212,32 +252,105 @@ script FloorManager extends Logic
 	end
 
 	@ExecSpace("Client")
-	method void ClientShowNodeSelect(integer stageNo, integer totalStages)
-		-- 클라: 3분기 노드 선택 팝업 (현재는 전부 일반 스테이지 — 임시 구현).
+	method void ClientShowNodeSelect(integer stageNo, integer totalStages, string roundId)
+		-- 클라: 1번 일반 스테이지, 2번 예약, 3번 이벤트 고정 노드 선택 팝업.
 		_InputRouter:SetContext("Node")
 		-- 선택 커버 로딩화면 표시(스테이지 준비되면 ClientStageReset이 숨김).
 		_SelectBackdrop:ShowLoading(true)
 		if self.nodeUI ~= nil then
-			self.nodeUI:Open(stageNo, totalStages)
+			self.nodeUI:Open(stageNo, totalStages, roundId)
 		else
 			log_warning("[FloorManager] nodeUI not registered — auto branch 1")
-			self:RequestSelectNode(1)
+			self:RequestSelectNode(roundId, 1)
 		end
 	end
 
 	@ExecSpace("Server")
-	method void RequestSelectNode(integer branchIdx)
-		-- 분기 선택 → 해당 Stage에서 일반 스테이지 시작 (branchIdx → nodeSpawnChoices의 Stage 이름).
+	method void RequestSelectNode(string roundId, integer slotId)
+		-- 고정 슬롯 라우팅. 1=일반, 2=예약(거부), 3=이벤트.
+		if roundId ~= self.currentNodeRoundId then
+			log_warning("[FloorManager] node rejected stale round=" .. tostring(roundId))
+			return
+		end
+		if self.PhaseName ~= "normal" then
+			log_warning("[FloorManager] node rejected phase=" .. tostring(self.PhaseName))
+			return
+		end
+		if self.nodeRoundLocked then
+			log_warning("[FloorManager] node rejected locked round=" .. roundId)
+			return
+		end
+		local pc = self:FirstPlayerComponent()
+		if pc == nil or senderUserId ~= pc.UserId then
+			log_warning("[FloorManager] node rejected sender=" .. tostring(senderUserId))
+			return
+		end
+		if slotId == 2 then
+			log_warning("[FloorManager] node slot 2 is reserved")
+			return
+		end
+		if slotId ~= 1 and slotId ~= 3 then
+			log_warning("[FloorManager] invalid node slot=" .. tostring(slotId))
+			return
+		end
+
+		self.nodeRoundLocked = true
+		if slotId == 3 then
+			local started = _EventManager:StartEvent(pc.UserId, self.CurrentTheme, roundId)
+			if started == false then
+				self.nodeRoundLocked = false
+				local required = _GameConstants:NormalStagesForFloor(_GameStateManager.CurrentFloor)
+				self:ClientShowNodeSelect(
+					self.NormalsClearedThisFloor + 1,
+					required + 2,
+					roundId,
+					pc.UserId
+				)
+				log_warning("[FloorManager] event start failed round=" .. roundId)
+			else
+				log("[FloorManager] event slot selected round=" .. roundId)
+			end
+			return
+		end
+
+		-- 슬롯 1 → 덱 첫 후보에서 기존 일반 스테이지 시작.
 		local stageName = "Stage1"
-		if self.nodeSpawnChoices ~= nil then
-			local idx = branchIdx
-			if idx < 1 or idx > #self.nodeSpawnChoices then idx = 1 end
-			stageName = self.nodeSpawnChoices[idx]
+		if self.nodeSpawnChoices ~= nil and #self.nodeSpawnChoices >= 1 then
+			stageName = self.nodeSpawnChoices[1]
 		end
 		-- ★ 진행 중 스테이지만 기록. 덱 제거는 "클리어" 시점(OnStageRewardDone)에만 — 사망·재시작은 덱 유지.
 		self.currentStageName = stageName
-		log("[FloorManager] node branch " .. tostring(branchIdx) .. " -> stage " .. tostring(stageName))
+		log("[FloorManager] node slot 1 -> stage " .. tostring(stageName)
+			.. " round=" .. roundId)
 		_StageManager:StartStageAt(stageName)
+	end
+
+	@ExecSpace("ServerOnly")
+	method void OnEventStageCompleted(EventStageCompletedEvent event)
+		if event.roundId ~= self.currentNodeRoundId then
+			log_warning("[FloorManager] ignored event completion stale round="
+				.. tostring(event.roundId))
+			return
+		end
+		if self.PhaseName ~= "normal" or self.nodeRoundLocked == false then return end
+		local pc = self:FirstPlayerComponent()
+		if pc == nil or event.userId ~= pc.UserId then return end
+
+		self.NormalsClearedThisFloor += 1
+		self.nodeRoundLocked = false
+		_RecordStorage:StampStage(
+			_GameStateManager.CurrentFloor,
+			_RecordStorage:ComputeStageProgress(
+				self.NormalsClearedThisFloor,
+				self.ShopDoneThisFloor,
+				false
+			),
+			_RunTimer:ServerElapsed()
+		)
+		log("[FloorManager] event done progress="
+			.. tostring(self.NormalsClearedThisFloor)
+			.. " instance=" .. event.instanceId)
+		self:NextNode()
 	end
 
 	@ExecSpace("Client")

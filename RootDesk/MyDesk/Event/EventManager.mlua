@@ -6,6 +6,7 @@ script EventManager extends Logic
 	@HideFromInspector property any activeByUser = nil
 	@HideFromInspector property integer nextInstanceSerial = 0
 
+	@ExecSpace("ServerOnly")
 	method void OnBeginPlay()
 		self.activeByUser = {}
 		self.nextInstanceSerial = 0
