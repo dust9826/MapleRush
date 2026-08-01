@@ -242,13 +242,13 @@ script PlayerAbility extends Component
 		local map = self.Entity.CurrentMap
 		local center = Vector2(cx, cy + _GameConstants.PlayerCenterYOffset)
 		local radius = _PlayerConfig.SpinRadius + _MetaProgression:GetSpinBonus()
+		-- 평타와 같은 이유로 패링을 데미지보다 먼저 확정한다. 공격 주체를 한 방에 죽여도 패링 보상이 유실되지 않는다.
+		local reflectDamage = _GameStateManager.AttackStat * _PlayerConfig.DmgReflectPct
+		local parryCount = _CombatPrimitives:TryParry(map, center, radius, radius, reflectDamage, inputAge)
 		local damage = _GameStateManager.AttackStat * _PlayerConfig.SpinDmgPct
 		local hitCount = _CombatPrimitives:DamageEnemiesInCircle(map, center, radius, damage, "spin")
 		-- 넉백: 명중해 살아남은 적을 플레이어 반대 방향으로 밀어냄(투사체 제외, ability_design §4.2).
 		local knockCount = _CombatPrimitives:KnockbackEnemiesInCircle(map, center, radius, _PlayerConfig.SpinKnockback)
-		-- 회전베기 전용 패링: 원형 범위를 정사각 박스로 근사해 근접 노란공격 취소 + 노란투사체 반사(ability_design §4.2).
-		local reflectDamage = _GameStateManager.AttackStat * _PlayerConfig.DmgReflectPct
-		local parryCount = _CombatPrimitives:TryParry(map, center, radius, radius, reflectDamage, inputAge)
 		log("[PlayerAbility] SPIN: hit=" .. tostring(hitCount) .. " knock=" .. tostring(knockCount) .. " parry=" .. tostring(parryCount) .. " r=" .. string.format("%.2f", radius) .. " (left=" .. tostring(self.UsesLeft) .. ")")
 	end
 
