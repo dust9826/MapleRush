@@ -130,11 +130,13 @@ script PlayerCombat extends Component
 		local ang = math.atan(ny, nx)
 		local cx = pos.x + nx * hw
 		local cy = pos.y + _GameConstants.PlayerCenterYOffset + ny * hw
-		local damage = _GameStateManager.AttackStat * _PlayerConfig.DmgAttackPct
-		local hitCount = _CombatPrimitives:DamageEnemiesInOBB(self.Entity.CurrentMap, cx, cy, hw, hh, ang, damage, "attack")
+		-- 패링을 데미지보다 먼저 확정한다. 한 방 처치가 먼저 Die→CancelAttacksBySource를 호출하면
+		-- 같은 공격의 유효한 패링 레코드까지 취소되어 parry=0이 되는 순서 회귀를 막는다.
 		local reflectDamage = _GameStateManager.AttackStat * _PlayerConfig.DmgReflectPct
 		local inputAge = _WallClock:NetworkInputAge(inputServerTime)
 		local parried = _CombatPrimitives:TryParryOBB(self.Entity.CurrentMap, cx, cy, hw, hh, ang, reflectDamage, inputAge)
+		local damage = _GameStateManager.AttackStat * _PlayerConfig.DmgAttackPct
+		local hitCount = _CombatPrimitives:DamageEnemiesInOBB(self.Entity.CurrentMap, cx, cy, hw, hh, ang, damage, "attack")
 		-- 패링 성공(근접 무효화/투사체 반사) 시 공격 위치에 CircleBurst 파티클 1회 — 요청 클라에만.
 		if parried > 0 then
 			local pc2 = self.Entity.PlayerComponent
