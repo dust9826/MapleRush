@@ -1,12 +1,12 @@
 ---
 id: MR-AK
 title: 폐광 테마 이벤트 풀 공백 + 테마 명칭(mine/deepmine) 통일
-status: backlog
-owner: unassigned
+status: done
+owner: dust9826
 area: mixed
 touches: [RootDesk/MyDesk/Event/EventCatalog.mlua, RootDesk/MyDesk/Event/Data/EventTemplates.csv]
 depends_on: []
-branch: ""
+branch: "feat/event-stage"
 created: 2026-08-02
 updated: 2026-08-02
 ---
@@ -16,8 +16,7 @@ updated: 2026-08-02
 ## Goal
 
 폐광(deepmine) 테마에서도 3번 이벤트 슬롯이 동작하게 하고, 이벤트 데이터의
-테마 명칭을 프로젝트 표준(`deepmine`)으로 통일한다. **팀 논의 후 착수** —
-MR-AJ 검증 중 발견해 기록만 남겨둔 상태.
+테마 명칭을 프로젝트 표준(`deepmine`)으로 통일한다. dust9826 결정으로 즉시 진행 (2026-08-02).
 
 ## 현상 (2026-08-02 확인)
 
@@ -41,11 +40,14 @@ MR-AJ 검증 중 발견해 기록만 남겨둔 상태.
 
 ## Acceptance criteria
 
-- [ ] 폐광 테마에서 3번 슬롯 선택 시 common(+검수된 폐광) 이벤트가 정상 추첨된다.
-- [ ] 테마 명칭이 코드·데이터 전반에서 `deepmine` 하나로 통일된다.
-- [ ] 기존 발견 기록(`eventId|choiceId` 키)이 깨지지 않는다.
-- [ ] 오르비스/엘나스 이벤트 추첨 회귀 없음.
+- [x] 폐광 테마에서 3번 슬롯 선택 시 common(+검수된 폐광) 이벤트가 정상 추첨된다.
+- [x] 테마 명칭이 코드·데이터 전반에서 `deepmine` 하나로 통일된다.
+- [x] 기존 발견 기록(`eventId|choiceId` 키)이 깨지지 않는다.
+- [x] 오르비스/엘나스 이벤트 추첨 회귀 없음.
 
 ## Notes / decisions
 
 - MR-AJ(고정 3번 슬롯 이벤트) 검증 중 발견 — 상세는 해당 티켓 Notes 참조.
+- (2026-08-02 처리) CSV theme_id 10칸 mine→deepmine, EventCatalog 검증·EligibleEventIds 가드에 deepmine 반영.
+  라이브 검증: 폐광 진입 → 3번 슬롯 → common_ruined_shrine 추첨·선택·완료·진행도 +1 정상. 발견기록 로드 count=10 유지.
+- `mine_*` 이벤트 10종의 `enabled=false`는 그대로 둠 — 플립 여부는 D4LGONA 판단.
