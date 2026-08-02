@@ -4,18 +4,20 @@ script EventController extends Component
 
 	-- Client presentation Adapter. Domain selection and result resolution remain in EventManager.
 	property Entity eventRoot = "d2be1198-0389-41fc-bc69-a68f7b41d1f8"
-	property TextComponent titleText = "b15617bf-06fd-4c52-9dcf-2a008d6922c4"
-	property TextComponent descriptionText = "de61ce66-6ca3-4f37-9035-2e99a5f59b3d"
-	property SpriteGUIRendererComponent illustration = "b72f6bc2-279f-4925-91fb-5fcf36103123"
-	property Entity choicePanel = "42936867-1aeb-4239-81cf-517faf8fed08"
-	property ButtonComponent btnChoice1 = "3e23757a-83da-46ab-8696-1418aed5d75c"
-	property TextComponent detail1 = "a89b3c01-b2d1-4f29-b24d-08e472736a60"
-	property ButtonComponent btnChoice2 = "46662b2a-fecc-4fbb-a0f8-64b5c103049f"
-	property TextComponent detail2 = "b27edfcd-a02d-431b-81fa-eafca8f6e34c"
-	property Entity resultPanel = "ba30f903-365d-4d99-bf35-e26b1b581437"
-	property TextComponent resultText = "b8920d53-4621-4ead-9f64-8b5423e4b1d1"
-	property TextComponent effectSummary = "87bad18c-1cc2-4ea4-a6f6-2ced3b21d1e6"
-	property ButtonComponent btnContinue = "eafbc617-e14a-4169-98eb-c91c39eb8424"
+	property TextComponent titleText = "ff0bfe1c-5dc0-45f0-9e4c-6ddb9ce3b8db"
+	property TextComponent descriptionText = "d7fd4b28-531d-4524-a682-9602269c53bd"
+	property SpriteGUIRendererComponent illustration = "516ee21d-7d91-4de7-bcea-dcc5e5091173"
+	property Entity choicePanel = "6522249c-4c0f-425a-9b9b-43f5864fab48"
+	property ButtonComponent btnChoice1 = "537057e2-ae4e-48fd-a9f7-16fa8811be08"
+	property TextComponent label1 = "6c064c35-59ed-4a34-b0c1-a31418b727d4"
+	property TextComponent detail1 = "c80d121f-2f45-407a-bfb5-db7e93a2d8ed"
+	property ButtonComponent btnChoice2 = "08b0d732-c56f-452c-bfa9-284e9335efce"
+	property TextComponent label2 = "40e20bb5-548c-412e-b1bd-7f7b52bf3e17"
+	property TextComponent detail2 = "08730b68-78b1-4a7b-8490-5d1c7d47a008"
+	property Entity resultPanel = "45fa482c-730a-4fb9-9643-df7f6ca50a54"
+	property TextComponent resultText = "e4679216-d74d-4e02-99d2-7beb499ab090"
+	property TextComponent effectSummary = "49cc3ef7-16a1-43b5-a7bc-0afbb3c20b54"
+	property ButtonComponent btnContinue = "53ec10e0-f16b-4965-b758-7291ce3c530a"
 
 	@HideFromInspector property string instanceId = ""
 	@HideFromInspector property string choiceId1 = ""
@@ -72,11 +74,9 @@ script EventController extends Component
 		self.choiceId2 = tostring(snapshot.choices[2].choiceId or "")
 		self.titleText.Text = tostring(snapshot.title or "")
 		self.descriptionText.Text = tostring(snapshot.description or "")
-		self.btnChoice1.Entity.TextComponent.Text =
-			tostring(snapshot.choices[1].label or "")
+		self.label1.Text = tostring(snapshot.choices[1].label or "")
 		self.detail1.Text = tostring(snapshot.choices[1].detail or "???")
-		self.btnChoice2.Entity.TextComponent.Text =
-			tostring(snapshot.choices[2].label or "")
+		self.label2.Text = tostring(snapshot.choices[2].label or "")
 		self.detail2.Text = tostring(snapshot.choices[2].detail or "???")
 		self.resultText.Text = ""
 		self.effectSummary.Text = ""
