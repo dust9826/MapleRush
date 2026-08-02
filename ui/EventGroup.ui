@@ -4974,20 +4974,20 @@
               },
               "MobileOnly": false,
               "OffsetMax": {
-                "x": 280,
-                "y": 430
+                "x": 210,
+                "y": 170
               },
               "OffsetMin": {
-                "x": -280,
-                "y": -430
+                "x": -210,
+                "y": -250
               },
               "Pivot": {
                 "x": 0.5,
                 "y": 0.5
               },
               "RectSize": {
-                "x": 560,
-                "y": 860
+                "x": 420,
+                "y": 420
               },
               "UIMode": 1,
               "UIScale": {
@@ -4998,7 +4998,7 @@
               "UIVersion": 2,
               "anchoredPosition": {
                 "x": 0,
-                "y": 0
+                "y": -40
               },
               "Position": {
                 "x": 0,
