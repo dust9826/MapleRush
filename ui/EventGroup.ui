@@ -4975,11 +4975,11 @@
               "MobileOnly": false,
               "OffsetMax": {
                 "x": 210,
-                "y": 170
+                "y": 30
               },
               "OffsetMin": {
                 "x": -210,
-                "y": -250
+                "y": -390
               },
               "Pivot": {
                 "x": 0.5,
@@ -4998,7 +4998,7 @@
               "UIVersion": 2,
               "anchoredPosition": {
                 "x": 0,
-                "y": -40
+                "y": -180
               },
               "Position": {
                 "x": 0,
