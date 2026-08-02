@@ -1,0 +1,8 @@
+reward_ref,reward_type,amount_multiplier,source_pool,description_ko
+meso_s,meso,0.5,normal_stage_base_meso,일반 전투 기본 메소의 50%
+meso_m,meso,1.0,normal_stage_base_meso,일반 전투 기본 메소의 100%
+meso_l,meso,1.5,normal_stage_base_meso,일반 전투 기본 메소의 150%
+normal_stat_choice,reward_choice,,normal_stat_pool,기존 일반 능력치 보상 풀에서 1개 제시
+normal_item_choice,reward_choice,,normal_item_pool,기존 일반 아이템 보상 풀에서 1개 제시
+normal_ability_choice,reward_choice,,normal_ability_pool,기존 일반 능력 보상 풀에서 1개 제시
+elite_combat_reward,stage_standard,,elite_stage_reward,일반 보상과 엘리트 전용 보상 규칙을 적용

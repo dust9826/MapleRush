@@ -1,0 +1,7 @@
+@Event
+script EventViewEvent extends EventType
+
+	property string action = ""
+	property any snapshot = nil
+
+end

@@ -1,0 +1,90 @@
+@Logic
+script EventDiscoveryStorage extends Logic
+
+	-- Persistent Repository for discovered event choices. Composite keys avoid cross-event ID collisions.
+	property string SaveKey = "event_discovered_choices_v1"
+	@HideFromInspector property string ownerUserId = ""
+	@HideFromInspector property boolean loaded = false
+	@HideFromInspector property any discovered = nil
+
+	method void EnsureCache()
+		if self.discovered == nil then
+			self.discovered = {}
+		end
+	end
+
+	method string DiscoveryKey(string eventId, string choiceId)
+		return eventId .. "|" .. choiceId
+	end
+
+	@ExecSpace("ServerOnly")
+	method void LoadFor(string userId)
+		if self.loaded and self.ownerUserId == userId then return end
+		self.ownerUserId = userId
+		self.discovered = {}
+
+		---@type UserDataStorage
+		local storage = _DataStorageService:GetUserDataStorage(userId)
+		local errorCode, raw = storage:GetAndWait(self.SaveKey)
+		if errorCode == 0 and raw ~= nil and raw ~= "" then
+			local rec = _UtilLogic:StringToTable(raw)
+			-- v1: choices = ','로 연결된 발견 키 문자열. TableToString은 중첩 테이블을
+			-- 직렬화하지 못하므로(참조 문자열로 저장됨) 평탄한 문자열 인코딩만 신뢰한다.
+			if rec ~= nil and type(rec.choices) == "string" then
+				for key in string.gmatch(rec.choices, "[^,]+") do
+					self.discovered[key] = true
+				end
+			end
+		end
+		self.loaded = true
+
+		local count = 0
+		for _, value in pairs(self.discovered) do
+			if value == true then count += 1 end
+		end
+		log("[EventDiscoveryStorage] loaded count=" .. tostring(count)
+			.. " (err=" .. tostring(errorCode) .. ")")
+	end
+
+	@ExecSpace("ServerOnly")
+	method boolean IsDiscovered(string eventId, string choiceId)
+		self:EnsureCache()
+		return self.discovered[self:DiscoveryKey(eventId, choiceId)] == true
+	end
+
+	@ExecSpace("ServerOnly")
+	method boolean Discover(string eventId, string choiceId)
+		self:EnsureCache()
+		local key = self:DiscoveryKey(eventId, choiceId)
+		if self.discovered[key] == true then return false end
+		self.discovered[key] = true
+		self:Persist()
+		log("[EventDiscoveryStorage] discovered " .. key)
+		return true
+	end
+
+	@ExecSpace("ServerOnly")
+	method void Persist()
+		if self.ownerUserId == "" or self.loaded == false then return end
+		self:EnsureCache()
+		-- 발견 키를 ','로 연결한 평탄 문자열로 저장 (키 형식 eventId|choiceId — ','는 미포함).
+		local keys = {}
+		for key, value in pairs(self.discovered) do
+			if value == true then table.insert(keys, key) end
+		end
+		table.sort(keys)
+		local blob = _UtilLogic:TableToString({
+			version = 1,
+			choices = table.concat(keys, ","),
+		})
+		---@type UserDataStorage
+		local storage = _DataStorageService:GetUserDataStorage(self.ownerUserId)
+		storage:SetAsync(self.SaveKey, blob, function(errorCode, value)
+			if errorCode ~= 0 then
+				log_warning("[EventDiscoveryStorage] save failed (err="
+					.. tostring(errorCode) .. ")")
+			end
+		end)
+	end
+
+end

@@ -1,0 +1,81 @@
+event_id,choice_id,sort_order,label_ko,detail_ko
+common_adventurer_rumor,listen,1,이야기를 엿듣는다,성공 확률이 있는 능력 보상 확인
+common_adventurer_rumor,move_on,2,지나친다,메소 획득
+common_lost_merchant,help_cart,1,수레를 도와준다,다음 상점 무료 구매 1회
+common_lost_merchant,take_goods,2,짐을 챙긴다,메소 획득 및 현재 메소 일부 감소
+common_roadside_chest,open_chest,1,상자를 연다,성공·실패 확률 보상 확인
+common_roadside_chest,leave_chest,2,상자를 두고 간다,소량 메소 획득
+common_wandering_smith,sharpen_blade,1,칼날을 맡긴다,능력치 보상 획득
+common_wandering_smith,save_time,2,시간을 아낀다,메소 획득
+common_duel_challenge,join_duel,1,결투에 뛰어든다,엘리트 강제 전투
+common_duel_challenge,mediate,2,말린다,보통 메소 획득
+common_ruined_shrine,pray,1,기도한다,능력 보상 획득
+common_ruined_shrine,offer_meso,2,공물을 바친다,현재 메소 일부 감소 및 다음 상점 무료 구매
+common_injured_scout,help_scout,1,정찰병을 돕는다,능력치 보상 획득
+common_injured_scout,take_map,2,지도만 챙긴다,메소 획득 및 다음 전투 대시 -1
+common_odd_vendor,barter,1,물건을 교환한다,현재 메소 일부 감소 및 아이템 보상
+common_odd_vendor,refuse,2,거절한다,소량 메소 획득
+common_silent_camp,rest,1,잠시 쉰다,다음 상점 무료 구매 1회
+common_silent_camp,search_camp,2,야영지를 수색한다,보통 메소 획득
+common_stray_map,follow_map,1,지도 길을 따른다,일반 강제 전투 후 능력 보상
+common_stray_map,sell_map,2,지도를 판다,보통 메소 획득
+orbis_teal_glimmer,follow_light,1,잔광을 따라간다,다음 전투 적 체력 증가 및 능력 보상
+orbis_teal_glimmer,safe_route,2,안전한 길을 찾는다,메소 획득
+orbis_shadow_bargain,accept_trade,1,거래를 받는다,성공·실패 확률 보상 확인
+orbis_shadow_bargain,cut_shadow,2,그림자를 베어낸다,엘리트 강제 전투
+orbis_empty_dock,decode_ticket,1,표를 해독한다,다음 상점 무료 구매 1회
+orbis_empty_dock,salvage_parts,2,부품을 챙긴다,소량 메소 획득
+orbis_cloud_bridge,cross_bridge,1,구름다리를 건넌다,다음 전투 대시 -1 및 아이템 보상
+orbis_cloud_bridge,reinforce_bridge,2,다리를 보강한다,보통 메소 획득
+orbis_star_chart,read_chart,1,항해도를 읽는다,능력 보상 획득
+orbis_star_chart,sell_chart,2,항해도를 판다,다량 메소 획득
+orbis_wind_vane,turn_vane,1,풍향계를 돌린다,다음 전투 적 체력 증가 및 능력치 보상
+orbis_wind_vane,ignore_vane,2,그대로 둔다,보통 메소 획득
+orbis_sky_pirate_signal,answer_signal,1,신호에 응답한다,성공 및 엘리트 전투 확률 확인
+orbis_sky_pirate_signal,hide_signal,2,신호를 피한다,소량 메소 획득
+orbis_cursed_feather,hold_feather,1,깃털을 쥔다,이번 런 공격 속도 감소 및 아이템 보상
+orbis_cursed_feather,burn_feather,2,깃털을 태운다,보통 메소 획득
+orbis_fallen_observatory,climb_observatory,1,관측소에 오른다,다음 전투 목숨 -1 및 능력 보상
+orbis_fallen_observatory,survey_ground,2,지상에서 살핀다,보통 메소 획득
+orbis_airy_pouch,open_pouch,1,주머니를 연다,다량 메소 획득
+orbis_airy_pouch,release_pouch,2,바람을 놓아준다,다음 상점 무료 구매 1회
+elnath_frozen_footprints,follow_steps,1,발자국을 좇는다,다음 전투 대시 -1 및 아이템 보상
+elnath_frozen_footprints,take_detour,2,바람을 피해 우회한다,메소 획득
+elnath_last_campfire,save_ember,1,불씨를 살린다,현재 메소 일부 감소 및 다음 상점 무료 구매
+elnath_last_campfire,recover_notes,2,노트를 회수한다,능력치 보상 획득
+elnath_blizzard_echo,answer_signal,1,신호에 응답한다,성공 및 엘리트 전투 확률 확인
+elnath_blizzard_echo,record_signal,2,신호를 기록한다,소량 메소 획득
+elnath_frozen_cabin,enter_cabin,1,산장에 들어간다,아이템 보상 획득
+elnath_frozen_cabin,collect_firewood,2,장작을 챙긴다,다음 상점 무료 구매 1회
+elnath_hunter_trail,follow_hunter,1,흔적을 따른다,엘리트 강제 전투
+elnath_hunter_trail,collect_arrows,2,화살촉을 챙긴다,보통 메소 획득
+elnath_ice_cave,resonate,1,울림에 맞춘다,다음 전투 적 체력 증가 및 능력 보상
+elnath_ice_cave,mark_cave,2,동굴을 표시한다,소량 메소 획득
+elnath_snow_owl,follow_owl,1,올빼미를 따른다,능력치 보상 획득
+elnath_snow_owl,feed_owl,2,먹이를 건넨다,현재 메소 일부 감소 및 다음 상점 무료 구매
+elnath_rope_bridge,cross_rope,1,밧줄다리를 건넌다,다음 전투 대시 -1 및 아이템 보상
+elnath_rope_bridge,secure_rope,2,밧줄을 고정한다,보통 메소 획득
+elnath_avalanche_warning,rush_through,1,눈사태를 뚫는다,일반 강제 전투 후 능력 보상
+elnath_avalanche_warning,wait_out,2,안전해질 때까지 기다린다,소량 메소 획득
+elnath_frost_shrine,take_offering,1,공물을 받는다,다음 전투 목숨 -1 및 능력치 보상
+elnath_frost_shrine,restore_offering,2,공물을 되돌린다,다음 상점 무료 구매 1회
+mine_sealed_rail,break_seal,1,봉인을 부순다,엘리트 적 체력 ×2.5 강제 전투
+mine_sealed_rail,repair_cart,2,광차를 수리한다,다량 메소 획득
+mine_molten_notes,retrieve_notes,1,노트를 건진다,다음 전투 목숨 -1 및 능력치 보상
+mine_molten_notes,copy_coordinates,2,좌표만 옮긴다,보통 메소 획득
+mine_rift_whisper,trust_whisper,1,목소리를 믿는다,메소 감소 및 일반 강제 전투
+mine_rift_whisper,seal_rift,2,균열을 봉인한다,다음 상점 무료 구매 1회
+mine_abandoned_forge,use_forge,1,모루를 사용한다,다음 전투 적 체력 증가 및 능력치 보상
+mine_abandoned_forge,collect_scrap,2,고철을 챙긴다,보통 메소 획득
+mine_miners_ledger,follow_ledger,1,장부를 따른다,아이템 보상 획득
+mine_miners_ledger,sell_ledger,2,장부를 판다,다량 메소 획득
+mine_heat_fissure,approach_fissure,1,틈에 다가간다,이번 런 대시 회복 속도 감소 및 능력 보상
+mine_heat_fissure,avoid_fissure,2,우회한다,소량 메소 획득
+mine_chained_golem,release_golem,1,사슬을 푼다,엘리트 강제 전투
+mine_chained_golem,search_rubble,2,잔해를 수색한다,보통 메소 획득
+mine_collapse_warning,take_shortcut,1,지름길을 택한다,다음 전투 목숨 -1 및 아이템 보상
+mine_collapse_warning,reinforce_tunnel,2,갱도를 보강한다,다음 상점 무료 구매 1회
+mine_smuggler_cache,open_cache,1,은닉처를 연다,현재 메소 일부 감소 및 아이템 보상
+mine_smuggler_cache,report_cache,2,은닉처를 신고한다,능력치 보상 획득
+mine_lava_lift,ride_lift,1,승강기를 탄다,일반 강제 전투 후 능력 보상
+mine_lava_lift,cool_lift,2,증기를 식힌다,다량 메소 획득
