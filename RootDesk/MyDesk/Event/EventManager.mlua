@@ -237,7 +237,7 @@ script EventManager extends Logic
 	end
 
 	@ExecSpace("Client")
-	method void ClientDispatchView(string action, any snapshot)
+	method void ClientDispatchView(string action, table snapshot)
 		local view = EventViewEvent()
 		view.action = action
 		view.snapshot = snapshot

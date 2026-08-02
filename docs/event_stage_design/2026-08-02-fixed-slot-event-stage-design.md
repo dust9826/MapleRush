@@ -186,7 +186,9 @@ DataStorage를 호출하지 않는다. 추후 효과 정책을 확정하면 게�
 
 이벤트는 독립적인 팝업 화면 단위로 만든다.
 
-- `EventGroup.ui`: `UIGroup + CanvasGroup`, `GroupType=UIType`, 팝업 계층
+- `EventGroup.ui`: `UIGroup + CanvasGroup`, 프로젝트의 단일 `DefaultType` 스택에서
+  `GroupOrder=20`인 최상위 모달 계층. Controller 생명주기를 위해 그룹은 활성 상태로 두고
+  실제 `Root`만 기본 비활성화한다.
 - 시작 시 숨김
 - 전체 화면 Dimmer가 뒤 UI의 raycast를 차단
 - 본문/선택 화면과 결과 화면을 별도 패널로 분리

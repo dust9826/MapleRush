@@ -494,7 +494,7 @@ git commit -m "feat: persist event choice discoveries"
   - `_EventManager:GetActiveFor(string userId) -> any`
   - `_EventManager:ResolveChoice(any instance, string choiceId) -> any`
   - `_EventManager:BuildEffectIntents(string eventId, string choiceId, string outcomeId) -> table`
-  - client RPC `ClientDispatchView(string action, any snapshot)`.
+  - client RPC `ClientDispatchView(string action, table snapshot)`.
   - `EventStageCompletedEvent` on the server-local `_EventManager` event source.
   - `EventViewEvent` on the client-local `_EventManager` event source.
 
@@ -669,7 +669,7 @@ It also sends `self:ClientDispatchView("close", {}, senderUserId)`. It never ref
 One `@ExecSpace("Client")` RPC bridges serializable data across the network:
 
 ```lua
-method void ClientDispatchView(string action, any snapshot)
+method void ClientDispatchView(string action, table snapshot)
     local event = EventViewEvent()
     event.action = action
     event.snapshot = snapshot
@@ -939,7 +939,9 @@ Expected before implementation: no `EventViewEvent` subscriber and no modal.
 
 - [ ] **Step 2: Create EventGroup.ui with UIBuilder**
 
-Build a hidden `GroupType=2`, `GroupOrder=10` UI with this exact hierarchy:
+Build a modal in the project's existing `GroupType=1` stack with `GroupOrder=20`.
+Keep the group active so its Controller receives events, and set the visual `Root` child
+`enable=false` initially. This exact hierarchy is required:
 
 ```text
 EventGroup
