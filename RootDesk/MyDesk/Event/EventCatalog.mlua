@@ -101,7 +101,7 @@ script EventCatalog extends Logic
 					errors = self:CatalogError(errors, "weight <= 0 event_id=" .. eventId)
 				end
 				local knownTheme = rec.themeId == "" or rec.themeId == "orbis"
-					or rec.themeId == "elnath" or rec.themeId == "mine"
+					or rec.themeId == "elnath" or rec.themeId == "deepmine"
 				if knownTheme == false then
 					errors = self:CatalogError(errors, "unknown theme_id=" .. rec.themeId .. " event_id=" .. eventId)
 				end
@@ -308,7 +308,7 @@ script EventCatalog extends Logic
 	method table EligibleEventIds(string theme)
 		local result = {}
 		if self.catalogReady == false then return result end
-		if theme ~= "orbis" and theme ~= "elnath" then return result end
+		if theme ~= "orbis" and theme ~= "elnath" and theme ~= "deepmine" then return result end
 		for _, eventId in ipairs(self.templateOrder) do
 			local rec = self.templatesById[eventId]
 			local scopeMatches = rec.eventScope == "common" or rec.themeId == theme
