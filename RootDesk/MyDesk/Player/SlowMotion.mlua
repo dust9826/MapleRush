@@ -44,7 +44,7 @@ script SlowMotion extends Logic
 		log("[SlowMotion] SERVER slow ACTIVE (0.25x) for " .. tostring(_GameConstants.SlowDuration) .. "s")
 		local pc = playerEntity.PlayerComponent
 		if pc ~= nil then
-			self:ClientSlowStart(pc.UserId)
+			self:ClientSlowStart(_UtilLogic.ServerElapsedSeconds, pc.UserId)
 		end
 	end
 
@@ -74,12 +74,17 @@ script SlowMotion extends Logic
 	end
 
 	@ExecSpace("Client")
-	method void ClientSlowStart()
-		-- 클라: 타임스케일 0.25 + 강화 대시 1회 부여 + 지속 타이머 시작.
+	method void ClientSlowStart(number serverStartedAt)
+		-- 클라: 서버 발동시각까지의 전송 지연을 보정한 뒤 타임스케일 0.25 + 강화 대시 1회 부여.
+		local transitAge = _WallClock:NetworkTransitAge(serverStartedAt)
+		local wasActive = self.clientSlowActive
+		if wasActive == false then
+			_WallClock:ReconcileSlowStart(transitAge, _GameConstants.SlowScale)
+		end
 		_UtilLogic:SetClientTimeScale(_GameConstants.SlowScale)
 		_SoundManager:PlaySFXKey("sfx_slowmo")
 		self.clientSlowActive = true
-		self.clientSlowStart = _WallClock:Now()
+		self.clientSlowStart = _WallClock:Now() - transitAge
 		local player = _UserService.LocalPlayer
 		if player ~= nil then
 			---@type PlayerDash

@@ -9,6 +9,8 @@ script PlayerAbility extends Component
 	property integer UsesLeft = 0
 
 	-- 서버: 능력 무적 종료 시각 (ServerNow 기준). 임시무적·부동심 흡수·만지·회전 공통 사용.
+	property number abilityInvincibleFrom = -999.0
+
 	property number abilityInvincibleUntil = -999.0
 
 	-- 서버: 부동심 보험 창 종료 시각 + 남은 흡수 횟수. 창 안에서 피격 시 흡수.
@@ -92,12 +94,12 @@ script PlayerAbility extends Component
 		elseif self.AbilityId == "spin" then
 			self:StartSpin()
 		else
-			self:RequestUseAbility()
+			self:RequestUseAbility(_UtilLogic.ServerElapsedSeconds)
 		end
 	end
 
 	@ExecSpace("Server")
-	method void RequestUseAbility()
+	method void RequestUseAbility(number inputServerTime)
 		-- 서버 검증 + 효과 발동 (player_design §4).
 		if self.AbilityId == "" or self.UsesLeft <= 0 then return end
 		-- 부동심: 이미 보험 창이 활성(시간·흡수횟수 남음) 중이면 재사용 무시 — 중복 발동/이펙트 겹침/사용횟수 낭비 방지(ability_design §4).
@@ -108,7 +110,9 @@ script PlayerAbility extends Component
 		self.UsesLeft -= 1
 		if self.AbilityId == "invincible" then
 			local invDur = _PlayerConfig.InvincibleAbilityDuration + _MetaProgression:GetInvincibleBonus()
-			self.abilityInvincibleUntil = _WallClock:ServerNow() + invDur
+			local inputAge = _WallClock:NetworkInputAge(inputServerTime)
+			self.abilityInvincibleFrom = _WallClock:ServerNow() - inputAge
+			self.abilityInvincibleUntil = self.abilityInvincibleFrom + invDur
 			self:FxInvincible(invDur)
 			log("[PlayerAbility] INVINCIBLE for " .. tostring(invDur) .. "s (base+금강불괴 meta, left=" .. tostring(self.UsesLeft) .. ")")
 		elseif self.AbilityId == "clearProjectiles" then
@@ -154,7 +158,8 @@ script PlayerAbility extends Component
 			self.immovableUntil = -999.0   -- 마지막 흡수 → 창 종료
 			self:FxImmovableStop()          -- 공격 흡수 직후 보호막 이펙트 즉시 제거(8초 타이머 대기 없이)
 		end
-		self.abilityInvincibleUntil = _WallClock:ServerNow() + _PlayerConfig.ImmovableGraceInvincible
+		self.abilityInvincibleFrom = _WallClock:ServerNow()
+		self.abilityInvincibleUntil = self.abilityInvincibleFrom + _PlayerConfig.ImmovableGraceInvincible
 		_SlowMotion:Activate(self.Entity)
 		log("[PlayerAbility] IMMOVABLE absorbed a hit -> grace " .. tostring(_PlayerConfig.ImmovableGraceInvincible) .. "s, charges left=" .. tostring(self.immovableCharges))
 		return true
@@ -163,7 +168,13 @@ script PlayerAbility extends Component
 	@ExecSpace("ServerOnly")
 	method boolean IsAbilityInvincible()
 		-- 능력 무적 판정 (PlayerHit이 호출). 임시무적·부동심 흡수·만지·회전 공통.
-		return _WallClock:ServerNow() < self.abilityInvincibleUntil
+		return self:IsAbilityInvincibleAt(_WallClock:ServerNow())
+	end
+
+	@ExecSpace("ServerOnly")
+	method boolean IsAbilityInvincibleAt(number serverTime)
+		-- 피격/능력 RPC 순서가 뒤집혀도 입력 당시 무적 구간을 기준으로 재판정한다.
+		return serverTime >= self.abilityInvincibleFrom and serverTime < self.abilityInvincibleUntil
 	end
 
 	-- ===== 만지 일섬 (커서 방향 대시 + 경로 데미지) =====
@@ -173,20 +184,29 @@ script PlayerAbility extends Component
 		---@type PlayerDash
 		local dash = self.Entity:GetComponent("script.PlayerDash")
 		if dash == nil or dash.IsDashing then return end
+		local inputServerTime = _UtilLogic.ServerElapsedSeconds
 		local started = dash:StartAbilityDash(_InputRouter:CursorWorld(), _PlayerConfig.ManjiDashDistance)
 		if started == false then return end
 		_SoundManager:PlaySFXKey("sfx_ability_manji")
 		self:PlayManjiFx(dash.dashDir.x, dash.dashDir.y)
 		local pos = self.Entity.TransformComponent.WorldPosition
-		self:RequestManji(pos.x, pos.y, dash.dashDir.x, dash.dashDir.y, dash.dashLen)
+		self:RequestManji(pos.x, pos.y, dash.dashDir.x, dash.dashDir.y, dash.dashLen, inputServerTime)
 	end
 
 	@ExecSpace("Server")
-	method void RequestManji(number footX, number footY, number dirX, number dirY, number dashLen)
+	method void RequestManji(number footX, number footY, number dirX, number dirY, number dashLen, number inputServerTime)
 		-- 서버: 만지 검증 + 사용횟수 소모 + 돌진시간 무적 + 경로(캡슐) 데미지 ATK×(400% + 메타).
 		if self.AbilityId ~= "manji" or self.UsesLeft <= 0 then return end
 		self.UsesLeft -= 1
-		self.abilityInvincibleUntil = _WallClock:ServerNow() + _PlayerConfig.ManjiDashDuration
+		local inputAge = _WallClock:NetworkInputAge(inputServerTime)
+		self.abilityInvincibleFrom = _WallClock:ServerNow() - inputAge
+		self.abilityInvincibleUntil = self.abilityInvincibleFrom + _PlayerConfig.ManjiDashDuration
+		local dlen = math.sqrt(dirX * dirX + dirY * dirY)
+		if dlen <= 0.0001 then return end
+		dirX = dirX / dlen
+		dirY = dirY / dlen
+		if dashLen < 0 then dashLen = 0 end
+		if dashLen > _PlayerConfig.ManjiDashDistance then dashLen = _PlayerConfig.ManjiDashDistance end
 		local damage = _GameStateManager.AttackStat * (_PlayerConfig.ManjiDmgPct + _MetaProgression:GetManjiBonus())
 		local pathStart = Vector2(footX, footY)
 		local pathEnd = Vector2(footX + dirX * dashLen, footY + dirY * dashLen)
@@ -198,6 +218,7 @@ script PlayerAbility extends Component
 	@ExecSpace("ClientOnly")
 	method void StartSpin()
 		-- 클라: 이동잠금(0.2s, OnUpdate가 복원) → 서버에 AoE/패링/무적 요청.
+		local inputServerTime = _UtilLogic.ServerElapsedSeconds
 		local pc = self.Entity.PlayerControllerComponent
 		if isvalid(pc) then
 			self.spinPrevControllerEnable = pc.Enable
@@ -207,25 +228,27 @@ script PlayerAbility extends Component
 		_SoundManager:PlaySFXKey("sfx_ability_spin")
 		self:PlaySpinFx()
 		local pos = self.Entity.TransformComponent.WorldPosition
-		self:RequestSpin(pos.x, pos.y)
+		self:RequestSpin(pos.x, pos.y, inputServerTime)
 	end
 
 	@ExecSpace("Server")
-	method void RequestSpin(number cx, number cy)
+	method void RequestSpin(number cx, number cy, number inputServerTime)
 		-- 서버: 회전베기 검증 + 사용횟수 소모 + 0.2s 무적 + 원형 AoE ATK×250% + 패링(반지름 근사 박스).
 		if self.AbilityId ~= "spin" or self.UsesLeft <= 0 then return end
 		self.UsesLeft -= 1
-		self.abilityInvincibleUntil = _WallClock:ServerNow() + _PlayerConfig.SpinDuration
+		local inputAge = _WallClock:NetworkInputAge(inputServerTime)
+		self.abilityInvincibleFrom = _WallClock:ServerNow() - inputAge
+		self.abilityInvincibleUntil = self.abilityInvincibleFrom + _PlayerConfig.SpinDuration
 		local map = self.Entity.CurrentMap
 		local center = Vector2(cx, cy + _GameConstants.PlayerCenterYOffset)
 		local radius = _PlayerConfig.SpinRadius + _MetaProgression:GetSpinBonus()
+		-- 평타와 같은 이유로 패링을 데미지보다 먼저 확정한다. 공격 주체를 한 방에 죽여도 패링 보상이 유실되지 않는다.
+		local reflectDamage = _GameStateManager.AttackStat * _PlayerConfig.DmgReflectPct
+		local parryCount = _CombatPrimitives:TryParry(map, center, radius, radius, reflectDamage, inputAge)
 		local damage = _GameStateManager.AttackStat * _PlayerConfig.SpinDmgPct
 		local hitCount = _CombatPrimitives:DamageEnemiesInCircle(map, center, radius, damage, "spin")
 		-- 넉백: 명중해 살아남은 적을 플레이어 반대 방향으로 밀어냄(투사체 제외, ability_design §4.2).
 		local knockCount = _CombatPrimitives:KnockbackEnemiesInCircle(map, center, radius, _PlayerConfig.SpinKnockback)
-		-- 회전베기 전용 패링: 원형 범위를 정사각 박스로 근사해 근접 노란공격 취소 + 노란투사체 반사(ability_design §4.2).
-		local reflectDamage = _GameStateManager.AttackStat * _PlayerConfig.DmgReflectPct
-		local parryCount = _CombatPrimitives:TryParry(map, center, radius, radius, reflectDamage)
 		log("[PlayerAbility] SPIN: hit=" .. tostring(hitCount) .. " knock=" .. tostring(knockCount) .. " parry=" .. tostring(parryCount) .. " r=" .. string.format("%.2f", radius) .. " (left=" .. tostring(self.UsesLeft) .. ")")
 	end
 

@@ -1,0 +1,143 @@
+@Component
+@ExecSpace("ClientOnly")
+script EventController extends Component
+
+	-- Client presentation Adapter. Domain selection and result resolution remain in EventManager.
+	property Entity eventRoot = "d2be1198-0389-41fc-bc69-a68f7b41d1f8"
+	property TextComponent titleText = "ff0bfe1c-5dc0-45f0-9e4c-6ddb9ce3b8db"
+	property TextComponent descriptionText = "d7fd4b28-531d-4524-a682-9602269c53bd"
+	property SpriteGUIRendererComponent illustration = "516ee21d-7d91-4de7-bcea-dcc5e5091173"
+	property Entity choicePanel = "6522249c-4c0f-425a-9b9b-43f5864fab48"
+	property ButtonComponent btnChoice1 = "537057e2-ae4e-48fd-a9f7-16fa8811be08"
+	property TextComponent label1 = "6c064c35-59ed-4a34-b0c1-a31418b727d4"
+	property TextComponent detail1 = "c80d121f-2f45-407a-bfb5-db7e93a2d8ed"
+	property ButtonComponent btnChoice2 = "08b0d732-c56f-452c-bfa9-284e9335efce"
+	property TextComponent label2 = "40e20bb5-548c-412e-b1bd-7f7b52bf3e17"
+	property TextComponent detail2 = "08730b68-78b1-4a7b-8490-5d1c7d47a008"
+	property Entity resultPanel = "45fa482c-730a-4fb9-9643-df7f6ca50a54"
+	property TextComponent resultText = "e4679216-d74d-4e02-99d2-7beb499ab090"
+	property TextComponent effectSummary = "49cc3ef7-16a1-43b5-a7bc-0afbb3c20b54"
+	property ButtonComponent btnContinue = "53ec10e0-f16b-4965-b758-7291ce3c530a"
+
+	@HideFromInspector property string instanceId = ""
+	@HideFromInspector property string choiceId1 = ""
+	@HideFromInspector property string choiceId2 = ""
+	@HideFromInspector property any viewHandler = nil
+	@HideFromInspector property any choiceHandler1 = nil
+	@HideFromInspector property any choiceHandler2 = nil
+	@HideFromInspector property any continueHandler = nil
+
+	method void OnBeginPlay()
+		self.eventRoot.Enable = false
+		self.viewHandler = _EventManager:ConnectEvent(EventViewEvent, self.OnEventView)
+		self.choiceHandler1 =
+			self.btnChoice1.Entity:ConnectEvent(ButtonClickEvent, self.OnChoice1Click)
+		self.choiceHandler2 =
+			self.btnChoice2.Entity:ConnectEvent(ButtonClickEvent, self.OnChoice2Click)
+		self.continueHandler =
+			self.btnContinue.Entity:ConnectEvent(ButtonClickEvent, self.OnContinueClick)
+		log("[EventController] registered")
+	end
+
+	method void OnEndPlay()
+		if self.viewHandler ~= nil then
+			_EventManager:DisconnectEvent(EventViewEvent, self.viewHandler)
+		end
+		if self.choiceHandler1 ~= nil then
+			self.btnChoice1.Entity:DisconnectEvent(ButtonClickEvent, self.choiceHandler1)
+		end
+		if self.choiceHandler2 ~= nil then
+			self.btnChoice2.Entity:DisconnectEvent(ButtonClickEvent, self.choiceHandler2)
+		end
+		if self.continueHandler ~= nil then
+			self.btnContinue.Entity:DisconnectEvent(ButtonClickEvent, self.continueHandler)
+		end
+	end
+
+	method void OnEventView(EventViewEvent event)
+		if event.action == "open" then
+			self:Open(event.snapshot)
+		elseif event.action == "result" then
+			self:ShowResult(event.snapshot)
+		elseif event.action == "close" then
+			self:Close()
+		end
+	end
+
+	method void Open(any snapshot)
+		if snapshot == nil or snapshot.choices == nil or #snapshot.choices ~= 2 then
+			log_error("[EventController] invalid presentation snapshot")
+			return
+		end
+		self.instanceId = tostring(snapshot.instanceId or "")
+		self.choiceId1 = tostring(snapshot.choices[1].choiceId or "")
+		self.choiceId2 = tostring(snapshot.choices[2].choiceId or "")
+		self.titleText.Text = tostring(snapshot.title or "")
+		self.descriptionText.Text = tostring(snapshot.description or "")
+		self.label1.Text = tostring(snapshot.choices[1].label or "")
+		self.detail1.Text = tostring(snapshot.choices[1].detail or "???")
+		self.label2.Text = tostring(snapshot.choices[2].label or "")
+		self.detail2.Text = tostring(snapshot.choices[2].detail or "???")
+		self.resultText.Text = ""
+		self.effectSummary.Text = ""
+
+		local primaryRuid = tostring(snapshot.primaryRuid or "")
+		if primaryRuid == "" then
+			self.illustration.Entity.Enable = false
+		else
+			self.illustration.ImageRUID = DataRef(primaryRuid)
+			self.illustration.Entity.Enable = true
+		end
+
+		_InputRouter:SetContext("Popup")
+		self.eventRoot.Enable = true
+		self.choicePanel.Enable = true
+		self.resultPanel.Enable = false
+		log("[EventController] opened instance=" .. self.instanceId)
+	end
+
+	method void ShowResult(any snapshot)
+		if snapshot == nil or tostring(snapshot.instanceId or "") ~= self.instanceId then
+			log_warning("[EventController] ignored result for another instance")
+			return
+		end
+		self.resultText.Text = tostring(snapshot.resultSummary or "")
+		local summaries = snapshot.effectSummaries or {}
+		if #summaries > 0 then
+			self.effectSummary.Text = table.concat(summaries, "\n")
+		else
+			self.effectSummary.Text = "추가 효과 없음"
+		end
+		self.choicePanel.Enable = false
+		self.resultPanel.Enable = true
+		log("[EventController] result instance=" .. self.instanceId
+			.. " outcome=" .. tostring(snapshot.outcomeId))
+	end
+
+	method void Close()
+		self.instanceId = ""
+		self.choiceId1 = ""
+		self.choiceId2 = ""
+		self.eventRoot.Enable = false
+		log("[EventController] closed")
+	end
+
+	method void OnChoice1Click(ButtonClickEvent event)
+		self:Choose(self.choiceId1)
+	end
+
+	method void OnChoice2Click(ButtonClickEvent event)
+		self:Choose(self.choiceId2)
+	end
+
+	method void Choose(string choiceId)
+		if self.instanceId == "" or choiceId == "" then return end
+		_EventManager:RequestChoose(self.instanceId, choiceId)
+	end
+
+	method void OnContinueClick(ButtonClickEvent event)
+		if self.instanceId == "" then return end
+		_EventManager:RequestComplete(self.instanceId)
+	end
+
+end

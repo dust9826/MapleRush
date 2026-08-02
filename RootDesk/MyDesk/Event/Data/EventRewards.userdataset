@@ -1,0 +1,23 @@
+{
+  "Id": "",
+  "GameId": "",
+  "EntryKey": "userdataset://4a4ee6f2-ff09-40af-bc63-57ff2bdb45f9",
+  "ContentType": "x-mod/userdataset",
+  "Content": "",
+  "Usage": 0,
+  "UsePublish": 1,
+  "UseService": 0,
+  "CoreVersion": "26.5.0.0",
+  "StudioVersion": "0.1.0.0",
+  "DynamicLoading": 0,
+  "ContentProto": {
+    "Use": "Json",
+    "Json": {
+      "name": "EventRewards",
+      "id": "4a4ee6f2-ff09-40af-bc63-57ff2bdb45f9",
+      "serveronly": true,
+      "syncDataSetWebUrl": "",
+      "dynamicloading": 0
+    }
+  }
+}

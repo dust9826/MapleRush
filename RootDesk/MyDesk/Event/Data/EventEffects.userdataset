@@ -1,0 +1,23 @@
+{
+  "Id": "",
+  "GameId": "",
+  "EntryKey": "userdataset://031507c9-d2b4-46aa-b25c-2636447806db",
+  "ContentType": "x-mod/userdataset",
+  "Content": "",
+  "Usage": 0,
+  "UsePublish": 1,
+  "UseService": 0,
+  "CoreVersion": "26.5.0.0",
+  "StudioVersion": "0.1.0.0",
+  "DynamicLoading": 0,
+  "ContentProto": {
+    "Use": "Json",
+    "Json": {
+      "name": "EventEffects",
+      "id": "031507c9-d2b4-46aa-b25c-2636447806db",
+      "serveronly": true,
+      "syncDataSetWebUrl": "",
+      "dynamicloading": 0
+    }
+  }
+}

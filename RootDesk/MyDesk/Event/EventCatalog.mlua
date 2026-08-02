@@ -1,0 +1,375 @@
+@Logic
+script EventCatalog extends Logic
+
+	-- Static event-data Repository. Runtime sessions, users, UI, and floor flow live elsewhere.
+	@HideFromInspector property boolean catalogReady = false
+	@HideFromInspector property any templatesById = nil
+	@HideFromInspector property any templateOrder = nil
+	@HideFromInspector property any choicesByEvent = nil
+	@HideFromInspector property any choicesByKey = nil
+	@HideFromInspector property any outcomesByChoice = nil
+	@HideFromInspector property any outcomesByKey = nil
+	@HideFromInspector property any effectsByOutcome = nil
+	@HideFromInspector property any rewardsById = nil
+	@HideFromInspector property any visualsByEvent = nil
+
+	@ExecSpace("ServerOnly")
+	method void OnBeginPlay()
+		self:Reload()
+	end
+
+	method boolean BoolCell(any value)
+		local s = string.lower(tostring(value or ""))
+		return s == "true" or s == "1" or s == "yes"
+	end
+
+	method string ChoiceKey(string eventId, string choiceId)
+		return eventId .. "|" .. choiceId
+	end
+
+	method string OutcomeKey(string eventId, string choiceId, string outcomeId)
+		return eventId .. "|" .. choiceId .. "|" .. outcomeId
+	end
+
+	method void Append(any index, string key, any rec)
+		if index[key] == nil then
+			index[key] = {}
+		end
+		table.insert(index[key], rec)
+	end
+
+	method integer CatalogError(integer count, string message)
+		log_error("[EventCatalog] " .. message)
+		return count + 1
+	end
+
+	@ExecSpace("ServerOnly")
+	method void Reload()
+		self.catalogReady = false
+		self.templatesById = {}
+		self.templateOrder = {}
+		self.choicesByEvent = {}
+		self.choicesByKey = {}
+		self.outcomesByChoice = {}
+		self.outcomesByKey = {}
+		self.effectsByOutcome = {}
+		self.rewardsById = {}
+		self.visualsByEvent = {}
+
+		local templateTable = _DataService:GetTable("EventTemplates")
+		local choiceTable = _DataService:GetTable("EventChoices")
+		local outcomeTable = _DataService:GetTable("EventOutcomes")
+		local effectTable = _DataService:GetTable("EventEffects")
+		local rewardTable = _DataService:GetTable("EventRewards")
+		local visualTable = _DataService:GetTable("EventVisuals")
+		local errors = 0
+
+		if templateTable == nil then errors = self:CatalogError(errors, "dataset EventTemplates not found") end
+		if choiceTable == nil then errors = self:CatalogError(errors, "dataset EventChoices not found") end
+		if outcomeTable == nil then errors = self:CatalogError(errors, "dataset EventOutcomes not found") end
+		if effectTable == nil then errors = self:CatalogError(errors, "dataset EventEffects not found") end
+		if rewardTable == nil then errors = self:CatalogError(errors, "dataset EventRewards not found") end
+		if visualTable == nil then errors = self:CatalogError(errors, "dataset EventVisuals not found") end
+		if errors > 0 then
+			log_error("[EventCatalog] reload aborted missingDatasets=" .. tostring(errors))
+			return
+		end
+
+		local i = 1
+		while i <= templateTable:GetRowCount() do
+			local eventId = tostring(templateTable:GetCell(i, "event_id") or "")
+			if eventId == "" then
+				errors = self:CatalogError(errors, "template row " .. tostring(i) .. " has empty event_id")
+			elseif self.templatesById[eventId] ~= nil then
+				errors = self:CatalogError(errors, "duplicate event_id=" .. eventId)
+			else
+				local rec = {
+					eventId = eventId,
+					version = tonumber(templateTable:GetCell(i, "version")) or 0,
+					enabled = self:BoolCell(templateTable:GetCell(i, "enabled")),
+					eventScope = tostring(templateTable:GetCell(i, "event_scope") or ""),
+					themeId = tostring(templateTable:GetCell(i, "theme_id") or ""),
+					weight = tonumber(templateTable:GetCell(i, "weight")) or 0,
+					cooldownGroup = tostring(templateTable:GetCell(i, "cooldown_group") or ""),
+					title = tostring(templateTable:GetCell(i, "title_ko") or ""),
+					description = tostring(templateTable:GetCell(i, "description_ko") or ""),
+					hasForcedCombat = false,
+				}
+				self.templatesById[eventId] = rec
+				table.insert(self.templateOrder, eventId)
+				if rec.weight <= 0 then
+					errors = self:CatalogError(errors, "weight <= 0 event_id=" .. eventId)
+				end
+				local knownTheme = rec.themeId == "" or rec.themeId == "orbis"
+					or rec.themeId == "elnath" or rec.themeId == "deepmine"
+				if knownTheme == false then
+					errors = self:CatalogError(errors, "unknown theme_id=" .. rec.themeId .. " event_id=" .. eventId)
+				end
+				if rec.eventScope ~= "common" and rec.eventScope ~= "theme" then
+					errors = self:CatalogError(errors, "unknown event_scope=" .. rec.eventScope .. " event_id=" .. eventId)
+				elseif rec.eventScope == "common" and rec.themeId ~= "" then
+					errors = self:CatalogError(errors, "common event has theme_id event_id=" .. eventId)
+				elseif rec.eventScope == "theme" and rec.themeId == "" then
+					errors = self:CatalogError(errors, "theme event missing theme_id event_id=" .. eventId)
+				end
+			end
+			i += 1
+		end
+
+		i = 1
+		while i <= rewardTable:GetRowCount() do
+			local rewardRef = tostring(rewardTable:GetCell(i, "reward_ref") or "")
+			if rewardRef == "" then
+				errors = self:CatalogError(errors, "reward row " .. tostring(i) .. " has empty reward_ref")
+			elseif self.rewardsById[rewardRef] ~= nil then
+				errors = self:CatalogError(errors, "duplicate reward_ref=" .. rewardRef)
+			else
+				self.rewardsById[rewardRef] = {
+					rewardRef = rewardRef,
+					rewardType = tostring(rewardTable:GetCell(i, "reward_type") or ""),
+					amountMultiplier = tonumber(rewardTable:GetCell(i, "amount_multiplier")) or 0,
+					sourcePool = tostring(rewardTable:GetCell(i, "source_pool") or ""),
+					description = tostring(rewardTable:GetCell(i, "description_ko") or ""),
+				}
+			end
+			i += 1
+		end
+
+		i = 1
+		while i <= choiceTable:GetRowCount() do
+			local eventId = tostring(choiceTable:GetCell(i, "event_id") or "")
+			local choiceId = tostring(choiceTable:GetCell(i, "choice_id") or "")
+			local key = self:ChoiceKey(eventId, choiceId)
+			if self.templatesById[eventId] == nil then
+				errors = self:CatalogError(errors, "choice references missing event_id=" .. eventId)
+			elseif choiceId == "" then
+				errors = self:CatalogError(errors, "choice has empty choice_id event_id=" .. eventId)
+			elseif self.choicesByKey[key] ~= nil then
+				errors = self:CatalogError(errors, "duplicate choice event_id=" .. eventId .. " choice_id=" .. choiceId)
+			else
+				local rec = {
+					eventId = eventId,
+					choiceId = choiceId,
+					sortOrder = tonumber(choiceTable:GetCell(i, "sort_order")) or 0,
+					label = tostring(choiceTable:GetCell(i, "label_ko") or ""),
+					detail = tostring(choiceTable:GetCell(i, "detail_ko") or ""),
+				}
+				self.choicesByKey[key] = rec
+				self:Append(self.choicesByEvent, eventId, rec)
+			end
+			i += 1
+		end
+
+		for _, choices in pairs(self.choicesByEvent) do
+			table.sort(choices, function(a, b) return a.sortOrder < b.sortOrder end)
+		end
+
+		i = 1
+		while i <= outcomeTable:GetRowCount() do
+			local eventId = tostring(outcomeTable:GetCell(i, "event_id") or "")
+			local choiceId = tostring(outcomeTable:GetCell(i, "choice_id") or "")
+			local outcomeId = tostring(outcomeTable:GetCell(i, "outcome_id") or "")
+			local choiceKey = self:ChoiceKey(eventId, choiceId)
+			local outcomeKey = self:OutcomeKey(eventId, choiceId, outcomeId)
+			if self.templatesById[eventId] == nil or self.choicesByKey[choiceKey] == nil then
+				errors = self:CatalogError(errors,
+					"outcome references missing event/choice event_id=" .. eventId .. " choice_id=" .. choiceId)
+			elseif outcomeId == "" then
+				errors = self:CatalogError(errors, "outcome has empty outcome_id choice=" .. choiceKey)
+			elseif self.outcomesByKey[outcomeKey] ~= nil then
+				errors = self:CatalogError(errors, "duplicate outcome key=" .. outcomeKey)
+			else
+				local probability = tonumber(outcomeTable:GetCell(i, "probability")) or 0
+				local forcedCombat = self:BoolCell(outcomeTable:GetCell(i, "forced_combat"))
+				local rewardRef = tostring(outcomeTable:GetCell(i, "reward_ref") or "")
+				local rec = {
+					eventId = eventId,
+					choiceId = choiceId,
+					outcomeId = outcomeId,
+					probability = probability,
+					forcedCombat = forcedCombat,
+					forcedCombatRewardPolicy =
+						tostring(outcomeTable:GetCell(i, "forced_combat_reward_policy") or ""),
+					rewardRef = rewardRef,
+					resultSummary = tostring(outcomeTable:GetCell(i, "result_summary_ko") or ""),
+				}
+				self.outcomesByKey[outcomeKey] = rec
+				self:Append(self.outcomesByChoice, choiceKey, rec)
+				if forcedCombat then
+					self.templatesById[eventId].hasForcedCombat = true
+				end
+				if probability <= 0 then
+					errors = self:CatalogError(errors, "probability <= 0 outcome=" .. outcomeKey)
+				end
+				if rewardRef ~= "" and self.rewardsById[rewardRef] == nil then
+					errors = self:CatalogError(errors, "missing reward_ref=" .. rewardRef .. " outcome=" .. outcomeKey)
+				end
+			end
+			i += 1
+		end
+
+		i = 1
+		while i <= effectTable:GetRowCount() do
+			local eventId = tostring(effectTable:GetCell(i, "event_id") or "")
+			local choiceId = tostring(effectTable:GetCell(i, "choice_id") or "")
+			local outcomeId = tostring(effectTable:GetCell(i, "outcome_id") or "")
+			local outcomeKey = self:OutcomeKey(eventId, choiceId, outcomeId)
+			if self.outcomesByKey[outcomeKey] == nil then
+				errors = self:CatalogError(errors, "effect references missing outcome=" .. outcomeKey)
+			else
+				local rec = {
+					eventId = eventId,
+					choiceId = choiceId,
+					outcomeId = outcomeId,
+					effectId = tostring(effectTable:GetCell(i, "effect_id") or ""),
+					effectType = tostring(effectTable:GetCell(i, "effect_type") or ""),
+					period = tostring(effectTable:GetCell(i, "period") or ""),
+					value = tostring(effectTable:GetCell(i, "value") or ""),
+					stackRule = tostring(effectTable:GetCell(i, "stack_rule") or ""),
+					uiSummary = tostring(effectTable:GetCell(i, "ui_summary_ko") or ""),
+				}
+				self:Append(self.effectsByOutcome, outcomeKey, rec)
+			end
+			i += 1
+		end
+
+		i = 1
+		while i <= visualTable:GetRowCount() do
+			local eventId = tostring(visualTable:GetCell(i, "event_id") or "")
+			if self.templatesById[eventId] == nil then
+				errors = self:CatalogError(errors, "visual references missing event_id=" .. eventId)
+			elseif self.visualsByEvent[eventId] ~= nil then
+				errors = self:CatalogError(errors, "duplicate visual event_id=" .. eventId)
+			else
+				self.visualsByEvent[eventId] = {
+					eventId = eventId,
+					visualVersion = tonumber(visualTable:GetCell(i, "visual_version")) or 0,
+					themeBackdropKey = tostring(visualTable:GetCell(i, "theme_backdrop_key") or ""),
+					primaryRuid = tostring(visualTable:GetCell(i, "primary_ruid") or ""),
+					primaryResourceType =
+						tostring(visualTable:GetCell(i, "primary_resource_type") or ""),
+					accentRuid = tostring(visualTable:GetCell(i, "accent_ruid") or ""),
+					accentResourceType =
+						tostring(visualTable:GetCell(i, "accent_resource_type") or ""),
+					layout = tostring(visualTable:GetCell(i, "layout_ko") or ""),
+					reviewStatus = tostring(visualTable:GetCell(i, "review_status") or ""),
+				}
+			end
+			i += 1
+		end
+
+		for _, eventId in ipairs(self.templateOrder) do
+			local template = self.templatesById[eventId]
+			if template.enabled then
+				local choices = self.choicesByEvent[eventId] or {}
+				if #choices == 0 then
+					errors = self:CatalogError(errors, "enabled event has zero choices event_id=" .. eventId)
+				elseif #choices ~= 2 then
+					errors = self:CatalogError(errors,
+						"enabled event choice count must be 2 event_id=" .. eventId .. " count=" .. tostring(#choices))
+				end
+				if self.visualsByEvent[eventId] == nil then
+					errors = self:CatalogError(errors, "missing visual row event_id=" .. eventId)
+				end
+			end
+		end
+
+		for choiceKey, outcomes in pairs(self.outcomesByChoice) do
+			local sum = 0
+			for _, outcome in ipairs(outcomes) do
+				sum += outcome.probability
+			end
+			if sum < 0.999 or sum > 1.001 then
+				errors = self:CatalogError(errors,
+					"probability sum outside range choice=" .. choiceKey .. " sum=" .. tostring(sum))
+			end
+		end
+
+		if errors > 0 then
+			log_error("[EventCatalog] invalid errors=" .. tostring(errors))
+			return
+		end
+		self.catalogReady = true
+		log("[EventCatalog] ready templates=" .. tostring(#self.templateOrder))
+	end
+
+	@ExecSpace("ServerOnly")
+	method boolean IsReady()
+		return self.catalogReady
+	end
+
+	@ExecSpace("ServerOnly")
+	method any EventFor(string eventId)
+		if self.templatesById == nil then return nil end
+		return self.templatesById[eventId]
+	end
+
+	@ExecSpace("ServerOnly")
+	method table EligibleEventIds(string theme)
+		local result = {}
+		if self.catalogReady == false then return result end
+		if theme ~= "orbis" and theme ~= "elnath" and theme ~= "deepmine" then return result end
+		for _, eventId in ipairs(self.templateOrder) do
+			local rec = self.templatesById[eventId]
+			local scopeMatches = rec.eventScope == "common" or rec.themeId == theme
+			if rec.enabled and scopeMatches and rec.hasForcedCombat == false then
+				table.insert(result, eventId)
+			end
+		end
+		return result
+	end
+
+	@ExecSpace("ServerOnly")
+	method any PickWeightedEvent(string theme)
+		local ids = self:EligibleEventIds(theme)
+		local total = 0
+		for _, eventId in ipairs(ids) do
+			total += self.templatesById[eventId].weight
+		end
+		if total <= 0 then return nil end
+		local cursor = _UtilLogic:RandomDouble() * total
+		for _, eventId in ipairs(ids) do
+			local rec = self.templatesById[eventId]
+			cursor -= rec.weight
+			if cursor < 0 then return rec end
+		end
+		return self.templatesById[ids[#ids]]
+	end
+
+	@ExecSpace("ServerOnly")
+	method table ChoicesFor(string eventId)
+		if self.choicesByEvent == nil then return {} end
+		return self.choicesByEvent[eventId] or {}
+	end
+
+	@ExecSpace("ServerOnly")
+	method table OutcomesFor(string eventId, string choiceId)
+		if self.outcomesByChoice == nil then return {} end
+		return self.outcomesByChoice[self:ChoiceKey(eventId, choiceId)] or {}
+	end
+
+	@ExecSpace("ServerOnly")
+	method any OutcomeFor(string eventId, string choiceId, string outcomeId)
+		if self.outcomesByKey == nil then return nil end
+		return self.outcomesByKey[self:OutcomeKey(eventId, choiceId, outcomeId)]
+	end
+
+	@ExecSpace("ServerOnly")
+	method table EffectsFor(string eventId, string choiceId, string outcomeId)
+		if self.effectsByOutcome == nil then return {} end
+		return self.effectsByOutcome[self:OutcomeKey(eventId, choiceId, outcomeId)] or {}
+	end
+
+	@ExecSpace("ServerOnly")
+	method any RewardFor(string rewardRef)
+		if self.rewardsById == nil then return nil end
+		return self.rewardsById[rewardRef]
+	end
+
+	@ExecSpace("ServerOnly")
+	method any VisualFor(string eventId)
+		if self.visualsByEvent == nil then return nil end
+		return self.visualsByEvent[eventId]
+	end
+
+end

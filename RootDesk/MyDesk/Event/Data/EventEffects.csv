@@ -1,0 +1,36 @@
+event_id,choice_id,outcome_id,effect_id,effect_type,period,value,stack_rule,ui_summary_ko
+common_lost_merchant,help_cart,help_success,free_purchase,next_shop_free_purchase,next_shop,1,replace,다음 상점 무료 구매 1회
+common_lost_merchant,take_goods,take_success,meso_loss,lose_meso_ratio,immediate,0.3,multiply,현재 메소 30% 감소
+common_roadside_chest,open_chest,chest_trap,max_life_down,next_battle_max_life_down,next_battle,-1,add,다음 전투 최대 목숨 -1
+common_ruined_shrine,offer_meso,offer_success,meso_loss,lose_meso_ratio,immediate,0.3,multiply,현재 메소 30% 감소
+common_ruined_shrine,offer_meso,offer_success,free_purchase,next_shop_free_purchase,next_shop,1,replace,다음 상점 무료 구매 1회
+common_injured_scout,take_map,map_success,max_dash_down,next_battle_max_dash_down,next_battle,-1,add,다음 전투 최대 대시 -1
+common_odd_vendor,barter,barter_success,meso_loss,lose_meso_ratio,immediate,0.3,multiply,현재 메소 30% 감소
+common_silent_camp,rest,rest_success,free_purchase,next_shop_free_purchase,next_shop,1,replace,다음 상점 무료 구매 1회
+orbis_teal_glimmer,follow_light,follow_success,enemy_hp_up,next_battle_enemy_hp_up,next_battle,1.5,add,다음 전투 적 체력 증가
+orbis_shadow_bargain,accept_trade,trade_fail,max_life_down,next_battle_max_life_down,next_battle,-1,add,다음 전투 최대 목숨 -1
+orbis_empty_dock,decode_ticket,decode_success,free_purchase,next_shop_free_purchase,next_shop,1,replace,다음 상점 무료 구매 1회
+orbis_cloud_bridge,cross_bridge,cross_success,max_dash_down,next_battle_max_dash_down,next_battle,-1,add,다음 전투 최대 대시 -1
+orbis_wind_vane,turn_vane,vane_success,enemy_hp_up,next_battle_enemy_hp_up,next_battle,1.5,add,다음 전투 적 체력 증가
+orbis_cursed_feather,hold_feather,feather_success,attack_speed_down,run_attack_speed_down,run,0.95,multiply,이번 런 공격 속도 -5%
+orbis_fallen_observatory,climb_observatory,climb_success,max_life_down,next_battle_max_life_down,next_battle,-1,add,다음 전투 최대 목숨 -1
+orbis_airy_pouch,release_pouch,release_success,free_purchase,next_shop_free_purchase,next_shop,1,replace,다음 상점 무료 구매 1회
+elnath_frozen_footprints,follow_steps,follow_success,max_dash_down,next_battle_max_dash_down,next_battle,-1,add,다음 전투 최대 대시 -1
+elnath_last_campfire,save_ember,ember_success,meso_loss,lose_meso_ratio,immediate,0.3,multiply,현재 메소 30% 감소
+elnath_last_campfire,save_ember,ember_success,free_purchase,next_shop_free_purchase,next_shop,1,replace,다음 상점 무료 구매 1회
+elnath_frozen_cabin,collect_firewood,wood_success,free_purchase,next_shop_free_purchase,next_shop,1,replace,다음 상점 무료 구매 1회
+elnath_ice_cave,resonate,resonate_success,enemy_hp_up,next_battle_enemy_hp_up,next_battle,1.5,add,다음 전투 적 체력 증가
+elnath_snow_owl,feed_owl,feed_success,meso_loss,lose_meso_ratio,immediate,0.3,multiply,현재 메소 30% 감소
+elnath_snow_owl,feed_owl,feed_success,free_purchase,next_shop_free_purchase,next_shop,1,replace,다음 상점 무료 구매 1회
+elnath_rope_bridge,cross_rope,rope_success,max_dash_down,next_battle_max_dash_down,next_battle,-1,add,다음 전투 최대 대시 -1
+elnath_frost_shrine,take_offering,offering_success,max_life_down,next_battle_max_life_down,next_battle,-1,add,다음 전투 최대 목숨 -1
+elnath_frost_shrine,restore_offering,restore_success,free_purchase,next_shop_free_purchase,next_shop,1,replace,다음 상점 무료 구매 1회
+mine_sealed_rail,break_seal,elite_combat,enemy_hp_up,next_battle_enemy_hp_up,next_battle,1.5,add,다음 전투 적 체력 증가
+mine_molten_notes,retrieve_notes,retrieve_success,max_life_down,next_battle_max_life_down,next_battle,-1,add,다음 전투 최대 목숨 -1
+mine_rift_whisper,trust_whisper,combat_victory,meso_loss,lose_meso_ratio,immediate,0.3,multiply,현재 메소 30% 감소
+mine_rift_whisper,seal_rift,seal_success,free_purchase,next_shop_free_purchase,next_shop,1,replace,다음 상점 무료 구매 1회
+mine_abandoned_forge,use_forge,forge_success,enemy_hp_up,next_battle_enemy_hp_up,next_battle,1.5,add,다음 전투 적 체력 증가
+mine_heat_fissure,approach_fissure,fissure_success,dash_recovery_down,run_dash_recovery_down,run,0.9,multiply,이번 런 대시 회복 속도 -10%
+mine_collapse_warning,take_shortcut,shortcut_success,max_life_down,next_battle_max_life_down,next_battle,-1,add,다음 전투 최대 목숨 -1
+mine_collapse_warning,reinforce_tunnel,reinforce_success,free_purchase,next_shop_free_purchase,next_shop,1,replace,다음 상점 무료 구매 1회
+mine_smuggler_cache,open_cache,cache_success,meso_loss,lose_meso_ratio,immediate,0.3,multiply,현재 메소 30% 감소

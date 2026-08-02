@@ -33,6 +33,12 @@ script GameConstants extends Logic
 
 	property number ParryWindowTrail = 0.05
 
+	-- 클라이언트가 관측한 서버 시각을 이용한 입력 보정 상한. 과거 시각 위조로 판정창을 무한히 늘리지 않도록 제한한다.
+	property number NetworkCompensationMax = 0.2
+
+	-- 피격 RPC와 공격/대시 RPC의 도착 순서가 뒤집혀도 같은 입력 묶음으로 판정할 유예.
+	property number LoveShotGrace = 0.2
+
 	property number DashWallMargin = 0.35
 
 	property string DashBlockGroup = "DashBlock"
