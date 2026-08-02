@@ -2707,20 +2707,20 @@
               },
               "MobileOnly": false,
               "OffsetMax": {
-                "x": 534,
-                "y": 187.5
+                "x": 549,
+                "y": 205.5
               },
               "OffsetMin": {
-                "x": 166,
-                "y": -307.5
+                "x": 151,
+                "y": -325.5
               },
               "Pivot": {
                 "x": 0.5,
                 "y": 0.5
               },
               "RectSize": {
-                "x": 368,
-                "y": 495
+                "x": 398,
+                "y": 531
               },
               "UIMode": 1,
               "UIScale": {
@@ -2734,8 +2734,8 @@
                 "y": -60
               },
               "Position": {
-                "x": 350,
-                "y": -60,
+                "x": 0,
+                "y": 0,
                 "z": 0
               },
               "QuaternionRotation": {
@@ -2757,7 +2757,7 @@
               "EndFrameIndex": 2147483647,
               "IgnoreMapLayerCheck": false,
               "ImageRUID": {
-                "DataId": "0ec29b0db96941f688a9d47e1b542d1f"
+                "DataId": "4a190db2958d4136849155fe11ac7e1c"
               },
               "LocalPosition": {
                 "x": 0,
@@ -2771,7 +2771,7 @@
               "OrderInLayer": 0,
               "OverrideSorting": false,
               "PlayRate": 1,
-              "PreserveSprite": 2,
+              "PreserveSprite": 0,
               "SortingLayer": "UI",
               "StartFrameIndex": 0,
               "Color": {
@@ -2807,7 +2807,7 @@
                 "a": 1
               },
               "OutlineWidth": 3,
-              "RaycastTarget": false,
+              "RaycastTarget": true,
               "Type": 0,
               "Enable": true
             },
@@ -2929,7 +2929,7 @@
           "name": "Icon",
           "path": "/ui/NodeSelectGroup/Root/Panel/BtnNode3/Icon",
           "nameEditable": true,
-          "enable": false,
+          "enable": true,
           "visible": true,
           "localize": true,
           "displayOrder": 0,
