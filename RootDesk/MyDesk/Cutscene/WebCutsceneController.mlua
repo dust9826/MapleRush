@@ -1,0 +1,99 @@
+﻿@Component
+script WebCutsceneController extends Component
+
+	-- 웹뷰 컷신 컨트롤러: WebView 페이지는 게임 키 입력을 못 받으므로 게임 쪽에서 키를 받아
+	-- ESC=스킵(닫기), Space/←→=페이지 클릭 존(Click API)으로 변환 전달. Duration 경과 시 자동 종료.
+
+	-- 웹뷰 컷신 루트(닫을 때 숨김). 바인딩 주입.
+	property Entity webRoot = "65b73d3a-3d7c-44fe-ae2f-58c0dda484bb"
+
+	-- 페이지 클릭 전달용 WebView. 바인딩 주입.
+	property WebViewComponent webView = "65b73d3a-3d7c-44fe-ae2f-58c0dda484bb"
+
+	-- 폴백 자동 종료 시간(초). 정상 종료는 end.html 로드 감지(OnWebLoad)가 담당하고,
+	-- 이 타이머는 네트워크 문제 등으로 종료 감지가 안 될 때의 안전장치.
+	property number Duration = 90.0
+
+	@HideFromInspector property number elapsed = 0.0
+
+	@HideFromInspector property boolean closed = false
+
+	@HideFromInspector property any keyHandler = nil
+
+	@HideFromInspector property any loadHandler = nil
+
+	-- 페이지 로드 횟수. 1=컷신 페이지, 2=end.html(컷신 종료 시 페이지가 스스로 이동) → 닫기.
+	@HideFromInspector property integer loadCount = 0
+
+	@ExecSpace("ClientOnly")
+	method void OnBeginPlay()
+		-- 키 핸들러(ESC 스킵 + 키→클릭 변환) + 페이지 로드 이벤트(종료 감지) 연결.
+		self.keyHandler = _InputService:ConnectEvent(KeyDownEvent, self.OnKeyDown)
+		if isvalid(self.webView) then
+			self.loadHandler = self.webView.Entity:ConnectEvent(WebLoadCompleteEvent, self.OnWebLoad)
+		end
+		log("[WebCutsceneController] started (fallback=" .. tostring(self.Duration) .. "s)")
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnEndPlay()
+		-- 핸들러 해제.
+		if self.keyHandler ~= nil then
+			_InputService:DisconnectEvent(KeyDownEvent, self.keyHandler)
+			self.keyHandler = nil
+		end
+		if self.loadHandler ~= nil and isvalid(self.webView) then
+			self.webView.Entity:DisconnectEvent(WebLoadCompleteEvent, self.loadHandler)
+			self.loadHandler = nil
+		end
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnWebLoad(WebLoadCompleteEvent event)
+		-- 컷신 페이지=1회차, 종료 시 페이지가 end.html로 이동=2회차 → 자동 닫기.
+		self.loadCount += 1
+		log("[WebCutsceneController] page load #" .. tostring(self.loadCount))
+		if self.loadCount >= 2 then
+			self:Close("finished")
+		end
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnUpdate(number delta)
+		-- 타임아웃 자동 종료.
+		if self.closed then return end
+		self.elapsed += delta
+		if self.elapsed >= self.Duration then
+			self:Close("timeout")
+		end
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnKeyDown(KeyDownEvent event)
+		-- ESC=닫기 / Space=중앙 클릭(재생·일시정지) / ←→=이전·다음 장면 존 클릭.
+		if self.closed then return end
+		if event.key == KeyboardKey.Escape then
+			self:Close("esc")
+		elseif event.key == KeyboardKey.Space then
+			if isvalid(self.webView) then self.webView:Click(Vector2(0.5, 0.5)) end
+			log("[WebCutsceneController] Space -> click center (toggle)")
+		elseif event.key == KeyboardKey.LeftArrow then
+			if isvalid(self.webView) then self.webView:Click(Vector2(0.05, 0.5)) end
+			log("[WebCutsceneController] Left -> click prev zone")
+		elseif event.key == KeyboardKey.RightArrow then
+			if isvalid(self.webView) then self.webView:Click(Vector2(0.95, 0.5)) end
+			log("[WebCutsceneController] Right -> click next zone")
+		end
+	end
+
+	@ExecSpace("ClientOnly")
+	method void Close(string reason)
+		-- 웹뷰 컷신 종료(루트 숨김).
+		self.closed = true
+		if isvalid(self.webRoot) then
+			self.webRoot.Enable = false
+		end
+		log("[WebCutsceneController] closed reason=" .. reason)
+	end
+
+end
