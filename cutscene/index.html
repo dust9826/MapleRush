@@ -176,6 +176,9 @@
     body.exporting .hint,
     body.exporting .loading { display: none; }
 
+    /* embed=1: hosted inside a game (MSW WebView) — hide the control bar; keep the key hint. */
+    body.embed .hud { display: none; }
+
     @media (max-width: 700px) {
       button { padding: 0 9px; }
       .label-long { display: none; }
@@ -228,6 +231,9 @@
       const captionButton = document.getElementById("captionToggle");
 
       if (exportMode) document.body.classList.add("exporting");
+      if (new URLSearchParams(location.search).get("embed") === "1") {
+        document.body.classList.add("embed");
+      }
 
       /*
        * Every face below is built from shared integer-grid vertices.
