@@ -231,9 +231,11 @@
       const captionButton = document.getElementById("captionToggle");
 
       if (exportMode) document.body.classList.add("exporting");
-      if (new URLSearchParams(location.search).get("embed") === "1") {
-        document.body.classList.add("embed");
-      }
+      const embedMode = new URLSearchParams(location.search).get("embed") === "1";
+      if (embedMode) document.body.classList.add("embed");
+      // In embed mode the host (MSW WebView) counts page loads to detect the end:
+      // navigating to end.html fires a second WebLoadCompleteEvent on the game side.
+      let finishedRedirect = false;
 
       /*
        * Every face below is built from shared integer-grid vertices.
@@ -1321,6 +1323,10 @@
             state.time = TOTAL_DURATION;
             state.playing = false;
             document.body.classList.add("paused");
+            if (embedMode && !finishedRedirect) {
+              finishedRedirect = true;
+              location.replace("end.html");
+            }
           }
         }
         state.lastWallTime = wallTime;
