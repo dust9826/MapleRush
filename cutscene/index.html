@@ -1,0 +1,1491 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Maple Words — Story Cutscene</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --ink: #030305;
+      --violet: #a66cff;
+      --ui: rgba(10, 9, 14, 0.82);
+    }
+
+    * { box-sizing: border-box; }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: #000;
+      color: #fff;
+      font-family: "Pretendard Variable", Pretendard, "Noto Sans KR", "Malgun Gothic", sans-serif;
+    }
+
+    body {
+      display: grid;
+      place-items: center;
+      user-select: none;
+    }
+
+    .stage-shell {
+      position: relative;
+      width: min(100vw, calc(100vh * 16 / 9));
+      height: min(100vh, calc(100vw * 9 / 16));
+      overflow: hidden;
+      background: var(--ink);
+      box-shadow: 0 0 110px rgba(0, 0, 0, 0.94);
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      background: var(--ink);
+      cursor: pointer;
+    }
+
+    .loading {
+      position: absolute;
+      inset: 0;
+      z-index: 5;
+      display: grid;
+      place-items: center;
+      background:
+        radial-gradient(circle at 50% 48%, rgba(99, 50, 176, 0.18), transparent 30%),
+        #030305;
+      font-size: clamp(11px, 1vw, 16px);
+      letter-spacing: 0.24em;
+      transition: opacity 420ms ease;
+    }
+
+    .loading::after {
+      content: "";
+      position: absolute;
+      width: 54px;
+      height: 2px;
+      margin-top: 54px;
+      background: linear-gradient(90deg, transparent, #a878ff, transparent);
+      animation: pulse 1.1s ease-in-out infinite;
+    }
+
+    .loading.ready {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scaleX(0.35); opacity: 0.25; }
+      50% { transform: scaleX(1); opacity: 1; }
+    }
+
+    .hint {
+      position: absolute;
+      top: clamp(12px, 1.6vw, 26px);
+      right: clamp(14px, 2.4vw, 42px);
+      z-index: 3;
+      padding: 7px 11px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 999px;
+      background: rgba(0, 0, 0, 0.4);
+      color: rgba(255, 255, 255, 0.62);
+      font-size: clamp(9px, 0.72vw, 11px);
+      letter-spacing: 0.08em;
+      pointer-events: none;
+      transition: opacity 500ms ease 2.6s;
+    }
+
+    body.started .hint { opacity: 0; }
+
+    .hud {
+      position: absolute;
+      inset: auto 0 0;
+      z-index: 4;
+      padding: 54px clamp(14px, 2.4vw, 42px) clamp(12px, 1.6vw, 26px);
+      background: linear-gradient(transparent, rgba(0, 0, 0, 0.76));
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity 180ms ease, transform 180ms ease;
+      pointer-events: none;
+    }
+
+    .stage-shell:hover .hud,
+    .stage-shell:focus-within .hud,
+    body.paused .hud {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .progress {
+      height: 3px;
+      margin-bottom: 14px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.18);
+      pointer-events: auto;
+      cursor: pointer;
+    }
+
+    .progress > span {
+      display: block;
+      width: 0;
+      height: 100%;
+      background: linear-gradient(90deg, #eadfff, #9657ff);
+      box-shadow: 0 0 10px rgba(150, 94, 255, 0.78);
+    }
+
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      pointer-events: auto;
+    }
+
+    button {
+      min-width: 38px;
+      height: 34px;
+      padding: 0 12px;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 999px;
+      background: var(--ui);
+      color: #fff;
+      font: inherit;
+      font-size: 12px;
+      cursor: pointer;
+      backdrop-filter: blur(12px);
+    }
+
+    button:hover {
+      border-color: rgba(255, 255, 255, 0.42);
+      background: rgba(30, 24, 42, 0.9);
+    }
+
+    .time {
+      margin-left: 4px;
+      color: rgba(255, 255, 255, 0.72);
+      font-size: 11px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .spacer { flex: 1; }
+
+    body.exporting .hud,
+    body.exporting .hint,
+    body.exporting .loading { display: none; }
+
+    @media (max-width: 700px) {
+      button { padding: 0 9px; }
+      .label-long { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <main class="stage-shell" aria-label="Maple Words 스토리 컷신">
+    <canvas id="stage" width="1920" height="1080" tabindex="0" aria-label="클릭하여 재생 또는 일시정지"></canvas>
+    <div class="loading" id="loading">STORY LOADING</div>
+    <div class="hint">SPACE 재생 · ← → 장면 이동</div>
+    <section class="hud" aria-label="재생 컨트롤">
+      <div class="progress" id="progress" aria-label="재생 위치"><span id="progressFill"></span></div>
+      <div class="controls">
+        <button id="restart" type="button" title="처음부터">↺</button>
+        <button id="prev" type="button" title="이전 장면">‹</button>
+        <button id="play" type="button" title="재생/일시정지">Ⅱ</button>
+        <button id="next" type="button" title="다음 장면">›</button>
+        <span class="time" id="time">00:00 / 00:54</span>
+        <span class="spacer"></span>
+        <button id="captionToggle" type="button">자막 ON</button>
+        <button id="fullscreen" type="button"><span class="label-long">전체화면 </span>⛶</button>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const W = 1920;
+      const H = 1080;
+      const GRID = 120;
+      const TOTAL_DURATION = 58;
+      const REVEAL_TIME_SCALE = 2 / 3; // 1.5× faster than the previous cut timing.
+      const GUTTER_PX = 12;
+      const exportMode = new URLSearchParams(location.search).get("export") === "1";
+      const canvas = document.getElementById("stage");
+      let ctx = canvas.getContext("2d", { alpha: false, desynchronized: false });
+      const transitionCanvas = document.createElement("canvas");
+      transitionCanvas.width = W;
+      transitionCanvas.height = H;
+      const transitionCtx = transitionCanvas.getContext("2d", { alpha: false, desynchronized: false });
+      const shell = document.querySelector(".stage-shell");
+      const loading = document.getElementById("loading");
+      const progress = document.getElementById("progress");
+      const progressFill = document.getElementById("progressFill");
+      const timeLabel = document.getElementById("time");
+      const playButton = document.getElementById("play");
+      const captionButton = document.getElementById("captionToggle");
+
+      if (exportMode) document.body.classList.add("exporting");
+
+      /*
+       * Every face below is built from shared integer-grid vertices.
+       * At 1920×1080, one grid unit is exactly 16×9 pixels.
+       * Adjacent faces therefore reuse the exact same endpoints and angles.
+       */
+      const panelTemplates = {
+        scene1: {
+          vertices: {
+            TL: [0, 0], TR: [120, 0], BR: [120, 120], BL: [0, 120], C: [50, 64],
+            A0: [48, 0], S0a: [52, 20], S0b: [53, 40],
+            A1: [120, 14], S1a: [94, 15], S1b: [66, 25], S1c: [56, 42],
+            A2: [72, 120], S2c: [62, 104], S2b: [57, 87], S2a: [52, 70],
+            A3: [35, 120], S3b: [42, 105], S3a: [46, 86],
+            A4: [0, 8], S4c: [30, 14], S4b: [43, 25], S4a: [48, 40]
+          },
+          faces: [
+            ["C", "S0b", "S0a", "A0", "TR", "A1", "S1a", "S1b", "S1c"],
+            ["C", "S1c", "S1b", "S1a", "A1", "BR", "A2", "S2c", "S2b", "S2a"],
+            ["C", "S2a", "S2b", "S2c", "A2", "A3", "S3b", "S3a"],
+            ["C", "S3a", "S3b", "A3", "BL", "A4", "S4c", "S4b", "S4a"],
+            ["C", "S4a", "S4b", "S4c", "A4", "TL", "A0", "S0a", "S0b"]
+          ],
+          seams: [
+            ["A0", "S0a", "S0b", "C"],
+            ["A1", "S1a", "S1b", "S1c", "C"],
+            ["A2", "S2c", "S2b", "S2a", "C"],
+            ["A3", "S3b", "S3a", "C"],
+            ["A4", "S4c", "S4b", "S4a", "C"]
+          ]
+        },
+        scene2: {
+          vertices: {
+            TL: [0, 0], TR: [120, 0], BR: [120, 120], BL: [0, 120],
+            T: [54, 0], NT: [54, 24], N: [55, 40],
+            R: [120, 57], ER: [91, 55], E: [72, 56],
+            BOT: [61, 120], SB: [62, 99], S: [61, 78],
+            L: [0, 66], WL: [23, 63], W: [43, 61]
+          },
+          faces: [
+            ["N", "NT", "T", "TR", "R", "ER", "E"],
+            ["E", "ER", "R", "BR", "BOT", "SB", "S"],
+            ["S", "SB", "BOT", "BL", "L", "WL", "W"],
+            ["W", "WL", "L", "TL", "T", "NT", "N"],
+            ["N", "E", "S", "W"]
+          ],
+          seams: [
+            ["N", "E", "S", "W", "N"],
+            ["T", "NT", "N"],
+            ["R", "ER", "E"],
+            ["BOT", "SB", "S"],
+            ["L", "WL", "W"]
+          ]
+        },
+        scene3: {
+          vertices: {
+            TL: [0, 0], TR: [120, 0], BR: [120, 120], BL: [0, 120], C: [64, 70],
+            A0: [50, 0], S0b: [54, 25], S0a: [59, 48],
+            A1: [120, 43], S1b: [98, 48], S1a: [77, 56],
+            A2: [120, 116], S2b: [100, 116], S2a: [72, 112],
+            A3: [62, 120], S3a: [63, 94],
+            A4: [0, 101], S4b: [20, 94], S4a: [43, 81]
+          },
+          faces: [
+            ["C", "S0a", "S0b", "A0", "TR", "A1", "S1b", "S1a"],
+            ["C", "S1a", "S1b", "A1", "A2", "S2b", "S2a"],
+            ["C", "S2a", "S2b", "A2", "BR", "A3", "S3a"],
+            ["C", "S3a", "A3", "BL", "A4", "S4b", "S4a"],
+            ["C", "S4a", "S4b", "A4", "TL", "A0", "S0b", "S0a"]
+          ],
+          seams: [
+            ["A0", "S0b", "S0a", "C"],
+            ["A1", "S1b", "S1a", "C"],
+            ["A2", "S2b", "S2a", "C"],
+            ["A3", "S3a", "C"],
+            ["A4", "S4b", "S4a", "C"]
+          ]
+        },
+        scene4: {
+          vertices: {
+            TL: [0, 0], TR: [120, 0], BR: [120, 120], BL: [0, 120],
+            T: [56, 0], NT: [55, 8], N: [55, 18],
+            R: [120, 47], ER: [111, 46], E: [101, 45],
+            BOT: [72, 120], SB: [73, 104], S: [73, 88],
+            L: [0, 62], WL: [10, 63], W: [22, 64]
+          },
+          faces: [
+            ["N", "NT", "T", "TR", "R", "ER", "E"],
+            ["E", "ER", "R", "BR", "BOT", "SB", "S"],
+            ["S", "SB", "BOT", "BL", "L", "WL", "W"],
+            ["W", "WL", "L", "TL", "T", "NT", "N"],
+            ["N", "E", "S", "W"]
+          ],
+          seams: [
+            ["N", "E", "S", "W", "N"],
+            ["T", "NT", "N"],
+            ["R", "ER", "E"],
+            ["BOT", "SB", "S"],
+            ["L", "WL", "W"]
+          ]
+        },
+        scene5: {
+          vertices: {
+            TL: [0, 0], TR: [120, 0], BR: [120, 120], BL: [0, 120], C: [58, 61],
+            A0: [77, 0], S0b: [72, 20], S0a: [66, 42],
+            A1: [120, 68], S1b: [100, 72], S1a: [78, 70],
+            A2: [78, 120], S2b: [71, 101], S2a: [65, 82],
+            A3: [0, 108], S3b: [25, 94], S3a: [44, 76],
+            A4: [0, 8], S4b: [25, 14], S4a: [46, 31]
+          },
+          faces: [
+            ["C", "S0a", "S0b", "A0", "TR", "A1", "S1b", "S1a"],
+            ["C", "S1a", "S1b", "A1", "BR", "A2", "S2b", "S2a"],
+            ["C", "S2a", "S2b", "A2", "BL", "A3", "S3b", "S3a"],
+            ["C", "S3a", "S3b", "A3", "A4", "S4b", "S4a"],
+            ["C", "S4a", "S4b", "A4", "TL", "A0", "S0b", "S0a"]
+          ],
+          seams: [
+            ["A0", "S0b", "S0a", "C"],
+            ["A1", "S1b", "S1a", "C"],
+            ["A2", "S2b", "S2a", "C"],
+            ["A3", "S3b", "S3a", "C"],
+            ["A4", "S4b", "S4a", "C"]
+          ]
+        },
+        scene6: {
+          vertices: {
+            TL: [0, 0], TR: [120, 0], BR: [120, 120], BL: [0, 120], C: [57, 59],
+            A0: [50, 0], S0b: [49, 20], S0a: [53, 39],
+            A1: [101, 0], S1c: [92, 16], S1b: [82, 32], S1a: [68, 48],
+            A2: [120, 65], S2b: [100, 62], S2a: [80, 59],
+            A3: [80, 120], S3b: [73, 96], S3a: [65, 76],
+            A4: [0, 40], S4c: [20, 45], S4b: [37, 50], S4a: [49, 55]
+          },
+          faces: [
+            ["C", "S0a", "S0b", "A0", "A1", "S1c", "S1b", "S1a"],
+            ["C", "S1a", "S1b", "S1c", "A1", "TR", "A2", "S2b", "S2a"],
+            ["C", "S2a", "S2b", "A2", "BR", "A3", "S3b", "S3a"],
+            ["C", "S3a", "S3b", "A3", "BL", "A4", "S4c", "S4b", "S4a"],
+            ["C", "S4a", "S4b", "S4c", "A4", "TL", "A0", "S0b", "S0a"]
+          ],
+          seams: [
+            ["A0", "S0b", "S0a", "C"],
+            ["A1", "S1c", "S1b", "S1a", "C"],
+            ["A2", "S2b", "S2a", "C"],
+            ["A3", "S3b", "S3a", "C"],
+            ["A4", "S4c", "S4b", "S4a", "C"]
+          ]
+        }
+      };
+
+      const part = text => ({ text });
+      const line = (...parts) => parts;
+      const caption = (from, to, lines, speaker = null) => ({ from, to, lines, speaker });
+
+      const scenes = [
+        {
+          image: "1", start: 0, duration: 8.5, template: "scene1",
+          order: [1, 4, 0, 3, 2], revealStarts: [0.15, 0.75, 1.35, 1.95, 2.55],
+          directions: ["down", "right", "center", "left", "up"],
+          captions: [
+            caption(0.00, 2.30, [line(part("누구도 곁에 두지 않던 만지에게,"))]),
+            caption(2.30, 5.40, [
+              line(part("어느 날")),
+              line(part("한 소녀가 까닭 없이 매일 다가와")),
+              line(part("말을 건다."))
+            ]),
+            caption(5.40, 6.75, [line(part("\"기다려요!\""))], "noah"),
+            caption(6.75, 8.50, [line(part("당신이 페리온의 만지 맞죠?"))], "noah")
+          ]
+        },
+        {
+          image: "2", start: 8.5, duration: 5.7, template: "scene2",
+          order: [3, 2, 4, 0, 1], revealStarts: [0.10, 0.45, 0.80, 1.15, 1.50],
+          directions: ["right", "center", "down", "left", "up"],
+          captions: [
+            caption(0.00, 3.00, [
+              line(part("만지는 몇 번이고 그녀를")),
+              line(part("밀어낸다."))
+            ]),
+            caption(3.00, 5.70, [line(part("\"...그냥 가라\""))], "manji")
+          ]
+        },
+        {
+          image: "3", start: 14.2, duration: 8.3, template: "scene3",
+          order: [2, 0, 3, 4, 1], revealStarts: [0.10, 0.60, 1.10, 1.60, 2.10],
+          directions: ["down", "center", "up", "left", "right"],
+          crisis: true,
+          captions: [
+            caption(0.00, 1.30, [line(part("그러던 어느 날,"))]),
+            caption(1.30, 5.50, [
+              line(part("오르비스의 하늘이 갈라지며")),
+              line(part("첫번째 어둠의 균열이 발생한다."))
+            ]),
+            caption(5.50, 8.30, [
+              line(part("소녀는 그 균열을")),
+              line(part("연구하기 시작했다."))
+            ])
+          ]
+        },
+        {
+          image: "4", start: 22.5, duration: 11.2, template: "scene4",
+          order: [0, 3, 2, 1, 4], revealStarts: [0.20, 0.80, 1.40, 2.00, 2.60],
+          directions: ["right", "down", "center", "left", "up"],
+          captions: [
+            caption(0.00, 3.30, [
+              line(part("균열에 호기심이 인 만지는")),
+              line(part("오르비스로 가게되었다."))
+            ]),
+            caption(3.30, 6.80, [
+              line(part("그리고 그녀와 만나게 되고,")),
+              line(part("처음으로 마음을 열게된다."))
+            ]),
+            caption(6.80, 11.20, [
+              line(part("\"전 노아라고 해요.")),
+              line(part("함께라면, 닫을 수 있어요.\""))
+            ], "noah")
+          ]
+        },
+        {
+          image: "5", start: 33.7, duration: 6.5, template: "scene5",
+          order: [0, 4, 3, 2, 1], revealStarts: [0.05, 0.32, 0.59, 0.86, 1.13],
+          directions: ["down", "right", "up", "left", "center"],
+          crisis: true,
+          captions: [
+            caption(0.00, 2.80, [
+              line(part("하지만 균열은 먼저")),
+              line(part("그녀를 삼켰다."))
+            ]),
+            caption(2.80, 6.50, [
+              line(part("균열에 다가간")),
+              line(part("소녀가 안으로 빨려 들어간다."))
+            ])
+          ]
+        },
+        {
+          image: "6", start: 40.2, duration: 7.8, template: "scene6",
+          order: [4, 1, 3, 0, 2], revealStarts: [0.05, 0.32, 0.59, 0.86, 1.13],
+          directions: ["right", "down", "up", "center", "left"],
+          crisis: true, transitionOut: true,
+          captions: [
+            caption(0.00, 4.60, [
+              line(part("만지는 그녀를 구하려")),
+              line(part("균열로 뛰어든다. 그리고 죽는다."))
+            ]),
+            caption(4.60, 7.80, [
+              line(part("\"이번엔...")),
+              line(part("내가 놓지 않아.\""))
+            ], "manji")
+          ]
+        },
+        {
+          image: "9", start: 48.0, duration: 10.0, mode: "mapleFinal",
+          captions: [
+            caption(2.20, 4.20, [
+              line(part("그 순간,")),
+              line(part("칼이 그를 선착장으로 되돌린다."))
+            ]),
+            caption(4.25, 5.55, [line(part("회귀가 시작된다."))])
+          ],
+          final: true
+        }
+      ];
+
+      const fullFrameProfiles = {
+        "1": {
+          zoomStart: 1.070, zoomEnd: 1.035,
+          focusStart: [0.67, 0.54], focusEnd: [0.37, 0.54],
+          entryDuration: 0.95, transition: "fade", effect: "warm", vignette: 0.34
+        },
+        "2": {
+          zoomStart: 1.035, zoomEnd: 1.060,
+          focusStart: [0.37, 0.54], focusEnd: [0.68, 0.54],
+          entryDuration: 0.78, transition: "pose", effect: "rejection", vignette: 0.44
+        },
+        "3": {
+          zoomStart: 1.055, zoomEnd: 1.018,
+          focusStart: [0.72, 0.24], focusEnd: [0.42, 0.58],
+          entryDuration: 1.02, transition: "cloud", effect: "riftStudy", vignette: 0.38
+        },
+        "4": {
+          zoomStart: 1.055, zoomEnd: 1.012,
+          focusStart: [0.68, 0.55], focusEnd: [0.46, 0.54],
+          entryDuration: 0.90, transition: "sky", effect: "trust", vignette: 0.28
+        },
+        "5": {
+          zoomStart: 1.000, zoomEnd: 1.070,
+          focusStart: [0.67, 0.55], focusEnd: [0.27, 0.43],
+          entryDuration: 0.86, transition: "rupture", effect: "suction", vignette: 0.48
+        },
+        "6": {
+          zoomStart: 1.080, zoomEnd: 1.005,
+          focusStart: [0.47, 0.55], focusEnd: [0.58, 0.49],
+          entryDuration: 0.82, transition: "vortex", effect: "sacrifice", vignette: 0.52
+        }
+      };
+
+      const resolvedTemplates = {};
+      const images = {};
+      const particleSeed = index => {
+        const value = Math.sin((index + 1) * 12.9898) * 43758.5453;
+        return value - Math.floor(value);
+      };
+      const mapleParticles = Array.from({ length: 36 }, (_, index) => {
+        const layer = index < 18 ? 0 : index < 30 ? 1 : 2;
+        let x = 0.03 + particleSeed(index * 5) * 0.94;
+        let y = 0.05 + particleSeed(index * 5 + 1) * 0.78;
+        if (y > 0.66 && x > 0.20 && x < 0.78) {
+          x = x < 0.50 ? 0.10 + x * 0.16 : 0.80 + (x - 0.50) * 0.30;
+        }
+        return {
+          layer,
+          x,
+          y,
+          phase: particleSeed(index * 5 + 2) * Math.PI * 2,
+          drift: 0.65 + particleSeed(index * 5 + 3) * 0.90,
+          size: [4, 8, 14][layer] + particleSeed(index * 5 + 4) * [5, 7, 8][layer]
+        };
+      });
+      const state = {
+        time: 0,
+        playing: !exportMode,
+        captions: true,
+        lastWallTime: performance.now()
+      };
+
+      const clamp = (value, min = 0, max = 1) => Math.max(min, Math.min(max, value));
+      const lerp = (from, to, amount) => from + (to - from) * amount;
+      const easeOut = value => 1 - Math.pow(1 - clamp(value), 3);
+      const smooth = value => {
+        const p = clamp(value);
+        return p * p * (3 - 2 * p);
+      };
+      const fadeWindow = (time, start, end, edge = 0.24) =>
+        smooth((time - start) / edge) * (1 - smooth((time - end + edge) / edge));
+
+      function resolveTemplate(name) {
+        if (resolvedTemplates[name]) return resolvedTemplates[name];
+        const source = panelTemplates[name];
+        const points = Object.fromEntries(
+          Object.entries(source.vertices).map(([id, [u, v]]) => [
+            id,
+            [u * W / GRID, v * H / GRID]
+          ])
+        );
+        resolvedTemplates[name] = { ...source, points };
+        return resolvedTemplates[name];
+      }
+
+      function polygonPath(ring, points) {
+        ctx.beginPath();
+        ring.forEach((id, index) => {
+          const [x, y] = points[id];
+          if (index === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        });
+        ctx.closePath();
+      }
+
+      function faceBounds(ring, points) {
+        const xs = ring.map(id => points[id][0]);
+        const ys = ring.map(id => points[id][1]);
+        return [
+          Math.min(...xs),
+          Math.min(...ys),
+          Math.max(...xs) - Math.min(...xs),
+          Math.max(...ys) - Math.min(...ys)
+        ];
+      }
+
+      function revealRect(bounds, progressValue, direction) {
+        const [x, y, w, h] = bounds;
+        const p = easeOut(progressValue);
+        if (direction === "right") return [x, y, w * p, h];
+        if (direction === "left") return [x + w * (1 - p), y, w * p, h];
+        if (direction === "down") return [x, y, w, h * p];
+        if (direction === "up") return [x, y + h * (1 - p), w, h * p];
+        return [x + w * (1 - p) * 0.5, y + h * (1 - p) * 0.5, w * p, h * p];
+      }
+
+      function drawFace(img, ring, points, reveal, direction, crisis) {
+        if (reveal <= 0) return;
+        const bounds = faceBounds(ring, points);
+        const mask = revealRect(bounds, reveal, direction);
+
+        ctx.save();
+        polygonPath(ring, points);
+        ctx.clip();
+        ctx.beginPath();
+        ctx.rect(mask[0], mask[1], Math.max(0.1, mask[2]), Math.max(0.1, mask[3]));
+        ctx.clip();
+
+        // Every face draws the same full image in the same global coordinate system.
+        ctx.drawImage(img, 0, 0, W, H);
+
+        if (crisis) {
+          ctx.globalCompositeOperation = "soft-light";
+          ctx.fillStyle = "rgba(117, 42, 211, 0.18)";
+          ctx.fillRect(0, 0, W, H);
+        }
+
+        const flash = clamp(1 - reveal * 2.5);
+        if (flash > 0) {
+          ctx.globalCompositeOperation = "screen";
+          ctx.fillStyle = crisis
+            ? `rgba(194, 151, 255, ${flash * 0.34})`
+            : `rgba(255, 255, 255, ${flash * 0.22})`;
+          ctx.fillRect(bounds[0], bounds[1], bounds[2], bounds[3]);
+        }
+        ctx.restore();
+      }
+
+      function drawGutters(template, crisis) {
+        const { points, seams } = template;
+        ctx.save();
+        ctx.strokeStyle = "#020203";
+        ctx.lineWidth = GUTTER_PX;
+        ctx.lineJoin = "miter";
+        ctx.miterLimit = 5;
+        ctx.lineCap = "square";
+
+        seams.forEach(seam => {
+          ctx.beginPath();
+          seam.forEach((id, index) => {
+            const [x, y] = points[id];
+            if (index === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+          });
+          ctx.stroke();
+        });
+
+        ctx.globalAlpha = crisis ? 0.32 : 0.12;
+        ctx.strokeStyle = crisis ? "#b68aff" : "#ffffff";
+        ctx.lineWidth = crisis ? 2 : 1;
+        seams.forEach(seam => {
+          ctx.beginPath();
+          seam.forEach((id, index) => {
+            const [x, y] = points[id];
+            if (index === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+          });
+          ctx.stroke();
+        });
+
+        ctx.globalAlpha = 1;
+        ctx.strokeStyle = "#020203";
+        ctx.lineWidth = 20;
+        ctx.strokeRect(0, 0, W, H);
+        ctx.restore();
+      }
+
+      function drawVignette(strength = 0.52) {
+        const gradient = ctx.createRadialGradient(W * 0.5, H * 0.46, H * 0.2, W * 0.5, H * 0.46, W * 0.72);
+        gradient.addColorStop(0, "rgba(0,0,0,0)");
+        gradient.addColorStop(0.72, `rgba(0,0,0,${strength * 0.2})`);
+        gradient.addColorStop(1, `rgba(0,0,0,${strength})`);
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, W, H);
+      }
+
+      function setCaptionFont(fontSize) {
+        ctx.font = `600 ${fontSize}px "Pretendard Variable", Pretendard, "Noto Sans KR", "Malgun Gothic", sans-serif`;
+      }
+
+      function measureCaptionLine(parts, fontSize) {
+        return parts.reduce((width, item) => {
+          setCaptionFont(fontSize);
+          return width + ctx.measureText(item.text).width;
+        }, 0);
+      }
+
+      function drawCaptionBlock(item, alpha) {
+        if (alpha <= 0 || !state.captions) return;
+        let fontSize = 40;
+        const maxAllowedWidth = W * 0.80;
+        let widths = item.lines.map(parts => measureCaptionLine(parts, fontSize));
+        const widest = Math.max(...widths);
+        if (widest > maxAllowedWidth) {
+          fontSize = Math.max(32, fontSize * maxAllowedWidth / widest);
+          widths = item.lines.map(parts => measureCaptionLine(parts, fontSize));
+        }
+
+        const lineHeight = fontSize * 1.42;
+        const contentHeight = lineHeight * item.lines.length;
+        const baselineStart = H - 128 - contentHeight + lineHeight * 0.5;
+        const boxWidth = Math.min(W * 0.88, Math.max(...widths) + 120);
+        const boxX = (W - boxWidth) * 0.5;
+        const boxY = baselineStart - lineHeight * 0.65;
+        const boxHeight = contentHeight + lineHeight * 0.32;
+
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        const background = ctx.createLinearGradient(boxX, 0, boxX + boxWidth, 0);
+        background.addColorStop(0, "rgba(0,0,0,0)");
+        background.addColorStop(0.12, "rgba(0,0,0,.76)");
+        background.addColorStop(0.88, "rgba(0,0,0,.76)");
+        background.addColorStop(1, "rgba(0,0,0,0)");
+        ctx.fillStyle = background;
+        ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
+
+        ctx.textAlign = "left";
+        ctx.textBaseline = "middle";
+        ctx.shadowColor = "rgba(0,0,0,.98)";
+        ctx.shadowBlur = 14;
+        ctx.shadowOffsetY = 3;
+        const captionColor =
+          item.speaker === "noah" ? "#ffd54a" :
+          item.speaker === "manji" ? "#5369a8" :
+          "#ffffff";
+
+        item.lines.forEach((parts, lineIndex) => {
+          const totalWidth = widths[lineIndex];
+          let x = (W - totalWidth) * 0.5;
+          const y = baselineStart + lineIndex * lineHeight;
+          parts.forEach(textPart => {
+            setCaptionFont(fontSize);
+            ctx.fillStyle = captionColor;
+            ctx.fillText(textPart.text, x, y);
+            x += ctx.measureText(textPart.text).width;
+          });
+        });
+        ctx.restore();
+      }
+
+      function drawCaption(scene, localTime) {
+        scene.captions.forEach(item => {
+          const alpha = fadeWindow(localTime, item.from, item.to, 0.24);
+          if (alpha > 0) drawCaptionBlock(item, alpha);
+        });
+      }
+
+      function drawImageWithFocus(
+        image,
+        zoom = 1,
+        focusX = 0.5,
+        focusY = 0.5,
+        alpha = 1,
+        blur = 0,
+        brightness = 1,
+        offsetX = 0,
+        offsetY = 0
+      ) {
+        if (alpha <= 0) return;
+        const width = W * zoom;
+        const height = H * zoom;
+        const x = focusX * W - focusX * width + offsetX;
+        const y = focusY * H - focusY * height + offsetY;
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.filter = `blur(${Math.max(0, blur)}px) brightness(${brightness})`;
+        ctx.drawImage(image, x, y, width, height);
+        ctx.restore();
+      }
+
+      function cameraForScene(scene, profile, localTime) {
+        let motion = smooth(localTime / scene.duration);
+        if (profile.effect === "sacrifice" && localTime > 4.55) {
+          const held = smooth(4.55 / scene.duration);
+          const tail = smooth((localTime - 4.55) / (scene.duration - 4.55));
+          motion = lerp(held, 1, tail * 0.46);
+        }
+
+        const zoom = lerp(profile.zoomStart, profile.zoomEnd, motion)
+          + Math.sin(localTime * 0.45) * 0.0015;
+        const focusX = lerp(profile.focusStart[0], profile.focusEnd[0], motion);
+        const focusY = lerp(profile.focusStart[1], profile.focusEnd[1], motion);
+        let offsetX = 0;
+        let offsetY = 0;
+
+        if (profile.effect === "riftStudy") {
+          const tremor = (1 - smooth(localTime / 1.05)) * 2.3;
+          offsetX = Math.sin(localTime * 54) * tremor;
+          offsetY = Math.cos(localTime * 47) * tremor * 0.55;
+        } else if (profile.effect === "suction") {
+          const shock = (1 - smooth(localTime / 0.62)) * 6.5;
+          offsetX = Math.sin(localTime * 61) * shock;
+          offsetY = Math.cos(localTime * 49) * shock * 0.60;
+        }
+
+        return { zoom, focusX, focusY, offsetX, offsetY };
+      }
+
+      function drawRadialLight(x, y, radius, color, alpha, composite = "screen") {
+        if (alpha <= 0) return;
+        const [red, green, blue] = color;
+        ctx.save();
+        ctx.globalCompositeOperation = composite;
+        const glow = ctx.createRadialGradient(x, y, 0, x, y, radius);
+        glow.addColorStop(0, `rgba(${red},${green},${blue},${alpha})`);
+        glow.addColorStop(0.38, `rgba(${red},${green},${blue},${alpha * 0.42})`);
+        glow.addColorStop(1, `rgba(${red},${green},${blue},0)`);
+        ctx.fillStyle = glow;
+        ctx.fillRect(x - radius, y - radius, radius * 2, radius * 2);
+        ctx.restore();
+      }
+
+      function drawAmbientMotes(localTime, count, color, alpha, rise = 8) {
+        if (alpha <= 0) return;
+        ctx.save();
+        ctx.globalCompositeOperation = "screen";
+        ctx.fillStyle = color;
+        for (let index = 0; index < count; index += 1) {
+          const source = mapleParticles[index % mapleParticles.length];
+          const x = source.x * W + Math.sin(localTime * 0.32 + source.phase) * (8 + source.layer * 4);
+          const rawY = source.y * H - localTime * (rise + source.layer * 2);
+          const y = ((rawY % H) + H) % H;
+          const shimmer = 0.52 + Math.sin(localTime * 1.7 + source.phase) * 0.34;
+          const size = 1.8 + source.layer * 1.2 + source.size * 0.12;
+          ctx.globalAlpha = alpha * Math.max(0.10, shimmer);
+          ctx.shadowColor = color;
+          ctx.shadowBlur = size * 2.2;
+          ctx.beginPath();
+          ctx.arc(x, y, size, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+
+      function drawFlowStreaks(localTime, targetX, targetY, count, color, alpha, origin = "right") {
+        if (alpha <= 0) return;
+        const targetPx = targetX * W;
+        const targetPy = targetY * H;
+        ctx.save();
+        ctx.globalCompositeOperation = "screen";
+        ctx.strokeStyle = color;
+        ctx.lineCap = "round";
+
+        for (let index = 0; index < count; index += 1) {
+          const seedA = particleSeed(index * 7 + 2);
+          const seedB = particleSeed(index * 7 + 5);
+          const startX = origin === "right"
+            ? W * (0.46 + seedA * 0.58)
+            : W * (-0.03 + seedA * 0.66);
+          const startY = origin === "right"
+            ? H * (0.03 + seedB * 0.94)
+            : H * (0.36 + seedB * 0.68);
+          const progressValue = (localTime * (0.22 + seedA * 0.12) + seedB) % 1;
+          const head = easeOut(progressValue);
+          const tail = easeOut(Math.max(0, progressValue - 0.075));
+          const headX = lerp(startX, targetPx, head);
+          const headY = lerp(startY, targetPy, head);
+          const tailX = lerp(startX, targetPx, tail);
+          const tailY = lerp(startY, targetPy, tail);
+          ctx.globalAlpha = alpha * (1 - progressValue) * (0.34 + seedA * 0.54);
+          ctx.lineWidth = 1.5 + seedB * 3.2;
+          ctx.beginPath();
+          ctx.moveTo(tailX, tailY);
+          ctx.lineTo(headX, headY);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+
+      function drawTransitionOverlay(type, progressValue) {
+        const pulse = Math.sin(clamp(progressValue) * Math.PI);
+        if (pulse <= 0) return;
+
+        if (type === "pose") {
+          ctx.fillStyle = `rgba(238,244,255,${pulse * 0.08})`;
+          ctx.fillRect(0, 0, W, H);
+        } else if (type === "cloud") {
+          drawRadialLight(W * 0.50, H * 0.48, W * 0.82, [248, 252, 255], pulse * 0.46);
+          ctx.fillStyle = `rgba(232,246,255,${pulse * 0.20})`;
+          ctx.fillRect(0, 0, W, H);
+        } else if (type === "sky") {
+          drawRadialLight(W * 0.46, H * 0.30, W * 0.68, [226, 249, 255], pulse * 0.30);
+        } else if (type === "rupture") {
+          drawRadialLight(W * 0.18, H * 0.30, W * 0.72, [161, 76, 255], pulse * 0.58);
+          ctx.fillStyle = `rgba(91,28,166,${pulse * 0.12})`;
+          ctx.fillRect(0, 0, W, H);
+        } else if (type === "vortex") {
+          drawRadialLight(W * 0.62, H * 0.44, W * 0.72, [154, 77, 255], pulse * 0.45);
+          ctx.fillStyle = `rgba(63,20,130,${pulse * 0.14})`;
+          ctx.fillRect(0, 0, W, H);
+        }
+      }
+
+      function drawStoryEffects(scene, profile, localTime, camera, revealAlpha) {
+        const pulse = 0.5 + Math.sin(localTime * 2.2) * 0.5;
+        if (profile.effect === "warm") {
+          drawRadialLight(W * 0.24, H * 0.34, H * 0.64, [255, 216, 151], revealAlpha * 0.13);
+          drawAmbientMotes(localTime, 17, "#ffe2a8", revealAlpha * 0.22, 5);
+        } else if (profile.effect === "rejection") {
+          ctx.save();
+          ctx.globalCompositeOperation = "multiply";
+          ctx.fillStyle = `rgba(13,22,58,${revealAlpha * 0.15})`;
+          ctx.fillRect(0, 0, W, H);
+          const shade = ctx.createLinearGradient(W * 0.40, 0, W, 0);
+          shade.addColorStop(0, "rgba(9,15,43,0)");
+          shade.addColorStop(1, `rgba(9,15,43,${revealAlpha * 0.18})`);
+          ctx.fillStyle = shade;
+          ctx.fillRect(0, 0, W, H);
+          ctx.restore();
+        } else if (profile.effect === "riftStudy") {
+          drawRadialLight(W * 0.72, H * 0.15, H * 0.56, [158, 76, 255], revealAlpha * (0.15 + pulse * 0.08));
+          drawRadialLight(W * 0.39, H * 0.72, H * 0.20, [100, 229, 255], revealAlpha * 0.08);
+          drawAmbientMotes(localTime, 13, "#c59cff", revealAlpha * 0.16, 4);
+        } else if (profile.effect === "trust") {
+          drawRadialLight(W * 0.45, H * 0.45, H * 0.54, [255, 226, 160], revealAlpha * 0.10);
+          drawAmbientMotes(localTime, 19, "#ffe7a8", revealAlpha * 0.20, 5);
+          const pendant = mapImagePoint(731, 548, camera.zoom, camera.focusX, camera.focusY);
+          drawTwinkle(
+            pendant[0] + camera.offsetX,
+            pendant[1] + camera.offsetY,
+            22,
+            fadeWindow(localTime, 7.00, 7.66, 0.18) * revealAlpha * 0.58,
+            "#c9f8ff"
+          );
+          const omen = smooth((localTime - (scene.duration - 1.45)) / 1.25);
+          drawAmbientMotes(localTime * 1.4, 10, "#b78aff", revealAlpha * omen * 0.24, -2);
+        } else if (profile.effect === "suction") {
+          ctx.save();
+          ctx.globalCompositeOperation = "soft-light";
+          ctx.fillStyle = `rgba(111,35,197,${revealAlpha * 0.15})`;
+          ctx.fillRect(0, 0, W, H);
+          ctx.restore();
+          drawRadialLight(W * 0.18, H * 0.27, H * 0.72, [151, 60, 255], revealAlpha * (0.17 + pulse * 0.08));
+          drawFlowStreaks(localTime, 0.18, 0.27, 22, "#d9b7ff", revealAlpha * 0.38, "right");
+        } else if (profile.effect === "sacrifice") {
+          drawRadialLight(W * 0.84, H * 0.15, H * 0.64, [132, 56, 255], revealAlpha * (0.14 + pulse * 0.07));
+          drawFlowStreaks(localTime, 0.84, 0.15, 16, "#b993ff", revealAlpha * 0.26, "left");
+          const sword = mapImagePoint(1190, 861, camera.zoom, camera.focusX, camera.focusY);
+          const resolve = smooth((localTime - 4.55) / 0.55) * (0.76 + Math.sin(localTime * 5.4) * 0.10);
+          drawRadialLight(
+            sword[0] + camera.offsetX,
+            sword[1] + camera.offsetY,
+            H * 0.18,
+            [235, 225, 255],
+            revealAlpha * resolve * 0.18
+          );
+        }
+      }
+
+      function drawNarrativeScene(scene, localTime, sceneIndex, options = {}) {
+        const profile = fullFrameProfiles[scene.image];
+        const camera = cameraForScene(scene, profile, localTime);
+        const entryProgress = options.entry === false
+          ? 1
+          : smooth(localTime / profile.entryDuration);
+
+        ctx.fillStyle = "#030305";
+        ctx.fillRect(0, 0, W, H);
+
+        if (sceneIndex > 0 && options.entry !== false) {
+          const previousScene = scenes[sceneIndex - 1];
+          const previousProfile = fullFrameProfiles[previousScene.image];
+          if (previousProfile) {
+            const previousCamera = cameraForScene(
+              previousScene,
+              previousProfile,
+              previousScene.duration - 0.001
+            );
+            drawImageWithFocus(
+              images[previousScene.image],
+              previousCamera.zoom,
+              previousCamera.focusX,
+              previousCamera.focusY,
+              1,
+              entryProgress * (profile.transition === "pose" ? 0 : 5),
+              1,
+              previousCamera.offsetX,
+              previousCamera.offsetY
+            );
+          }
+        }
+
+        const imageAlpha = sceneIndex === 0 ? entryProgress : 1;
+        drawImageWithFocus(
+          images[scene.image],
+          camera.zoom,
+          camera.focusX,
+          camera.focusY,
+          sceneIndex === 0 ? entryProgress : entryProgress,
+          (1 - entryProgress) * (profile.transition === "pose" ? 0 : 4),
+          1,
+          camera.offsetX,
+          camera.offsetY
+        );
+
+        if (sceneIndex > 0 && options.entry !== false) {
+          drawTransitionOverlay(profile.transition, entryProgress);
+        }
+
+        drawStoryEffects(scene, profile, localTime, camera, imageAlpha);
+        drawVignette(profile.vignette);
+
+        if (scene.transitionOut && options.transition !== false) {
+          drawTransitionCharge(scene, localTime);
+        }
+        if (options.captions !== false) drawCaption(scene, localTime);
+      }
+
+      function drawRiftBloom(x, y, intensity, radiusScale = 1) {
+        if (intensity <= 0) return;
+        ctx.save();
+        ctx.globalCompositeOperation = "screen";
+        const innerRadius = H * 0.035 * radiusScale;
+        const outerRadius = H * 0.54 * radiusScale;
+        const glow = ctx.createRadialGradient(x, y, innerRadius, x, y, outerRadius);
+        glow.addColorStop(0, `rgba(252,248,255,${0.58 * intensity})`);
+        glow.addColorStop(0.16, `rgba(211,177,255,${0.44 * intensity})`);
+        glow.addColorStop(0.48, `rgba(130,63,255,${0.30 * intensity})`);
+        glow.addColorStop(1, "rgba(62,20,140,0)");
+        ctx.fillStyle = glow;
+        ctx.fillRect(0, 0, W, H);
+
+        ctx.translate(x, y);
+        ctx.lineCap = "round";
+        for (let index = 0; index < 7; index += 1) {
+          const angle = -1.22 + index * 0.41;
+          const length = H * (0.22 + index % 3 * 0.045) * radiusScale;
+          const ray = ctx.createLinearGradient(0, 0, Math.cos(angle) * length, Math.sin(angle) * length);
+          ray.addColorStop(0, `rgba(246,232,255,${0.25 * intensity})`);
+          ray.addColorStop(1, "rgba(158,90,255,0)");
+          ctx.strokeStyle = ray;
+          ctx.lineWidth = 5 + (index % 2) * 3;
+          ctx.beginPath();
+          ctx.moveTo(0, 0);
+          ctx.lineTo(Math.cos(angle) * length, Math.sin(angle) * length);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+
+      function drawTransitionCharge(scene, localTime) {
+        const progressValue = smooth(
+          (localTime - (scene.duration - 0.62)) / 0.62
+        );
+        if (progressValue <= 0) return;
+        const pulse = 0.84 + Math.sin(localTime * 8.2) * 0.16;
+        drawRiftBloom(
+          W * 0.69,
+          H * 0.70,
+          progressValue * pulse * 0.46,
+          0.72 + progressValue * 0.26
+        );
+      }
+
+      function drawPanelScene(scene, localTime, options = {}) {
+        const template = resolveTemplate(scene.template);
+        const img = images[scene.image];
+        const faceProgress = new Array(template.faces.length).fill(0);
+        const baseRevealDuration = scene.crisis ? 0.16 : 0.22;
+        const revealDuration = baseRevealDuration * REVEAL_TIME_SCALE;
+
+        scene.order.forEach((faceIndex, sequenceIndex) => {
+          faceProgress[faceIndex] = clamp(
+            (localTime - scene.revealStarts[sequenceIndex] * REVEAL_TIME_SCALE) / revealDuration
+          );
+        });
+
+        ctx.fillStyle = "#030305";
+        ctx.fillRect(0, 0, W, H);
+
+        template.faces.forEach((face, faceIndex) => {
+          const sequenceIndex = scene.order.indexOf(faceIndex);
+          const direction = scene.directions[sequenceIndex] || "center";
+          drawFace(img, face, template.points, faceProgress[faceIndex], direction, scene.crisis);
+        });
+
+        drawGutters(template, scene.crisis);
+        drawVignette(scene.crisis ? 0.64 : 0.50);
+
+        if (scene.crisis) {
+          const pulse = 0.5 + Math.sin(localTime * 3.4) * 0.5;
+          ctx.save();
+          ctx.globalCompositeOperation = "screen";
+          ctx.globalAlpha = 0.035 + pulse * 0.025;
+          ctx.fillStyle = "#8f4dff";
+          ctx.fillRect(0, 0, W, H);
+          ctx.restore();
+        }
+
+        if (scene.transitionOut && options.transition !== false) {
+          drawTransitionCharge(scene, localTime);
+        }
+
+        if (options.captions !== false) drawCaption(scene, localTime);
+
+        if (!scene.transitionOut && options.fade !== false) {
+          const fadeOut = smooth((localTime - (scene.duration - 0.38)) / 0.38);
+          if (fadeOut > 0) {
+            ctx.fillStyle = `rgba(0,0,0,${fadeOut})`;
+            ctx.fillRect(0, 0, W, H);
+          }
+        }
+      }
+
+      function drawParticleDiamond(x, y, size, alpha, rotation) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(rotation);
+        ctx.globalCompositeOperation = "screen";
+        ctx.globalAlpha = alpha;
+        ctx.shadowColor = "#b47aff";
+        ctx.shadowBlur = size * 1.6;
+        ctx.fillStyle = "#d9bcff";
+        ctx.beginPath();
+        ctx.moveTo(0, -size);
+        ctx.lineTo(size * 0.46, 0);
+        ctx.lineTo(0, size);
+        ctx.lineTo(-size * 0.46, 0);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      }
+
+      function drawMapleParticles(localTime) {
+        const appear = smooth((localTime - 1.48) / 0.62);
+        const disappear = 1 - smooth((localTime - 9.10) / 0.55);
+        const visibility = appear * disappear;
+        if (visibility <= 0) return;
+        const elapsed = Math.max(0, localTime - 1.48);
+        const driftByLayer = [10, 24, 46];
+        const speedByLayer = [5, 11, 19];
+
+        mapleParticles.forEach(particle => {
+          const amplitude = driftByLayer[particle.layer];
+          const x = particle.x * W
+            + Math.sin(elapsed * particle.drift + particle.phase) * amplitude;
+          const y = particle.y * H
+            - elapsed * speedByLayer[particle.layer]
+            + Math.cos(elapsed * 0.52 + particle.phase) * amplitude * 0.22;
+          const shimmer = 0.62 + Math.sin(elapsed * 2.1 + particle.phase) * 0.38;
+          const baseAlpha = [0.18, 0.24, 0.31][particle.layer];
+          drawParticleDiamond(
+            x,
+            y,
+            particle.size,
+            visibility * baseAlpha * shimmer,
+            elapsed * (0.14 + particle.layer * 0.08) + particle.phase
+          );
+        });
+      }
+
+      function drawTwinkle(x, y, radius, alpha, color = "#f7eeff") {
+        if (alpha <= 0) return;
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.globalCompositeOperation = "screen";
+        ctx.globalAlpha = alpha;
+        ctx.shadowColor = color;
+        ctx.shadowBlur = radius * 0.8;
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.moveTo(0, -radius);
+        ctx.quadraticCurveTo(radius * 0.12, -radius * 0.12, radius, 0);
+        ctx.quadraticCurveTo(radius * 0.12, radius * 0.12, 0, radius);
+        ctx.quadraticCurveTo(-radius * 0.12, radius * 0.12, -radius, 0);
+        ctx.quadraticCurveTo(-radius * 0.12, -radius * 0.12, 0, -radius);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      function mapImagePoint(x, y, zoom, focusX, focusY) {
+        return [
+          focusX * W - focusX * W * zoom + x * zoom,
+          focusY * H - focusY * H * zoom + y * zoom
+        ];
+      }
+
+      function drawFinalScene(scene, localTime) {
+        const mainContext = ctx;
+        ctx = transitionCtx;
+        drawNarrativeScene(scenes[5], scenes[5].duration - 0.02, 5, {
+          entry: false,
+          captions: false,
+          transition: true
+        });
+        ctx = mainContext;
+
+        const transitionMix = smooth((localTime - 1.12) / 0.96);
+        const previousAlpha = 1 - transitionMix;
+        const previousZoom = 1 + smooth(localTime / 1.35) * 0.02;
+        drawImageWithFocus(
+          transitionCanvas,
+          previousZoom,
+          0.69,
+          0.70,
+          previousAlpha,
+          transitionMix * 14,
+          1 + transitionMix * 0.08
+        );
+
+        const settle = smooth((localTime - 1.34) / 7.60);
+        const finalZoom = 1.055 - settle * 0.055;
+        const finalAlpha = smooth((localTime - 1.12) / 0.82);
+        drawImageWithFocus(
+          images[scene.image],
+          finalZoom,
+          0.62,
+          0.62,
+          finalAlpha,
+          (1 - finalAlpha) * 8,
+          0.96 + finalAlpha * 0.04
+        );
+
+        const bloomIn = smooth((localTime - 0.36) / 0.72);
+        const bloomOut = 1 - smooth((localTime - 1.34) / 0.54);
+        drawRiftBloom(
+          W * 0.69,
+          H * 0.70,
+          bloomIn * bloomOut,
+          0.86 + bloomIn * 0.46
+        );
+
+        const flashIn = smooth((localTime - 1.10) / 0.18);
+        const flashOut = 1 - smooth((localTime - 1.34) / 0.46);
+        const flash = flashIn * flashOut;
+        if (flash > 0) {
+          ctx.save();
+          ctx.globalCompositeOperation = "screen";
+          ctx.fillStyle = `rgba(251,247,255,${flash * 0.88})`;
+          ctx.fillRect(0, 0, W, H);
+          ctx.restore();
+        }
+
+        drawMapleParticles(localTime);
+
+        const pendantPoint = mapImagePoint(1328, 440, finalZoom, 0.62, 0.62);
+        const swordPoint = mapImagePoint(1438, 836, finalZoom, 0.62, 0.62);
+        drawTwinkle(
+          pendantPoint[0],
+          pendantPoint[1],
+          23,
+          fadeWindow(localTime, 2.62, 3.12, 0.16) * 0.74,
+          "#c9f4ff"
+        );
+        drawTwinkle(
+          swordPoint[0],
+          swordPoint[1],
+          30,
+          fadeWindow(localTime, 3.18, 3.70, 0.16) * 0.68
+        );
+
+        const vignetteStrength = smooth((localTime - 2.18) / 0.52) * 0.22;
+        drawVignette(vignetteStrength);
+        drawCaption(scene, localTime);
+
+        const endFade = smooth((localTime - (scene.duration - 0.85)) / 0.85);
+        if (endFade > 0) {
+          ctx.fillStyle = `rgba(0,0,0,${endFade})`;
+          ctx.fillRect(0, 0, W, H);
+        }
+      }
+
+      function render(time) {
+        const safeTime = clamp(time, 0, TOTAL_DURATION);
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.globalAlpha = 1;
+        ctx.globalCompositeOperation = "source-over";
+        ctx.filter = "none";
+        ctx.fillStyle = "#030305";
+        ctx.fillRect(0, 0, W, H);
+
+        const scene = scenes.find(item =>
+          safeTime >= item.start && safeTime < item.start + item.duration
+        ) || (safeTime === TOTAL_DURATION ? scenes[scenes.length - 1] : null);
+        if (scene) {
+          const localTime = Math.min(
+            scene.duration - 0.001,
+            Math.max(0, safeTime - scene.start)
+          );
+          if (scene.mode === "mapleFinal") drawFinalScene(scene, localTime);
+          else drawNarrativeScene(scene, localTime, scenes.indexOf(scene));
+        }
+        updateHud(safeTime);
+      }
+
+      function updateHud(time) {
+        progressFill.style.width = `${clamp(time / TOTAL_DURATION) * 100}%`;
+        const current = Math.floor(time);
+        const total = Math.floor(TOTAL_DURATION);
+        const format = value =>
+          `${String(Math.floor(value / 60)).padStart(2, "0")}:${String(value % 60).padStart(2, "0")}`;
+        timeLabel.textContent = `${format(current)} / ${format(total)}`;
+        playButton.textContent = state.playing ? "Ⅱ" : "▶";
+      }
+
+      function tick(wallTime) {
+        if (state.playing) {
+          const delta = Math.min(0.08, (wallTime - state.lastWallTime) / 1000);
+          state.time += delta;
+          if (state.time >= TOTAL_DURATION) {
+            state.time = TOTAL_DURATION;
+            state.playing = false;
+            document.body.classList.add("paused");
+          }
+        }
+        state.lastWallTime = wallTime;
+        render(state.time);
+        requestAnimationFrame(tick);
+      }
+
+      function togglePlay() {
+        if (state.time >= TOTAL_DURATION - 0.01) state.time = 0;
+        state.playing = !state.playing;
+        state.lastWallTime = performance.now();
+        document.body.classList.toggle("paused", !state.playing);
+        document.body.classList.add("started");
+      }
+
+      function seek(time) {
+        state.time = clamp(time, 0, TOTAL_DURATION);
+        state.lastWallTime = performance.now();
+        render(state.time);
+      }
+
+      function currentSceneIndex() {
+        const index = scenes.findIndex(scene =>
+          state.time >= scene.start && state.time < scene.start + scene.duration
+        );
+        if (index >= 0) return index;
+        return state.time <= 0 ? 0 : scenes.length - 1;
+      }
+
+      function jump(direction) {
+        const index = currentSceneIndex();
+        const nextIndex = clamp(index + direction, 0, scenes.length - 1);
+        seek(scenes[nextIndex].start);
+      }
+
+      function polygonArea(face, vertices) {
+        let area = 0;
+        for (let i = 0; i < face.length; i += 1) {
+          const [x1, y1] = vertices[face[i]];
+          const [x2, y2] = vertices[face[(i + 1) % face.length]];
+          area += x1 * y2 - x2 * y1;
+        }
+        return Math.abs(area) * 0.5;
+      }
+
+      function partitionAudit() {
+        return Object.fromEntries(
+          Object.entries(panelTemplates).map(([name, template]) => {
+            const areas = template.faces.map(face => polygonArea(face, template.vertices));
+            const edgeCounts = new Map();
+            template.faces.forEach(face => {
+              for (let i = 0; i < face.length; i += 1) {
+                const a = face[i];
+                const b = face[(i + 1) % face.length];
+                const key = [a, b].sort().join("|");
+                edgeCounts.set(key, (edgeCounts.get(key) || 0) + 1);
+              }
+            });
+            const badEdges = [];
+            edgeCounts.forEach((count, key) => {
+              const [a, b] = key.split("|").map(id => template.vertices[id]);
+              const isOuter =
+                (a[0] === 0 && b[0] === 0) ||
+                (a[0] === GRID && b[0] === GRID) ||
+                (a[1] === 0 && b[1] === 0) ||
+                (a[1] === GRID && b[1] === GRID);
+              const expected = isOuter ? 1 : 2;
+              if (count !== expected) badEdges.push({ key, count, expected });
+            });
+            return [name, {
+              faceCount: template.faces.length,
+              faceAreas: areas,
+              areaSum: areas.reduce((sum, value) => sum + value, 0),
+              expectedArea: GRID * GRID,
+              exactAreaMatch: Math.abs(areas.reduce((sum, value) => sum + value, 0) - GRID * GRID) < 1e-9,
+              exactEdgeMatch: badEdges.length === 0,
+              badEdges,
+              gutterPx: GUTTER_PX
+            }];
+          })
+        );
+      }
+
+      // TEMP: only 6.jpg / 7.jpg were delivered — alternate them for the
+      // missing scene images until the real 1-5.jpg and 9.png arrive.
+      const imageSources = {
+        "1": "assets/6.jpg",
+        "2": "assets/7.jpg",
+        "3": "assets/6.jpg",
+        "4": "assets/7.jpg",
+        "5": "assets/6.jpg",
+        "6": "assets/6.jpg",
+        "9": "assets/7.jpg"
+      };
+
+      function loadImages() {
+        return Promise.all(["1", "2", "3", "4", "5", "6", "9"].map(key =>
+          new Promise((resolve, reject) => {
+            const image = new Image();
+            image.decoding = "async";
+            image.onload = () => {
+              images[key] = image;
+              resolve();
+            };
+            image.onerror = reject;
+            image.src = imageSources[key];
+          })
+        ));
+      }
+
+      canvas.addEventListener("click", togglePlay);
+      document.getElementById("play").addEventListener("click", togglePlay);
+      document.getElementById("restart").addEventListener("click", () => seek(0));
+      document.getElementById("prev").addEventListener("click", () => jump(-1));
+      document.getElementById("next").addEventListener("click", () => jump(1));
+      document.getElementById("fullscreen").addEventListener("click", async () => {
+        if (document.fullscreenElement) await document.exitFullscreen();
+        else await shell.requestFullscreen();
+      });
+      captionButton.addEventListener("click", () => {
+        state.captions = !state.captions;
+        captionButton.textContent = `자막 ${state.captions ? "ON" : "OFF"}`;
+        render(state.time);
+      });
+      progress.addEventListener("click", event => {
+        const rect = progress.getBoundingClientRect();
+        seek(((event.clientX - rect.left) / rect.width) * TOTAL_DURATION);
+      });
+      window.addEventListener("keydown", event => {
+        if (event.code === "Space") {
+          event.preventDefault();
+          togglePlay();
+        } else if (event.code === "ArrowLeft") {
+          jump(-1);
+        } else if (event.code === "ArrowRight") {
+          jump(1);
+        }
+      });
+
+      window.cutscene = {
+        duration: TOTAL_DURATION,
+        renderFrame(time, captions = true) {
+          state.playing = false;
+          state.captions = captions;
+          seek(time);
+          return { time: state.time, ready: Boolean(window.__CUTSCENE_READY__) };
+        },
+        play() {
+          state.playing = true;
+          state.lastWallTime = performance.now();
+        },
+        pause() {
+          state.playing = false;
+        },
+        seek,
+        getState() {
+          return { time: state.time, playing: state.playing, captions: state.captions };
+        },
+        getPartitionAudit: partitionAudit
+      };
+
+      loadImages().then(() => {
+        window.__CUTSCENE_READY__ = true;
+        loading.classList.add("ready");
+        render(0);
+        requestAnimationFrame(tick);
+      }).catch(error => {
+        console.error(error);
+        loading.textContent = "IMAGE LOAD ERROR";
+      });
+    })();
+  </script>
+</body>
+</html>
