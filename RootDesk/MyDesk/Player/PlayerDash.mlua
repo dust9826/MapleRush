@@ -55,7 +55,7 @@ script PlayerDash extends Component
 	method void OnBeginPlay()
 		-- 로컬 플레이어에게만 입력 라우터 구독 + 대시 횟수 초기화.
 		if self.Entity ~= _UserService.LocalPlayer then return end
-		self.MaxDash = _PlayerConfig.BaseMaxDash + _MetaProgression:GetBonusMaxDash()
+		self.MaxDash = _PlayerConfig.BaseMaxDash + _MetaProgression:GetBonusMaxDash() + _GameStateManager.RunDashMaxBonus
 		self.DashCount = self.MaxDash
 		self.routerHandler = _InputRouter:ConnectEvent(RouterActionEvent, self.OnRouterAction)
 		log("[PlayerDash] OnBeginPlay: router connected, dash=" .. tostring(self.DashCount) .. "/" .. tostring(self.MaxDash))
@@ -74,12 +74,22 @@ script PlayerDash extends Component
 		-- 스테이지 (재)시작 시 대시 상태 초기화: 충전 만충 + 강화 대시 플래그 해제 + 회복 앵커 리셋.
 		-- (StageManager.ClientStageReset가 플레이어 리셋 시 호출 — DashCount는 비동기 클라 전용이라 서버가 직접 못 씀.)
 		if self.Entity ~= _UserService.LocalPlayer then return end
-		-- 메타 '최대 대시' 강화 반영(Levels 동기화가 로그인 직후엔 늦을 수 있어 스테이지 시작마다 재계산).
-		self.MaxDash = _PlayerConfig.BaseMaxDash + _MetaProgression:GetBonusMaxDash()
+		-- 메타 '최대 대시' 강화 + 엘리트 런 보너스 반영(Levels 동기화가 로그인 직후엔 늦을 수 있어 스테이지 시작마다 재계산).
+		self.MaxDash = _PlayerConfig.BaseMaxDash + _MetaProgression:GetBonusMaxDash() + _GameStateManager.RunDashMaxBonus
 		self.DashCount = self.MaxDash
 		self.EmpoweredReady = false
 		self.recoverAnchor = -999.0
 		log("[PlayerDash] ResetForStage: dash refilled " .. tostring(self.DashCount) .. "/" .. tostring(self.MaxDash))
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnEliteDashMaxUp(integer runBonus)
+		-- 엘리트 'dash_max_up' 즉시 반영: 최대 +1(인자값 기준 — @Sync 지연 무관) + 즉시 1회 충전 (elite spec §4.2).
+		if self.Entity ~= _UserService.LocalPlayer then return end
+		self.MaxDash = _PlayerConfig.BaseMaxDash + _MetaProgression:GetBonusMaxDash() + runBonus
+		self.DashCount += 1
+		if self.DashCount > self.MaxDash then self.DashCount = self.MaxDash end
+		log("[PlayerDash] elite dash_max_up -> " .. tostring(self.DashCount) .. "/" .. tostring(self.MaxDash))
 	end
 
 	@ExecSpace("ClientOnly")
@@ -360,7 +370,7 @@ script PlayerDash extends Component
 		end
 		-- (1) 대시 회복: 실제 시간 2.5s마다 1회 (스냅샷 차분, delta 누산 금지)
 		if self.DashCount < self.MaxDash then
-			if _WallClock:IsExpired(self.recoverAnchor, _PlayerConfig.BaseDashRecoverTime * _MetaProgression:GetDashRecoverMult()) then
+			if _WallClock:IsExpired(self.recoverAnchor, _PlayerConfig.BaseDashRecoverTime * _MetaProgression:GetDashRecoverMult() / _GameStateManager.RunDashChargeMult) then
 				self.DashCount += 1
 				self.recoverAnchor = _WallClock:Now()
 				log("[PlayerDash] dash recovered -> " .. tostring(self.DashCount) .. "/" .. tostring(self.MaxDash))
@@ -461,7 +471,8 @@ script PlayerDash extends Component
 		local now = _WallClock:ServerNow()
 		local inputAge = _WallClock:NetworkInputAge(inputServerTime)
 		self.InvincibleFromServer = now - inputAge
-		self.InvincibleUntilServer = self.InvincibleFromServer + _PlayerConfig.DashDuration
+		-- 엘리트 dash_invuln_up: i-frame 창 배율 확장 (서버 권위).
+		self.InvincibleUntilServer = self.InvincibleFromServer + _PlayerConfig.DashDuration * _GameStateManager.RunDashInvulnMult
 		-- 클라이언트 경로 인자는 방향 정규화 + 설계 최대거리로 제한한다.
 		local dlen = math.sqrt(dirX * dirX + dirY * dirY)
 		if dlen <= 0.0001 then return end
@@ -482,7 +493,7 @@ script PlayerDash extends Component
 			dmgPct = _PlayerConfig.DmgEmpoweredDashPct
 			source = "empoweredDash"
 		end
-		local damage = _GameStateManager.AttackStat * dmgPct
+		local damage = _GameStateManager:EffectiveAttack() * dmgPct
 		local pathStart = Vector2(startX, startY)
 		local pathEnd = Vector2(startX + dirX * dashLen, startY + dirY * dashLen)
 		local hitCount = _CombatPrimitives:DamageEnemiesAlongPath(

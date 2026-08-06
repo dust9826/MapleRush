@@ -1,4 +1,4 @@
-@Component
+﻿@Component
 script NodeSelectController extends Component
 
 	property Entity nodeRoot = "5c6a85af-6513-443a-92fa-5c55f98eb97d"
@@ -6,20 +6,33 @@ script NodeSelectController extends Component
 	-- 타이틀은 이미지, 서브타이틀 텍스트만 동적("스테이지(X/Y)").
 	property TextComponent subtitleText = "1f7329ab-df25-4572-b22f-064953a715e2"
 
-	-- 1번은 일반 스테이지, 3번은 이벤트. 2번은 다른 기능을 위해 미연결 예약.
+	-- 1번=일반, 2번=엘리트(MR-AN), 3번=이벤트.
 	property ButtonComponent btnNode1 = "143548d7-20f6-44e2-a88f-f1b5901056c1"
+	property ButtonComponent btnNode2 = "c1111f36-9180-418f-9435-24b2a2f057cf"
 	property ButtonComponent btnNode3 = "38d86f7d-9f18-4c55-8c18-e42ba8a6b41e"
 
+	-- 카드 호버 툴팁(커서 추적 — elite spec §6.1). 바인딩 주입.
+	-- ★ 빌더 text()가 만드는 컴포넌트는 TextComponent가 아니라 TextGUIRendererComponent — 타입 일치 필수.
+	property Entity tipRoot = "4e3ceb2e-e642-49bc-8361-3fbb3f3c7c11"
+	property TextGUIRendererComponent tipTitle = "cd35ddb9-de3f-42bf-b92c-d87dcc011b54"
+	property TextGUIRendererComponent tipBody = "7f838caf-19c8-47a3-9081-ca1acf00e135"
+
+	-- 커서 기준 툴팁 오프셋(우하단). ItemTooltip과 동일 규칙.
+	property Vector2 CursorOffset = Vector2(20, -20)
+
 	property any hNode1 = nil
+	property any hNode2 = nil
 	property any hNode3 = nil
 	property string currentRoundId = ""
 
 	@ExecSpace("ClientOnly")
 	method void OnBeginPlay()
-		-- FloorManager에 등록 + 숨김 + 1/3번 슬롯 버튼 연결.
+		-- FloorManager에 등록 + 숨김 + 1/2/3번 슬롯 버튼 연결.
 		_FloorManager.nodeUI = self
 		if isvalid(self.nodeRoot) then self.nodeRoot.Enable = false end
+		if isvalid(self.tipRoot) then self.tipRoot.Enable = false end
 		self.hNode1 = self.btnNode1.Entity:ConnectEvent(ButtonClickEvent, self.OnNode1Click)
+		self.hNode2 = self.btnNode2.Entity:ConnectEvent(ButtonClickEvent, self.OnNode2Click)
 		self.hNode3 = self.btnNode3.Entity:ConnectEvent(ButtonClickEvent, self.OnNode3Click)
 		log("[NodeSelectController] registered")
 	end
@@ -28,12 +41,13 @@ script NodeSelectController extends Component
 	method void OnEndPlay()
 		-- 버튼 해제.
 		if self.hNode1 ~= nil then self.btnNode1.Entity:DisconnectEvent(ButtonClickEvent, self.hNode1) end
+		if self.hNode2 ~= nil then self.btnNode2.Entity:DisconnectEvent(ButtonClickEvent, self.hNode2) end
 		if self.hNode3 ~= nil then self.btnNode3.Entity:DisconnectEvent(ButtonClickEvent, self.hNode3) end
 	end
 
 	@ExecSpace("ClientOnly")
 	method void Open(integer stageNo, integer totalStages, string roundId)
-		-- 고정 노드 선택: 1번 일반, 2번 예약, 3번 이벤트.
+		-- 고정 노드 선택: 1번 일반, 2번 엘리트, 3번 이벤트.
 		self.currentRoundId = roundId
 		self.nodeRoot.Enable = true
 		if isvalid(self.subtitleText) then self.subtitleText.Text = "스테이지(" .. tostring(stageNo) .. "/" .. tostring(totalStages) .. ")" end
@@ -48,6 +62,12 @@ script NodeSelectController extends Component
 	end
 
 	@ExecSpace("ClientOnly")
+	method void OnNode2Click(ButtonClickEvent event)
+		-- 엘리트 스테이지 (MR-AN).
+		self:SelectNode(2)
+	end
+
+	@ExecSpace("ClientOnly")
 	method void OnNode3Click(ButtonClickEvent event)
 		-- 이벤트 스테이지.
 		self:SelectNode(3)
@@ -57,9 +77,69 @@ script NodeSelectController extends Component
 	method void SelectNode(integer slotId)
 		-- 슬롯 확정 → 라운드 토큰과 함께 서버 통지.
 		self.nodeRoot.Enable = false
+		if isvalid(self.tipRoot) then self.tipRoot.Enable = false end
 		_FloorManager:RequestSelectNode(self.currentRoundId, slotId)
 		log("[NodeSelectController] slot " .. tostring(slotId)
 			.. " round=" .. self.currentRoundId)
+	end
+
+	method boolean IsCursorOver(Vector2 screen, ButtonComponent btn)
+		-- 스크린 커서가 카드 rect 안인지 (ItemTooltip과 동일한 로컬 rect 판정).
+		if isvalid(btn) == false or isvalid(btn.Entity) == false then return false end
+		local ut = btn.Entity.UITransformComponent
+		if isvalid(ut) == false then return false end
+		local lp = _UILogic:ScreenToLocalUIPosition(screen, ut)
+		local sz = ut.RectSize
+		local pv = ut.Pivot
+		if lp.x < -pv.x * sz.x then return false end
+		if lp.x > (1 - pv.x) * sz.x then return false end
+		if lp.y < -pv.y * sz.y then return false end
+		if lp.y > (1 - pv.y) * sz.y then return false end
+		return true
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnUpdate(number delta)
+		-- 노드 선택이 열려 있는 동안 카드 호버 폴링 → 위험·보상 툴팁을 커서 우하단에 추적 표시.
+		-- 카드 밖이면 즉시 숨김. 툴팁 스프라이트는 raycast 비대상이라 클릭을 가로채지 않는다 (spec §6.1).
+		if isvalid(self.tipRoot) == false then return end
+		if isvalid(self.nodeRoot) == false or self.nodeRoot.Enable == false then
+			self.tipRoot.Enable = false
+			return
+		end
+		local cur = _InputService:GetCursorPosition()
+		local title = ""
+		local body = ""
+		if self:IsCursorOver(cur, self.btnNode2) then
+			title = "엘리트 전투"
+			body = "적 강화 수치: 체력 ×2.0, 이동속도 ×1.3\n보상: 일반 보상 + 엘리트 보상 (낮은 확률로 엘리트 보상 추가 획득)"
+		elseif self:IsCursorOver(cur, self.btnNode1) then
+			title = "일반 전투"
+			body = "적 강화 수치: 없음 (층 보정만)\n보상: 일반 보상"
+		elseif self:IsCursorOver(cur, self.btnNode3) then
+			title = "이벤트"
+			body = "전투 없음 · 상황 선택\n보상: 선택 결과에 따라 획득/불이익"
+		end
+		if title == "" then
+			self.tipRoot.Enable = false
+			return
+		end
+		if isvalid(self.tipTitle) then self.tipTitle.Text = title end
+		if isvalid(self.tipBody) then self.tipBody.Text = body end
+		-- 커서 추적 + 캔버스(±960/±540) 클램프. tipRoot pivot=좌상단 기준(ItemTooltip과 동일).
+		local uiPos = _UILogic:ScreenToUIPosition(cur)
+		local ut = self.tipRoot.UITransformComponent
+		if isvalid(ut) then
+			local sz = ut.RectSize
+			local x = uiPos.x + self.CursorOffset.x
+			local y = uiPos.y + self.CursorOffset.y
+			if x < -960 then x = -960 end
+			if x > 960 - sz.x then x = 960 - sz.x end
+			if y > 540 then y = 540 end
+			if y < -540 + sz.y then y = -540 + sz.y end
+			ut.anchoredPosition = Vector2(x, y)
+		end
+		self.tipRoot.Enable = true
 	end
 
 end

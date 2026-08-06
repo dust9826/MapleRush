@@ -207,7 +207,7 @@ script PlayerAbility extends Component
 		dirY = dirY / dlen
 		if dashLen < 0 then dashLen = 0 end
 		if dashLen > _PlayerConfig.ManjiDashDistance then dashLen = _PlayerConfig.ManjiDashDistance end
-		local damage = _GameStateManager.AttackStat * (_PlayerConfig.ManjiDmgPct + _MetaProgression:GetManjiBonus())
+		local damage = _GameStateManager:EffectiveAttack() * (_PlayerConfig.ManjiDmgPct + _MetaProgression:GetManjiBonus())
 		local pathStart = Vector2(footX, footY)
 		local pathEnd = Vector2(footX + dirX * dashLen, footY + dirY * dashLen)
 		local hitCount = _CombatPrimitives:DamageEnemiesAlongPath(self.Entity.CurrentMap, pathStart, pathEnd, _PlayerConfig.ManjiPathRadius, damage, "manji")
@@ -243,9 +243,9 @@ script PlayerAbility extends Component
 		local center = Vector2(cx, cy + _GameConstants.PlayerCenterYOffset)
 		local radius = _PlayerConfig.SpinRadius + _MetaProgression:GetSpinBonus()
 		-- 평타와 같은 이유로 패링을 데미지보다 먼저 확정한다. 공격 주체를 한 방에 죽여도 패링 보상이 유실되지 않는다.
-		local reflectDamage = _GameStateManager.AttackStat * _PlayerConfig.DmgReflectPct
+		local reflectDamage = _GameStateManager:EffectiveAttack() * _PlayerConfig.DmgReflectPct
 		local parryCount = _CombatPrimitives:TryParry(map, center, radius, radius, reflectDamage, inputAge)
-		local damage = _GameStateManager.AttackStat * _PlayerConfig.SpinDmgPct
+		local damage = _GameStateManager:EffectiveAttack() * _PlayerConfig.SpinDmgPct
 		local hitCount = _CombatPrimitives:DamageEnemiesInCircle(map, center, radius, damage, "spin")
 		-- 넉백: 명중해 살아남은 적을 플레이어 반대 방향으로 밀어냄(투사체 제외, ability_design §4.2).
 		local knockCount = _CombatPrimitives:KnockbackEnemiesInCircle(map, center, radius, _PlayerConfig.SpinKnockback)
