@@ -1,7 +1,7 @@
 ---
 id: MR-AN
 title: 엘리트 스테이지 (노드 2번 슬롯 고정 + 적 강화/보라 외곽선 + 전용 보상 풀)
-status: review
+status: done
 owner: dust9826
 area: mixed
 depends_on: []
