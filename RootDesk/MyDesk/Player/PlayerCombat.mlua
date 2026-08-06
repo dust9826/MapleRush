@@ -50,7 +50,8 @@ script PlayerCombat extends Component
 	@ExecSpace("ClientOnly")
 	method void TryAttack(Vector2 targetWorldPos)
 		-- 평타: 쿨타임 0.5s(실제 시간), 대시 이동 중 불가. 판정은 서버에 요청.
-		if not _WallClock:IsExpired(self.lastAttackTime, _PlayerConfig.AttackCooldown) then return end
+		-- 엘리트 attack_speed_up: 쿨다운을 배율로 나눠 공격속도 증가.
+		if not _WallClock:IsExpired(self.lastAttackTime, _PlayerConfig.AttackCooldown / _GameStateManager.RunAttackSpeedMult) then return end
 		---@type PlayerDash
 		local dash = self.Entity:GetComponent("script.PlayerDash")
 		if dash ~= nil and dash.IsDashing == true then return end
@@ -132,10 +133,10 @@ script PlayerCombat extends Component
 		local cy = pos.y + _GameConstants.PlayerCenterYOffset + ny * hw
 		-- 패링을 데미지보다 먼저 확정한다. 한 방 처치가 먼저 Die→CancelAttacksBySource를 호출하면
 		-- 같은 공격의 유효한 패링 레코드까지 취소되어 parry=0이 되는 순서 회귀를 막는다.
-		local reflectDamage = _GameStateManager.AttackStat * _PlayerConfig.DmgReflectPct
+		local reflectDamage = _GameStateManager:EffectiveAttack() * _PlayerConfig.DmgReflectPct
 		local inputAge = _WallClock:NetworkInputAge(inputServerTime)
 		local parried = _CombatPrimitives:TryParryOBB(self.Entity.CurrentMap, cx, cy, hw, hh, ang, reflectDamage, inputAge)
-		local damage = _GameStateManager.AttackStat * _PlayerConfig.DmgAttackPct
+		local damage = _GameStateManager:EffectiveAttack() * _PlayerConfig.DmgAttackPct
 		local hitCount = _CombatPrimitives:DamageEnemiesInOBB(self.Entity.CurrentMap, cx, cy, hw, hh, ang, damage, "attack")
 		-- 패링 성공(근접 무효화/투사체 반사) 시 공격 위치에 CircleBurst 파티클 1회 — 요청 클라에만.
 		if parried > 0 then

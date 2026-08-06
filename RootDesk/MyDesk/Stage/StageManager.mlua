@@ -1,7 +1,7 @@
 @Logic
 script StageManager extends Logic
 
-	-- normal / shop / boss
+	-- 전투 유형(CombatStageType): normal / elite / shop / boss (elite_stage_design_spec §1)
 	@Sync
 	property string StageType = "normal"
 
@@ -277,7 +277,34 @@ script StageManager extends Logic
 	@ExecSpace("ServerOnly")
 	method void StartStageAt(string stageName)
 		-- 노드에서 고른 Stage로 진입 (맵 전환 없음, 이미 테마맵): 그 Stage 스폰포인트 + 몬스터 재스폰.
-		self.StageType = "normal"
+		self:StartThemedStageAt(stageName, "normal")
+	end
+
+	@ExecSpace("ServerOnly")
+	method void StartEliteStageAt(string stageName)
+		-- 엘리트 전투 진입: 선택된 일반 스테이지의 맵·스폰·편성을 그대로 재사용하고 전투 유형만 elite (spec §7 —
+		-- 별도 StartStage("elite")로 편성을 재추첨하지 않는다). 보정은 스폰 전에 StageType으로 확정 →
+		-- EnemyHealth/EliteModifier가 초기화 시점에 층→합연산→시각 순서로 적용.
+		self:StartThemedStageAt(stageName, "elite")
+	end
+
+	@ExecSpace("ServerOnly")
+	method boolean IsEliteActive()
+		-- 현재 전투 유형이 엘리트인지 (적 초기화/이동속도 배율이 폴링). 사망 재시작도 StageType이 유지돼 그대로 성립.
+		return self.StageType == "elite"
+	end
+
+	@ExecSpace("ServerOnly")
+	method number EliteSpeedMult()
+		-- 엘리트 이동속도 배율: 적 AI가 이동 계산에만 곱한다(원본 MoveSpeed 불변 — spec §7).
+		if self.StageType == "elite" then return _GameConstants.EliteSpeedMult end
+		return 1.0
+	end
+
+	@ExecSpace("ServerOnly")
+	method void StartThemedStageAt(string stageName, string stageType)
+		-- 테마맵 내 Stage 컨테이너 기반 전투 진입 공통 경로 (normal/elite).
+		self.StageType = stageType
 		self.StageActive = false
 		self.freshStage = true
 		self.pendingStage = stageName
@@ -299,7 +326,7 @@ script StageManager extends Logic
 			self.curSpawnY = 0.3
 		end
 		self:ResetStage()
-		log("[StageManager] StartStageAt " .. tostring(stageName) .. " mobs=" .. tostring(#self.composition))
+		log("[StageManager] StartStageAt " .. tostring(stageName) .. " type=" .. stageType .. " mobs=" .. tostring(#self.composition))
 	end
 
 	@ExecSpace("ServerOnly")
@@ -702,13 +729,22 @@ script StageManager extends Logic
 		if self.StageType == "boss" then
 			_GameStateManager.BossClears += 1
 			mesoGain = _GameStateManager.BossClears * _GameConstants.MesoPerBossClear
+		elseif self.StageType == "elite" then
+			-- 엘리트: 일반과 분리 집계(spec §3.3). 메소는 일반 경로와 같은 누진식 — 전투 클리어 수(일반+엘리트) 기준.
+			_GameStateManager.EliteClears += 1
+			mesoGain = (_GameStateManager.NormalClears + _GameStateManager.EliteClears) * _GameConstants.MesoPerNormalClear
 		else
 			_GameStateManager.NormalClears += 1
 			mesoGain = _GameStateManager.NormalClears * _GameConstants.MesoPerNormalClear
 		end
 		_GameStateManager:AddMeso(mesoGain)
 		local rewards = _RewardManager:RollRewards(self.StageType)
-		log("[StageManager] STAGE CLEAR! type=" .. self.StageType .. " meso+" .. tostring(mesoGain) .. " stat=" .. tostring(rewards.stat) .. " item=" .. tostring(rewards.item) .. " ability=" .. tostring(rewards.ability))
+		-- 엘리트 전용 보상: 메소·일반 추첨 "이후" 판정/적용 (spec §4.1 순서). 표시 문자열을 보상 UI로 전달.
+		local eliteInfo = ""
+		if self.StageType == "elite" then
+			eliteInfo = _RewardManager:GrantEliteRewards()
+		end
+		log("[StageManager] STAGE CLEAR! type=" .. self.StageType .. " meso+" .. tostring(mesoGain) .. " stat=" .. tostring(rewards.stat) .. " item=" .. tostring(rewards.item) .. " ability=" .. tostring(rewards.ability) .. " elite=" .. eliteInfo)
 		-- 보상 UI (클라). map이 nil(CurrentMapId 미설정/경로조회 실패)이어도 크래시 없이 추적 플레이어로 폴백,
 		-- 그래도 대상이 없으면 보상 없이 진행 위임(런 스톨 방지).
 		local map = self:GetMap()
@@ -724,7 +760,7 @@ script StageManager extends Logic
 			if tp ~= nil then pc = tp.PlayerComponent end
 		end
 		if pc ~= nil then
-			self:ClientShowReward(mesoGain, rewards.stat, rewards.item, rewards.ability, pc.UserId)
+			self:ClientShowReward(mesoGain, rewards.stat, rewards.item, rewards.ability, eliteInfo, pc.UserId)
 		else
 			log_error("[StageManager] StageClear: 보상 대상 플레이어 없음 -> 자동 진행")
 			self:RequestProceedNext()
@@ -732,11 +768,11 @@ script StageManager extends Logic
 	end
 
 	@ExecSpace("Client")
-	method void ClientShowReward(number mesoGain, boolean statReward, boolean itemReward, boolean abilityReward)
-		-- 클라: 보상 팝업 표시 + 입력 컨텍스트 전환.
+	method void ClientShowReward(number mesoGain, boolean statReward, boolean itemReward, boolean abilityReward, string eliteInfo)
+		-- 클라: 보상 팝업 표시 + 입력 컨텍스트 전환. eliteInfo=엘리트 전용 보상 표시 문자열("" = 비엘리트).
 		_InputRouter:SetContext("Reward")
 		if self.rewardUI ~= nil then
-			self.rewardUI:Open(mesoGain, statReward, itemReward, abilityReward)
+			self.rewardUI:Open(mesoGain, statReward, itemReward, abilityReward, eliteInfo)
 		else
 			log_warning("[StageManager] rewardUI not registered — auto-proceed")
 			self:RequestProceedNext()
@@ -816,7 +852,7 @@ script StageManager extends Logic
 		-- 런 종료 → 콤보 전량 초기화(다음 런으로 이어지지 않음, 영구저장 없음 — combo_doc §6).
 		_ComboManager:ResetAll()
 		_RecordStorage:SubmitRun(_GameStateManager.CurrentFloor, _FloorManager.NormalsClearedThisFloor, _FloorManager.ShopDoneThisFloor, false, runTime)
-		local score = _GameStateManager.NormalClears + _GameStateManager.BossClears * 3
+		local score = _GameStateManager.NormalClears + _GameStateManager.EliteClears * 2 + _GameStateManager.BossClears * 3
 		_MetaProgression:AwardScore(score)
 		log("[StageManager] GAME OVER (normalClears=" .. tostring(_GameStateManager.NormalClears) .. " score+" .. tostring(score) .. ")")
 		-- 게임오버 화면(클라). map nil이어도 크래시 없이 추적 플레이어로 폴백.

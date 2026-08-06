@@ -1,0 +1,32 @@
+{
+  "Id": "",
+  "GameId": "",
+  "EntryKey": "material://7c3f2a91-5b8e-4d16-9a4f-2e8d61c0af53",
+  "ContentType": "x-mod/material",
+  "Content": "",
+  "Usage": 0,
+  "UsePublish": 1,
+  "UseService": 0,
+  "CoreVersion": "26.7.0.0",
+  "StudioVersion": "0.1.0.0",
+  "DynamicLoading": 0,
+  "ContentProto": {
+    "Use": "Json",
+    "Json": {
+      "name": "EliteEnemyOutline",
+      "id": "7c3f2a91-5b8e-4d16-9a4f-2e8d61c0af53",
+      "shadertype": "Outline",
+      "AlphaCut": 0.5,
+      "LitMode": 0,
+      "OutlineColor": {
+        "r": 0.72,
+        "g": 0.25,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "Thickness": 0.03,
+      "IsUIMaterial": false,
+      "RequiresUIStencilStateChange": false
+    }
+  }
+}

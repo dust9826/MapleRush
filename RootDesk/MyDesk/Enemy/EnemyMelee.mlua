@@ -260,7 +260,8 @@ script EnemyMelee extends Component
 			if isvalid(svb) == false or svb:IsOnGround() == false then return end
 			local mc = self.Entity.MovementComponent
 			if isvalid(mc) == false then return end
-			mc.InputSpeed = self.MoveSpeed * timeScale
+			-- 엘리트 배율은 이동 계산에만 곱한다(원본 MoveSpeed 불변 — elite spec §7).
+			mc.InputSpeed = self.MoveSpeed * timeScale * _StageManager:EliteSpeedMult()
 			mc:MoveToDirection(Vector2(dir, 0), delta)
 		else
 			-- MapleTile (기존 로직 유지)
@@ -275,7 +276,7 @@ script EnemyMelee extends Component
 					return
 				end
 			end
-			rb.MoveVelocity = Vector2(dir * self.MoveSpeed * timeScale, 0)
+			rb.MoveVelocity = Vector2(dir * self.MoveSpeed * timeScale * _StageManager:EliteSpeedMult(), 0)
 		end
 		-- 스프라이트는 좌향 기본 → 우측 이동 시 FlipX
 		local sprite = self.Entity.SpriteRendererComponent

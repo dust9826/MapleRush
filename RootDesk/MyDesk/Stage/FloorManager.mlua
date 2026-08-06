@@ -181,6 +181,8 @@ script FloorManager extends Logic
 			end
 		elseif self.ShopDoneThisFloor == false then
 			self.PhaseName = "shop"
+			-- 엘리트 '다음 상점 무료화' 예약을 가격 노출 전에 반영 (elite spec §4.2).
+			_ShopManager:ApplyFreeReservation()
 			_StageManager:StartStage("shop", "")
 			if pc ~= nil then
 				self:ClientShowShop(pc.UserId)
@@ -285,11 +287,7 @@ script FloorManager extends Logic
 			log_warning("[FloorManager] node rejected sender=" .. tostring(senderUserId))
 			return
 		end
-		if slotId == 2 then
-			log_warning("[FloorManager] node slot 2 is reserved")
-			return
-		end
-		if slotId ~= 1 and slotId ~= 3 then
+		if slotId ~= 1 and slotId ~= 2 and slotId ~= 3 then
 			log_warning("[FloorManager] invalid node slot=" .. tostring(slotId))
 			return
 		end
@@ -313,16 +311,22 @@ script FloorManager extends Logic
 			return
 		end
 
-		-- 슬롯 1 → 덱 첫 후보에서 기존 일반 스테이지 시작.
+		-- 슬롯 1=일반(덱 1번 후보) / 슬롯 2=엘리트(덱 2번 후보 — 같은 일반 스테이지 재사용, 전투 유형만 elite).
 		local stageName = "Stage1"
-		if self.nodeSpawnChoices ~= nil and #self.nodeSpawnChoices >= 1 then
+		if self.nodeSpawnChoices ~= nil and #self.nodeSpawnChoices >= slotId then
+			stageName = self.nodeSpawnChoices[slotId]
+		elseif self.nodeSpawnChoices ~= nil and #self.nodeSpawnChoices >= 1 then
 			stageName = self.nodeSpawnChoices[1]
 		end
 		-- ★ 진행 중 스테이지만 기록. 덱 제거는 "클리어" 시점(OnStageRewardDone)에만 — 사망·재시작은 덱 유지.
 		self.currentStageName = stageName
-		log("[FloorManager] node slot 1 -> stage " .. tostring(stageName)
+		log("[FloorManager] node slot " .. tostring(slotId) .. " -> stage " .. tostring(stageName)
 			.. " round=" .. roundId)
-		_StageManager:StartStageAt(stageName)
+		if slotId == 2 then
+			_StageManager:StartEliteStageAt(stageName)
+		else
+			_StageManager:StartStageAt(stageName)
+		end
 	end
 
 	@ExecSpace("ServerOnly")
@@ -372,6 +376,8 @@ script FloorManager extends Logic
 	method void RequestLeaveShop()
 		-- 상점 나가기 → 보스 노드 (stage_design §2.4.2).
 		self.ShopDoneThisFloor = true
+		-- 상점 종료 시 미구매 무료 품목 해제(가격 원복 — elite spec §3.3/§7).
+		_ShopManager:ReleaseFreeSlots()
 		-- 상점 완료 진행도 스탬프: HUD '이전 기록' 라인의 조회 키(shop 비트 포함)와 스탬프 키를 일치시킨다.
 		--   (상점은 전투 종료로 진행 안 되므로 OnStageRewardDone을 안 타 스탬프가 누락됐던 지점.)
 		_RecordStorage:StampStage(_GameStateManager.CurrentFloor, _RecordStorage:ComputeStageProgress(self.NormalsClearedThisFloor, true, false), _RunTimer:ServerElapsed())
@@ -458,7 +464,7 @@ script FloorManager extends Logic
 		-- 런 종료 → 콤보 전량 초기화 (combo_doc §6).
 		_ComboManager:ResetAll()
 		_RecordStorage:SubmitRun(_GameStateManager.CurrentFloor, self.NormalsClearedThisFloor, self.ShopDoneThisFloor, true, runTime)
-		local score = _GameStateManager.NormalClears + _GameStateManager.BossClears * 3
+		local score = _GameStateManager.NormalClears + _GameStateManager.EliteClears * 2 + _GameStateManager.BossClears * 3
 		log("[FloorManager] GAME CLEAR! score=" .. tostring(score))
 		_MetaProgression:AwardScore(score)
 		local pc = self:FirstPlayerComponent()

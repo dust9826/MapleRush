@@ -4,14 +4,116 @@ script RewardManager extends Logic
 	@ExecSpace("ServerOnly")
 	method table RollRewards(string stageType)
 		-- 보상 등장 독립 판정 (stage_design §3.2.1): 스탯 50% / 아이템 70% / 능력 15%. 보스: 전체 제시.
+		-- 엘리트: 기존 normal 경로 유지하되 상향 판정 70%/90%/40% (elite spec §4.1).
 		if stageType == "boss" then
 			return { stat = true, item = true, ability = true }
+		end
+		if stageType == "elite" then
+			return {
+				stat = _UtilLogic:RandomDouble() < _GameConstants.EliteRewardStatChance,
+				item = _UtilLogic:RandomDouble() < _GameConstants.EliteRewardItemChance,
+				ability = _UtilLogic:RandomDouble() < _GameConstants.EliteRewardAbilityChance,
+			}
 		end
 		return {
 			stat = _UtilLogic:RandomDouble() < _GameConstants.RewardStatChance,
 			item = _UtilLogic:RandomDouble() < _GameConstants.RewardItemChance,
 			ability = _UtilLogic:RandomDouble() < _GameConstants.RewardAbilityChance,
 		}
+	end
+
+	@ExecSpace("ServerOnly")
+	method table EliteRewardPool()
+		-- 엘리트 전용 보상 풀 (elite spec §4.2, 총 가중치 7).
+		return {
+			{ id = "max_life_up", w = 0.5, label = "최대 목숨 +1" },
+			{ id = "move_speed_up", w = 1.0, label = "이동속도 ×1.05 (이번 런)" },
+			{ id = "dash_charge_up", w = 1.0, label = "대시 충전 가속 ×1.05 (이번 런)" },
+			{ id = "attack_up", w = 1.0, label = "공격력 ×1.05 (이번 런)" },
+			{ id = "attack_speed_up", w = 1.0, label = "공격속도 ×1.05 (이번 런)" },
+			{ id = "dash_max_up", w = 0.5, label = "대시 최대 +1 (즉시 1회 충전)" },
+			{ id = "dash_invuln_up", w = 0.5, label = "대시 무적 시간 ×1.20 (이번 런)" },
+			{ id = "meso_double", w = 0.5, label = "보유 메소 ×2" },
+			{ id = "next_shop_free", w = 1.0, label = "다음 상점 품목 1개 무료" },
+		}
+	end
+
+	@ExecSpace("ServerOnly")
+	method string GrantEliteRewards()
+		-- 엘리트 전용 보상 판정+적용 (spec §4): 기본 1개, 10%로 2개(같은 클리어 내 중복 없음, 제거 후 재추첨).
+		-- 반환 = UI 표시 문자열 ("엘리트 보상 N개: 라벨1 / 라벨2"). 적용값은 전부 서버 확정.
+		local pool = self:EliteRewardPool()
+		local count = 1
+		if _UtilLogic:RandomDouble() < _GameConstants.EliteRewardDoubleChance then count = 2 end
+		local labels = {}
+		for n = 1, count do
+			local total = 0.0
+			for _, r in ipairs(pool) do total += r.w end
+			if total <= 0 then break end
+			local roll = _UtilLogic:RandomDouble() * total
+			local pick = 1
+			for i, r in ipairs(pool) do
+				roll -= r.w
+				if roll <= 0 then pick = i break end
+			end
+			local chosen = pool[pick]
+			table.remove(pool, pick)
+			self:ApplyEliteReward(chosen.id)
+			table.insert(labels, chosen.label)
+			log("[RewardManager] elite reward " .. tostring(n) .. "/" .. tostring(count) .. ": " .. chosen.id)
+		end
+		local head = "엘리트 보상 1개"
+		if #labels >= 2 then head = "엘리트 보너스! 전용 보상 2개" end
+		return head .. ": " .. table.concat(labels, " / ")
+	end
+
+	@ExecSpace("ServerOnly")
+	method void ApplyEliteReward(string rewardId)
+		-- 전용 보상 1건 서버 적용. 런 지속 배율은 곱연산 누적(spec §4.2), 목숨/대시는 1 이상·최대치 클램프(spec §5).
+		local gs = _GameStateManager
+		if rewardId == "max_life_up" then
+			gs.MaxLives += 1
+			gs.CurrentLives += 1
+			if gs.CurrentLives > gs.MaxLives then gs.CurrentLives = gs.MaxLives end
+		elseif rewardId == "move_speed_up" then
+			gs.RunMoveSpeedMult *= 1.05
+		elseif rewardId == "dash_charge_up" then
+			gs.RunDashChargeMult *= 1.05
+		elseif rewardId == "attack_up" then
+			gs.RunAttackMult *= 1.05
+		elseif rewardId == "attack_speed_up" then
+			gs.RunAttackSpeedMult *= 1.05
+		elseif rewardId == "dash_max_up" then
+			gs.RunDashMaxBonus += 1
+		elseif rewardId == "dash_invuln_up" then
+			gs.RunDashInvulnMult *= 1.20
+		elseif rewardId == "meso_double" then
+			gs.Meso = _GameConstants:ClampMeso(gs.Meso * 2)
+		elseif rewardId == "next_shop_free" then
+			_ShopManager:ReserveNextShopFree()
+		end
+		-- 클라 측 반영이 필요한 보상(이동 물리 재적용 / 대시 즉시 충전)은 로컬 플레이어에 RPC로 통지.
+		local player = self:FindRequester()
+		if player ~= nil and player.PlayerComponent ~= nil then
+			self:ClientApplyEliteReward(rewardId, gs.RunDashMaxBonus, gs.RunMoveSpeedMult, player.PlayerComponent.UserId)
+		end
+	end
+
+	@ExecSpace("Client")
+	method void ClientApplyEliteReward(string rewardId, integer dashMaxBonus, number moveMult)
+		-- 클라: 즉시 반영이 필요한 엘리트 보상 처리. @Sync 전파가 RPC보다 늦을 수 있어 값은 인자로 받는다.
+		local player = _UserService.LocalPlayer
+		if isvalid(player) == false then return end
+		if rewardId == "move_speed_up" then
+			-- 이동속도는 RigidbodyComponent.WalkSpeed에 직접 반영 (ApplyMovementConfig와 같은 공식, 배율만 인자값).
+			local rb = player.RigidbodyComponent
+			if isvalid(rb) then rb.WalkSpeed = _PlayerConfig.MoveSpeed * moveMult end
+		elseif rewardId == "dash_max_up" then
+			---@type PlayerDash
+			local dash = player:GetComponent("script.PlayerDash")
+			if dash ~= nil then dash:OnEliteDashMaxUp(dashMaxBonus) end
+		end
+		log("[RewardManager] client elite apply: " .. rewardId)
 	end
 
 	@ExecSpace("Server")

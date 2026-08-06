@@ -14,6 +14,10 @@ script RewardController extends Component
 
 	property TextComponent mesoText = "4037e3d7-ce47-46da-a5fd-c035801d8ebd"
 
+	-- 엘리트 전용 보상 표기 라인 (MR-AN). 바인딩 주입. 비엘리트 클리어에선 숨김.
+	-- ★ 빌더 text()가 만드는 컴포넌트는 TextGUIRendererComponent (TextComponent 아님) — 타입 일치 필수.
+	property TextGUIRendererComponent eliteText = "eed27e6f-d5b3-4946-b7ee-666d7b5bc442"
+
 	property ButtonComponent btnStat = "d693a241-fd8b-4acb-ba90-1dd7dc126eb8"
 
 	property ButtonComponent btnItem = "8d8c2ed3-9c4c-4221-a7f6-b776507d71f2"
@@ -99,8 +103,9 @@ script RewardController extends Component
 	end
 
 	@ExecSpace("ClientOnly")
-	method void Open(number mesoGain, boolean statReward, boolean itemReward, boolean abilityReward)
+	method void Open(number mesoGain, boolean statReward, boolean itemReward, boolean abilityReward, string eliteInfo)
 		-- 보상 팝업 열기: 메소 표시 + 등장 보상의 수령/버리기 버튼만 활성화 (stage_design §3.1).
+		-- eliteInfo ~= "" 이면 엘리트 전용 보상 표기 라인 노출 (서버 확정값 표시 전용 — elite spec §6.2).
 		self.rewardRoot.Enable = true
 		-- 진행 상태 초기화(재사용 대비).
 		self.proceeding = false
@@ -108,10 +113,18 @@ script RewardController extends Component
 		if isvalid(self.canvasGroup) then self.canvasGroup.GroupAlpha = 0 end
 		self.fadeT = 0.0
 		self.mesoText.Text = "메소 +" .. tostring(math.floor(mesoGain)) .. "  (보유: " .. tostring(math.floor(_GameStateManager.Meso)) .. ")"
+		if isvalid(self.eliteText) then
+			if eliteInfo ~= "" then
+				self.eliteText.Text = eliteInfo
+				self.eliteText.Entity.Enable = true
+			else
+				self.eliteText.Entity.Enable = false
+			end
+		end
 		self:SetPair(self.btnStat, self.btnStatDiscard, statReward)
 		self:SetPair(self.btnItem, self.btnItemDiscard, itemReward)
 		self:SetPair(self.btnAbility, self.btnAbilityDiscard, abilityReward)
-		log("[RewardController] opened (meso+" .. tostring(mesoGain) .. " stat=" .. tostring(statReward) .. " item=" .. tostring(itemReward) .. " ability=" .. tostring(abilityReward) .. ")")
+		log("[RewardController] opened (meso+" .. tostring(mesoGain) .. " stat=" .. tostring(statReward) .. " item=" .. tostring(itemReward) .. " ability=" .. tostring(abilityReward) .. " elite=" .. eliteInfo .. ")")
 	end
 
 	@ExecSpace("ClientOnly")
