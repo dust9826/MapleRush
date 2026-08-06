@@ -41,7 +41,8 @@ script PlayerInputSetup extends Component
 		--  속도=WalkSpeed / 즉시 최대속도=WalkAcceleration↑ / 즉시 정지=WalkDrag↑ + Mass↓(가감속 반응) / 공중=Air Accel·Decel.
 		local rb = self.Entity.RigidbodyComponent
 		if isvalid(rb) == false then return end
-		rb.WalkSpeed = _PlayerConfig.MoveSpeed
+		-- 엘리트 move_speed_up 런 배율 반영(맵 전환/스테이지 재적용에도 유지).
+		rb.WalkSpeed = _PlayerConfig.MoveSpeed * _GameStateManager.RunMoveSpeedMult
 		rb.WalkAcceleration = _PlayerConfig.MoveAcceleration
 		rb.WalkDrag = _PlayerConfig.MoveDrag
 		rb.Mass = _PlayerConfig.MoveMass

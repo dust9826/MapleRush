@@ -1,0 +1,61 @@
+﻿@Logic
+script EliteModifier extends Logic
+
+	-- 엘리트 적 공통 시각 보정 (elite_stage_design_spec §3.2).
+	-- 서버가 스폰 시점(EnemyHealth.OnBeginPlay)에 1회 적용: 보라 외곽선(MaterialId @Sync) + 스프라이트 1.25배.
+	-- 전투 판정은 상수 박스(GameConstants.EnemyHbox* / 공격박스 프로퍼티) 기반이라 Scale 변경의 영향이 없어 역보정 불요.
+	-- 재시작마다 적이 fresh 스폰되므로 배율/외곽선 누적 없음. 보스·투사체는 호출부(EnemyHealth)에서 제외.
+
+	-- 외곽선 머티리얼 id 캐시 ("" = 미해석, "!" = 조회 실패 확정)
+	property string outlineMatId = ""
+
+	@ExecSpace("ServerOnly")
+	method string ResolveOutlineMat()
+		-- EliteEnemyOutline 머티리얼 id 1회 해석(bare uuid). 없으면 log_error(스펙: QA 실패 조건) 후 "!" 캐시.
+		if self.outlineMatId == "" then
+			local id = _EntryService:GetMaterialIdByName(_GameConstants.EliteOutlineMatName)
+			if id == nil or id == "" then
+				log_error("[EliteModifier] 외곽선 머티리얼 '" .. _GameConstants.EliteOutlineMatName .. "' 조회 실패 — 엘리트 식별 불가(QA FAIL)")
+				self.outlineMatId = "!"
+			else
+				self.outlineMatId = id
+			end
+		end
+		return self.outlineMatId
+	end
+
+	@ExecSpace("ServerOnly")
+	method void ApplyTo(Entity e)
+		-- 엘리트 일반 적 1기에 보라 외곽선 + 1.25배 시각 크기 적용 (스폰 직후 1회).
+		if isvalid(e) == false then return end
+		local sprite = e.SpriteRendererComponent
+		local matId = self:ResolveOutlineMat()
+		if isvalid(sprite) and matId ~= "!" then
+			sprite:ChangeMaterial(matId)
+		elseif isvalid(sprite) == false then
+			log_error("[EliteModifier] " .. e.Name .. " SpriteRendererComponent 없음 — 외곽선 적용 실패")
+		end
+		local tf = e.TransformComponent
+		if isvalid(tf) then
+			-- 부호 보존 곱연산(좌우 반전은 FlipX 사용이라 보통 양수지만 방어적으로 유지). Z는 그대로.
+			local s = tf.Scale
+			local m = _GameConstants.EliteScaleMult
+			tf.Scale = Vector3(s.x * m, s.y * m, s.z)
+		end
+		log("[EliteModifier] applied to " .. e.Name .. " (outline=" .. tostring(matId ~= "!") .. " scale x" .. tostring(_GameConstants.EliteScaleMult) .. ")")
+	end
+
+	@ExecSpace("ServerOnly")
+	method number EventHpMult()
+		-- 이벤트 '다음 전투 적 체력 증가' 배율 훅. 게이트웨이가 아직 로그 전용(MR-AL)이라 항상 1.0 —
+		-- 실제 적용 시 여기서 예약값을 읽도록 배선한다. EnemyHealth가 합연산 계산에 사용.
+		return 1.0
+	end
+
+	@ExecSpace("ServerOnly")
+	method number CombinedHpMult()
+		-- 엘리트+이벤트 체력 보정 "추가 비율 합연산" (spec §3.1): 1 + (2.0-1) + (event-1).
+		return 1.0 + (_GameConstants.EliteHpMult - 1.0) + (self:EventHpMult() - 1.0)
+	end
+
+end

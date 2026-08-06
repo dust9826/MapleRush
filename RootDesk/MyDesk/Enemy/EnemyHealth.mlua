@@ -34,9 +34,19 @@ script EnemyHealth extends Component
 		local scaled = math.floor(self.MaxHP * _GameConstants:EnemyHpMultForFloor(floor))
 		if scaled < 1 then scaled = 1 end
 		self.MaxHP = scaled
-		-- HP를 최대치로 초기화.
+		-- 엘리트 전투: 층 보정 "이후" 엘리트·이벤트 추가 비율 합연산 + 시각 보정(외곽선/1.25배).
+		-- 보스는 제외(엘리트는 보스 노드를 대체하지 않음 — spec §3.1). 순서: 층 → 합연산 → 시각 (spec §7 구현 주의점).
+		local elite = false
+		if _GameStateManager.RunActive and self.EnemyKind ~= "boss" and _StageManager:IsEliteActive() then
+			elite = true
+			local combined = math.floor(self.MaxHP * _EliteModifier:CombinedHpMult())
+			if combined < 1 then combined = 1 end
+			self.MaxHP = combined
+			_EliteModifier:ApplyTo(self.Entity)
+		end
+		-- HP를 최대치로 초기화 (최종 최대 체력 계산 직후 — spec §3.1).
 		self.HP = self.MaxHP
-		log("[EnemyHealth] spawned: " .. self.Entity.Name .. " kind=" .. self.EnemyKind .. " floor=" .. tostring(floor) .. " HP=" .. tostring(self.HP))
+		log("[EnemyHealth] spawned: " .. self.Entity.Name .. " kind=" .. self.EnemyKind .. " floor=" .. tostring(floor) .. " elite=" .. tostring(elite) .. " HP=" .. tostring(self.HP))
 	end
 
 	-- 적 측면충돌 진입 방향 판정용 직전 X. 90000=미초기화.
@@ -71,7 +81,7 @@ script EnemyHealth extends Component
 			if gg ~= nil then
 				local charge = amount
 				if source == "reflect" then
-					charge = _GameStateManager.AttackStat * _GameConstants.GroggyParryMult
+					charge = _GameStateManager:EffectiveAttack() * _GameConstants.GroggyParryMult
 				end
 				gg:Charge(charge, source)
 			end

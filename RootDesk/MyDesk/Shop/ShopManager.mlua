@@ -14,6 +14,16 @@ script ShopManager extends Logic
 	@Sync
 	property integer PriceItem = 40
 
+	-- ===== 엘리트 '다음 상점 무료화' 예약 (elite spec §4.2 next_shop_free) — 전부 서버 상태 =====
+	-- 예약 대기 수(다음 상점 진입 시 소진). 같은 층에서 여러 번 받으면 누적됐다가 한 상점에서 각각 다른 품목에 적용.
+	property integer freeReservedCount = 0
+
+	-- 현재 상점에서 무료화된 품목 키("" 없음 / maxlife / stat / ability / item)와 원래 가격(복원·다음가격 산정용).
+	property string freeSlot1 = ""
+	property integer freeOrig1 = 0
+	property string freeSlot2 = ""
+	property integer freeOrig2 = 0
+
 	@ExecSpace("ServerOnly")
 	method void ResetPrices()
 		-- 새 런 시작 시 가격 초기화.
@@ -21,6 +31,105 @@ script ShopManager extends Logic
 		self.PriceStat = _GameConstants.PriceStat
 		self.PriceAbility = _GameConstants.PriceAbility
 		self.PriceItem = _GameConstants.PriceItem
+	end
+
+	@ExecSpace("ServerOnly")
+	method void ReserveNextShopFree()
+		-- 다음 상점의 무작위 품목 1개 가격 0 예약 (적용은 상점 진입 시 ApplyFreeReservation).
+		self.freeReservedCount += 1
+		log("[ShopManager] next-shop-free reserved (pending=" .. tostring(self.freeReservedCount) .. ")")
+	end
+
+	@ExecSpace("ServerOnly")
+	method void ClearFreeReservation()
+		-- 런 시작/종료 시 예약·적용 상태 전량 초기화 (spec §5).
+		self.freeReservedCount = 0
+		self.freeSlot1 = ""
+		self.freeOrig1 = 0
+		self.freeSlot2 = ""
+		self.freeOrig2 = 0
+	end
+
+	@ExecSpace("ServerOnly")
+	method void ApplyFreeReservation()
+		-- 상점 진입 시 호출: 대기 중 예약을 무작위 품목에 적용(가격 0, 원가 저장). 최대 2건까지 서로 다른 품목.
+		local applied = 0
+		while self.freeReservedCount > 0 and applied < 2 do
+			self.freeReservedCount -= 1
+			local pool = {}
+			if self.freeSlot1 ~= "maxlife" and self.freeSlot2 ~= "maxlife" then table.insert(pool, "maxlife") end
+			if self.freeSlot1 ~= "stat" and self.freeSlot2 ~= "stat" then table.insert(pool, "stat") end
+			if self.freeSlot1 ~= "ability" and self.freeSlot2 ~= "ability" then table.insert(pool, "ability") end
+			if self.freeSlot1 ~= "item" and self.freeSlot2 ~= "item" then table.insert(pool, "item") end
+			if #pool == 0 then break end
+			local slot = pool[_UtilLogic:RandomIntegerRange(1, #pool)]
+			local orig = 0
+			if slot == "maxlife" then orig = self.PriceMaxLife self.PriceMaxLife = 0
+			elseif slot == "stat" then orig = self.PriceStat self.PriceStat = 0
+			elseif slot == "ability" then orig = self.PriceAbility self.PriceAbility = 0
+			else orig = self.PriceItem self.PriceItem = 0 end
+			if self.freeSlot1 == "" then
+				self.freeSlot1 = slot
+				self.freeOrig1 = orig
+			else
+				self.freeSlot2 = slot
+				self.freeOrig2 = orig
+			end
+			applied += 1
+			log("[ShopManager] free slot applied: " .. slot .. " (orig=" .. tostring(orig) .. ")")
+		end
+	end
+
+	@ExecSpace("ServerOnly")
+	method integer ConsumeFreeSlot(string slot)
+		-- 구매/상점 종료 시 해당 품목의 무료 적용을 해제하고 원가 반환. 미적용 품목은 -1.
+		if self.freeSlot1 == slot then
+			local orig = self.freeOrig1
+			self.freeSlot1 = ""
+			self.freeOrig1 = 0
+			return orig
+		end
+		if self.freeSlot2 == slot then
+			local orig = self.freeOrig2
+			self.freeSlot2 = ""
+			self.freeOrig2 = 0
+			return orig
+		end
+		return -1
+	end
+
+	@ExecSpace("ServerOnly")
+	method void ReleaseFreeSlots()
+		-- 상점 종료: 미구매 무료 품목 가격을 원가로 복원 + 적용 상태 해제 (spec §7 ShopManager 책임).
+		if self.freeSlot1 ~= "" then
+			self:RestorePrice(self.freeSlot1, self.freeOrig1)
+			self.freeSlot1 = ""
+			self.freeOrig1 = 0
+		end
+		if self.freeSlot2 ~= "" then
+			self:RestorePrice(self.freeSlot2, self.freeOrig2)
+			self.freeSlot2 = ""
+			self.freeOrig2 = 0
+		end
+	end
+
+	@ExecSpace("ServerOnly")
+	method void RestorePrice(string slot, integer orig)
+		-- 무료화 해제: 품목 가격을 원가로 되돌린다.
+		if slot == "maxlife" then self.PriceMaxLife = orig
+		elseif slot == "stat" then self.PriceStat = orig
+		elseif slot == "ability" then self.PriceAbility = orig
+		elseif slot == "item" then self.PriceItem = orig end
+		log("[ShopManager] free slot released: " .. slot .. " -> " .. tostring(orig))
+	end
+
+	@ExecSpace("ServerOnly")
+	method integer NextPriceAfterBuy(string slot, integer currentPrice)
+		-- 구매 후 다음 가격: 무료 구매면 저장된 원가 기준 ×2 (0×2=0 고착 방지), 아니면 현재가 ×2.
+		local orig = self:ConsumeFreeSlot(slot)
+		local base = currentPrice
+		if orig >= 0 then base = orig end
+		return math.floor(math.min(base * 2, _GameConstants.MesoCap))
 	end
 
 	@ExecSpace("Server")
@@ -32,7 +141,7 @@ script ShopManager extends Logic
 		end
 		_GameStateManager.MaxLives += 1
 		_GameStateManager.CurrentLives += 1
-		self.PriceMaxLife = math.floor(math.min(self.PriceMaxLife * 2, _GameConstants.MesoCap))
+		self.PriceMaxLife = self:NextPriceAfterBuy("maxlife", self.PriceMaxLife)
 		log("[ShopManager] maxlife bought -> " .. tostring(_GameStateManager.MaxLives) .. " (next price " .. tostring(self.PriceMaxLife) .. ")")
 	end
 
@@ -44,7 +153,7 @@ script ShopManager extends Logic
 			return
 		end
 		_GameStateManager.AttackStat += 2
-		self.PriceStat = math.floor(math.min(self.PriceStat * 2, _GameConstants.MesoCap))
+		self.PriceStat = self:NextPriceAfterBuy("stat", self.PriceStat)
 		log("[ShopManager] stat bought -> ATK " .. tostring(_GameStateManager.AttackStat) .. " (next price " .. tostring(self.PriceStat) .. ")")
 	end
 
@@ -56,7 +165,7 @@ script ShopManager extends Logic
 			return
 		end
 		_RewardManager:ClaimAbilityReward()
-		self.PriceAbility = math.floor(math.min(self.PriceAbility * 2, _GameConstants.MesoCap))
+		self.PriceAbility = self:NextPriceAfterBuy("ability", self.PriceAbility)
 		log("[ShopManager] ability bought (next price " .. tostring(self.PriceAbility) .. ")")
 	end
 
@@ -79,7 +188,7 @@ script ShopManager extends Logic
 			return
 		end
 		_RewardManager:ClaimItemReward()
-		self.PriceItem = math.floor(math.min(self.PriceItem * 2, _GameConstants.MesoCap))
+		self.PriceItem = self:NextPriceAfterBuy("item", self.PriceItem)
 		log("[ShopManager] item bought (next price " .. tostring(self.PriceItem) .. ")")
 	end
 

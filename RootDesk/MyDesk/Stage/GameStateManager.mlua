@@ -30,6 +30,35 @@ script GameStateManager extends Logic
 	@Sync
 	property integer RunKills = 0
 
+	-- ===== 엘리트 (MR-AN) — 별도 집계 + 런 지속 보정 (전부 런 종료/시작 시 초기화) =====
+	-- 엘리트 전투 클리어 수 (NormalClears와 분리 집계 — spec §3.3)
+	@Sync
+	property integer EliteClears = 0
+
+	-- 이동속도 배율 (클라 PlayerInputSetup.ApplyMovementConfig가 반영 → @Sync 필수)
+	@Sync
+	property number RunMoveSpeedMult = 1.0
+
+	-- 대시 충전 가속 배율 (클라 PlayerDash 회복시간을 나눔)
+	@Sync
+	property number RunDashChargeMult = 1.0
+
+	-- 공격력 배율 (EffectiveAttack 경유로 모든 데미지 계산에 적용)
+	@Sync
+	property number RunAttackMult = 1.0
+
+	-- 공격속도 배율 (클라 PlayerCombat 공격 쿨다운을 나눔)
+	@Sync
+	property number RunAttackSpeedMult = 1.0
+
+	-- 대시 무적 시간 배율 (서버 i-frame 창 확장)
+	@Sync
+	property number RunDashInvulnMult = 1.0
+
+	-- 대시 최대 개수 보너스 (클라 PlayerDash MaxDash에 가산)
+	@Sync
+	property integer RunDashMaxBonus = 0
+
 	@ExecSpace("ServerOnly")
 	method void StartRun()
 		-- 새 게임 판 시작: 런 상태 초기화 + 영구 강화 보너스 적용 (stage_design §4.5).
@@ -41,6 +70,15 @@ script GameStateManager extends Logic
 		self.MaxLives = _PlayerConfig.BaseMaxLives + _MetaProgression:GetBonusLives()
 		self.CurrentLives = self.MaxLives
 		self.AttackStat = _PlayerConfig.BaseAttack + _MetaProgression:GetBonusAttack()
+		-- 엘리트 런 지속 보정 초기화 (런 시작·게임오버 후 재시작·전층 클리어 후 재시작 전부 이 경로 — spec §5)
+		self.EliteClears = 0
+		self.RunMoveSpeedMult = 1.0
+		self.RunDashChargeMult = 1.0
+		self.RunAttackMult = 1.0
+		self.RunAttackSpeedMult = 1.0
+		self.RunDashInvulnMult = 1.0
+		self.RunDashMaxBonus = 0
+		_ShopManager:ClearFreeReservation()
 		self.RunActive = true
 		-- 새 런 시작 → 콤보 상태 초기화(이전 런의 등급/처치수가 새 런으로 새는 것 방지 — combo_doc §6).
 		_ComboManager:ResetAll()
@@ -60,6 +98,11 @@ script GameStateManager extends Logic
 		if self.Meso < amount then return false end
 		self.Meso = self.Meso - amount
 		return true
+	end
+
+	method number EffectiveAttack()
+		-- 데미지 계산용 실효 공격력 = 기본 공격력 × 엘리트 런 보정(곱연산 누적). 모든 데미지 산식이 이걸 쓴다.
+		return self.AttackStat * self.RunAttackMult
 	end
 
 	@ExecSpace("ServerOnly")
